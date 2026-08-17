@@ -1,0 +1,4 @@
+<resources>
+    <!-- Unsupported device locales fall back to English. -->
+    <string name="app_name">QuestTick</string>
+</resources>

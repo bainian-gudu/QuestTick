@@ -1,0 +1,83 @@
+# ================================================================
+# MYS_Signin_Android Startup Profile v2
+# ================================================================
+#
+# 比 baseline-prof.txt 更精简：只包含「应用从冷启动到首屏可见」
+# 这条关键路径上必须经过的类。安装时预编译这些能让冷启动时间下降
+# 30% - 50%（Android 官方文档建议范围）。
+#
+# v2 更新（2026-06-27 UI重组 + 启动预热裁剪）：
+# - 移除 Notifier.ensureChannel（已延后到首帧后）
+# - 新增 Coil ImageLoader（首屏奖励图标）
+# - 新增 Room WAL 初始化路径
+# - 新增 ThreadLocal DateFormatter
+# - 新增 Compose Animation 运行时
+#
+# 与源码对应：
+#   - MainActivity / QuestTickApp：进程入口
+#   - ui/theme / ui/components：Compose 主题、通用组件
+#   - ui/screens/HomeScreen：首屏
+#   - ui/screens/AccountsScreen：第二个高频入口
+#   - ui/vm/MainViewModel / HomeViewModel / AccountsViewModel：构造时就预热
+#   - data/SecureStore / Repository：启动期解密 + 预加载
+# ================================================================
+
+# === 入口 ===
+HSPLcom/questtick/MainActivity*->**(**)**
+HSPLcom/questtick/QuestTickApp*->**(**)**
+Lcom/questtick/MainActivity;
+Lcom/questtick/QuestTickApp;
+
+# === 主题与通用组件（首帧渲染必备） ===
+HSPLcom/questtick/ui/theme/**->**(**)**
+HSPLcom/questtick/ui/components/**->**(**)**
+Lcom/questtick/ui/theme/ThemeKt;
+
+# === 首屏 ===
+HSPLcom/questtick/ui/screens/HomeScreen*->**(**)**
+HSPLcom/questtick/ui/screens/AccountsScreen*->**(**)**
+Lcom/questtick/ui/screens/HomeScreenKt;
+Lcom/questtick/ui/screens/AccountsScreenKt;
+# 日期格式化 ThreadLocal 热路径
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatDay(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatTime(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatClock(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatSec(**)**
+
+# === ViewModel（构造即预热） ===
+HSPLcom/questtick/ui/vm/MainViewModel*->**(**)**
+HSPLcom/questtick/ui/vm/HomeViewModel*->**(**)**
+HSPLcom/questtick/ui/vm/AccountsViewModel*->**(**)**
+Lcom/questtick/ui/vm/MainViewModel;
+Lcom/questtick/ui/vm/HomeViewModel;
+Lcom/questtick/ui/vm/AccountsViewModel;
+
+# === 数据层（启动期预热 + 预读取） ===
+HSPLcom/questtick/data/**->**(**)**
+HSPLcom/questtick/repository/**->**(**)**
+HSPLcom/questtick/data/SecureStore->warmUp(**)**
+HSPLcom/questtick/data/SecureStore->getAccounts(**)**
+HSPLcom/questtick/data/SecureStore->getAppSettings(**)**
+Lcom/questtick/data/SecureStore;
+Lcom/questtick/data/Account;
+Lcom/questtick/data/AppSettings;
+
+# === Room WAL 初始化（启动加速） ===
+HSPLandroidx/room/**->**(**)**
+HSPLcom/questtick/data/db/AppDatabase->get(**)**
+
+# === Coil 图片加载（首屏奖励图标） ===
+HSPLcoil3/**->**(**)**
+HSPLcom/questtick/ui/components/CachedRewardIconKt*->**(**)**
+
+# === Compose 动画运行时（进度条 / 切换动画） ===
+HSPLandroidx/compose/animation/core/**->**(**)**
+HSPLandroidx/compose/runtime/**->**(**)**
+
+# === Hilt DI 启动路径 ===
+HSPLdagger/hilt/**->**(**)**
+HSPLandroidx/hilt/**->**(**)**
+
+# === 通知渠道（已延后到首帧后，不再列入 startup profile） ===
+# HSPLcom/questtick/notify/Notifier->ensureChannel(**)**
+# Lcom/questtick/notify/Notifier;

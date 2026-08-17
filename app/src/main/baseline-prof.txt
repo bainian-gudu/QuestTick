@@ -1,0 +1,217 @@
+# ================================================================
+# MYS_Signin_Android Baseline Profile
+# ================================================================
+#
+# 此文件由人工 + Macrobenchmark 共同维护。
+# AOT 预编译列表（HSPL）会让 ART 在安装时就把这些方法编译成机器码，
+# 显著降低首次启动 / 冷启动 / 关键交互的 jank 和 CPU 占用。
+#
+# 格式说明：
+#   HSPL<package/class/method>-><signature>     — Hot-Specific Method（精确）
+#   HSPL<package/class>*->**(**)**              — Hot-Static：包/类下所有方法
+#   L<class>;                                     — 类初始化器
+#
+# ★ 与源码对应：
+#   - ui/ 包：所有 Compose 屏幕和 ViewModel（启动后立即渲染）
+#   - data/ 包：SecureStore / Repository（启动时预热，签到后立即读取）
+#   - sign/ 包：SignInRunner + 签到引擎（定时任务首次执行）
+#   - mail/ 包：Mailer.send（签到完成通知，热点路径）
+#   - notify/ 包：Notifier.showResult（本地通知，热点路径）
+#   - work/ 包：SignInWorker（定时任务入口）
+#   - net/ 包：Http.client / execute（每次网络请求都走）
+#
+# ★ 本次更新（基于 13 处修复）：
+#   1. 加入 mail/Mailer.kt（签到完成时邮件推送，热点）
+#   2. 加入 notify/Notifier.kt（签到完成时本地通知，热点）
+#   3. 显式列出 SignInRunner 关键方法（runAll / processAccount / notifyAccountChanged）
+#   4. 显式列出 SecureStore 关键写入方法（saveLogs / addRunRecord / saveActIdCache）
+#   5. 显式列出 LogExporter.buildText / suggestFileName（用户导出日志）
+#   6. 显式列出 CookieRefresher.refresh（Cookie 过期时调用，热点）
+# ================================================================
+
+# === 入口：Application + Activity（冷启动） ===
+HSPLcom/questtick/MainActivity*->**(**)**
+HSPLcom/questtick/QuestTickApp*->**(**)**
+Lcom/questtick/MainActivity;
+Lcom/questtick/QuestTickApp;
+
+# === UI 主题与基础组件 ===
+HSPLcom/questtick/ui/theme/**->**(**)**
+HSPLcom/questtick/ui/components/**->**(**)**
+Lcom/questtick/ui/theme/ThemeKt;
+
+# === 所有 Compose 屏幕（启动后立即渲染） ===
+HSPLcom/questtick/ui/screens/HomeScreen*->**(**)**
+HSPLcom/questtick/ui/screens/AccountsScreen*->**(**)**
+HSPLcom/questtick/ui/screens/RecordsScreen*->**(**)**
+HSPLcom/questtick/ui/screens/LogsScreen*->**(**)**
+HSPLcom/questtick/ui/screens/SettingsScreen*->**(**)**
+HSPLcom/questtick/ui/screens/AccountEditScreen*->**(**)**
+HSPLcom/questtick/ui/screens/QRLoginScreen*->**(**)**
+HSPLcom/questtick/ui/screens/CloudQRLoginScreen*->**(**)**
+
+# === ViewModel（应用启动后立即构造） ===
+HSPLcom/questtick/ui/vm/AddAccountViewModel*->**(**)**
+Lcom/questtick/ui/vm/AddAccountViewModel;
+Lcom/questtick/ui/vm/AddAccountUiState;
+HSPLcom/questtick/ui/vm/MainViewModel*->**(**)**
+Lcom/questtick/ui/vm/MainViewModel;
+HSPLcom/questtick/ui/vm/HomeViewModel*->**(**)**
+Lcom/questtick/ui/vm/HomeViewModel;
+HSPLcom/questtick/ui/vm/AccountsViewModel*->**(**)**
+Lcom/questtick/ui/vm/AccountsViewModel;
+HSPLcom/questtick/ui/vm/RecordsViewModel*->**(**)**
+Lcom/questtick/ui/vm/RecordsViewModel;
+HSPLcom/questtick/ui/vm/LogsViewModel*->**(**)**
+Lcom/questtick/ui/vm/LogsViewModel;
+HSPLcom/questtick/ui/vm/SettingsViewModel*->**(**)**
+Lcom/questtick/ui/vm/SettingsViewModel;
+
+# === 数据层（启动时预热、签到后立即读写） ===
+HSPLcom/questtick/data/**->**(**)**
+Lcom/questtick/data/Account;
+Lcom/questtick/data/AppSettings;
+Lcom/questtick/data/SecureStore;
+# ★ 热写入方法（每次签到后调用）
+HSPLcom/questtick/data/SecureStore->saveLogs(**)**
+HSPLcom/questtick/data/SecureStore->addRunRecord(**)**
+HSPLcom/questtick/data/SecureStore->saveActIdCache(**)**
+HSPLcom/questtick/data/SecureStore->upsertAccount(**)**
+HSPLcom/questtick/data/SecureStore->getAccounts(**)**
+HSPLcom/questtick/data/SecureStore->effectiveMysDeviceId(**)**
+HSPLcom/questtick/data/SecureStore->effectiveCloudDeviceId(**)**
+# ★ Repository StateFlow（UI 订阅的热点）
+HSPLcom/questtick/repository/**->**(**)**
+
+# === 网络层（每个请求都会走） ===
+HSPLcom/questtick/net/**->**(**)**
+
+# === 签到引擎（定时任务 + 手动签到都会调用） ===
+HSPLcom/questtick/sign/**->**(**)**
+# ★ 热路径显式列出（让 AOT 编译优先级更高）
+HSPLcom/questtick/sign/SignInRunner->runAll(**)**
+HSPLcom/questtick/sign/SignInRunner->processAccount(**)**
+HSPLcom/questtick/sign/SignInRunner->notifyAccountChanged(**)**
+HSPLcom/questtick/sign/SignInRunner->safeMysRun(**)**
+HSPLcom/questtick/sign/SignInRunner->safeCloudRun(**)**
+HSPLcom/questtick/sign/SignInRunner->validateCookie(**)**
+HSPLcom/questtick/sign/SignInRunner->randomSleep(**)**
+# ★ Cookie 自动刷新（Cookie 过期时调用，是热点）
+HSPLcom/questtick/sign/CookieRefresher->refresh(**)**
+HSPLcom/questtick/sign/CookieRefresher->buildCookie(**)**
+HSPLcom/questtick/sign/CookieRefresher->isCookieExpired(**)**
+# ★ 米游社签到核心
+HSPLcom/questtick/sign/MysSignIn->signIn(**)**
+HSPLcom/questtick/sign/MysSignIn->getRole(**)**
+HSPLcom/questtick/sign/MysSignIn->runForCookie(**)**
+# ★ 云游戏签到
+HSPLcom/questtick/sign/CloudSignIn->runForToken(**)**
+# ★ 二维码登录（用户首次登录时调用）
+HSPLcom/questtick/sign/QRLoginManager*->**(**)**
+HSPLcom/questtick/sign/CloudQRLogin*->**(**)**
+# ★ Mask（每次日志写入都调用）
+HSPLcom/questtick/sign/Mask->sensitive(**)**
+HSPLcom/questtick/sign/Mask->uid(**)**
+# ★ Headers（含 DS 签名）
+HSPLcom/questtick/sign/Endpoints*->**(**)**
+HSPLcom/questtick/sign/MysHeaders*->**(**)**
+HSPLcom/questtick/sign/CloudHeaders*->**(**)**
+HSPLcom/questtick/sign/Ds->generate(**)**
+HSPLcom/questtick/sign/ErrorText*->**(**)**
+HSPLcom/questtick/sign/Passport*->**(**)**
+
+# === WorkManager（定时任务入口） ===
+HSPLcom/questtick/work/**->**(**)**
+
+# === 邮件推送（签到完成后调用，是热点） ===
+HSPLcom/questtick/mail/**->**(**)**
+HSPLcom/questtick/mail/Mailer->send(**)**
+HSPLcom/questtick/mail/Mailer->buildHtml(**)**
+HSPLcom/questtick/mail/Mailer->buildSubject(**)**
+Lcom/questtick/mail/Mailer;
+
+# === 本地通知（签到完成后调用，是热点） ===
+HSPLcom/questtick/notify/**->**(**)**
+HSPLcom/questtick/notify/Notifier->showResult(**)**
+HSPLcom/questtick/notify/Notifier->ensureChannel(**)**
+HSPLcom/questtick/notify/Notifier->hasPermission(**)**
+Lcom/questtick/notify/Notifier;
+
+# === 二维码登录引擎（显式列出，避免被上面的 ** 覆盖） ===
+HSPLcom/questtick/sign/QRLoginManager*->**(**)**
+HSPLcom/questtick/sign/CloudQRLogin*->**(**)**
+
+# ================================================================
+# Baseline Profile 补充 v2 - 2026-06-27
+# UI 重组优化 + 启动预热裁剪 对应热点
+# ================================================================
+
+# --- Coil 3 图片加载（奖励图标） ---
+HSPLcoil3/**->**(**)**
+HSPLcoil3/compose/**->**(**)**
+HSPLcoil3/memory/**->**(**)**
+HSPLcoil3/disk/**->**(**)**
+HSPLcoil3/request/ImageRequest*->**(**)**
+Lcom/coil3/ImageLoader;
+Lcom/coil3/SingletonImageLoader;
+
+# --- Compose 动画运行时（进度条 animateIntAsState） ---
+HSPLandroidx/compose/animation/core/**->**(**)**
+HSPLandroidx/compose/runtime/**->**(**)**
+HSPLandroidx/compose/foundation/lazy/**->**(**)**
+
+# --- Room WAL / 数据库热路径 ---
+HSPLandroidx/room/**->**(**)**
+HSPLandroidx/sqlite/db/**->**(**)**
+HSPLcom/questtick/data/db/AppDatabase->get(**)**
+HSPLcom/questtick/data/db/LogDao*->**(**)**
+HSPLcom/questtick/data/db/HistoryDao*->**(**)**
+HSPLcom/questtick/data/db/AccountDao*->**(**)**
+
+# --- 奖励图标缓存（性能优化版） ---
+HSPLcom/questtick/data/RewardIconCache*->**(**)**
+HSPLcom/questtick/ui/components/CachedRewardIconKt*->**(**)**
+
+# --- HomeScreen 重组热点 ---
+HSPLcom/questtick/ui/screens/HomeScreenKt*->**(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatDay(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatTime(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->formatClock(**)**
+HSPLcom/questtick/ui/screens/HomeScreenKt->ResultRow(**)**
+
+# --- HomeThemeDashboard / ProgressCard ---
+HSPLcom/questtick/ui/components/HomeThemeDashboardKt*->**(**)**
+HSPLcom/questtick/ui/components/HomeThemeDashboardKt->HomeThemeProgressCard(**)**
+
+# --- OkHttp 5.4 快速失败 / 连接池 ---
+HSPLokhttp3/**->**(**)**
+HSPLokio/**->**(**)**
+
+# --- Kotlin 协程热路径 ---
+HSPLkotlinx/coroutines/**->**(**)**
+
+# --- Security / Crypto（启动预热） ---
+HSPLcom/questtick/data/KeystoreEncryptedSharedPreferences*->**(**)**
+HSPLcom/questtick/data/SecureStore->warmUp(**)**
+HSPLcom/questtick/data/SecureStore->warmSecondaryCaches(**)**
+
+# --- 日志 / 历史裁剪（性能优化） ---
+HSPLcom/questtick/data/RoomLogStore*->**(**)**
+HSPLcom/questtick/data/RoomHistoryStore*->**(**)**
+HSPLcom/questtick/log/LogExporter*->**(**)**
+
+# --- 启动加速相关 ---
+HSPLcom/questtick/QuestTickApp->newImageLoader(**)**
+HSPLcom/questtick/QuestTickApp->onCreate(**)**
+HSPLandroidx/core/splashscreen/**->**(**)**
+
+# --- Compose Material3 高频组件 ---
+HSPLandroidx/compose/material3/**->**(**)**
+HSPLandroidx/compose/ui/**->**(**)**
+HSPLandroidx/compose/foundation/**->**(**)**
+
+# --- Hilt / DI 启动路径 ---
+HSPLdagger/hilt/**->**(**)**
+HSPLandroidx/hilt/**->**(**)**
+
+# end of Baseline Profile v2 supplement

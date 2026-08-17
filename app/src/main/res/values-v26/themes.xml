@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.QuestTick" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/galaxy_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- API 26+ 禁用默认焦点高亮，减少不必要的 overdraw。 -->
+        <item name="android:defaultFocusHighlightEnabled">false</item>
+    </style>
+
+    <style name="Theme.QuestTick.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/galaxy_bg_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:defaultFocusHighlightEnabled">false</item>
+    </style>
+</resources>

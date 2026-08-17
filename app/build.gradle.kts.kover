@@ -1,0 +1,25 @@
+// Kover 覆盖率门禁 - 加入 app/build.gradle.kts
+// kover { ... }
+kover {
+    reports {
+        total {
+            html { onCheck = true
+                htmlDir.set(layout.buildDirectory.dir("reports/kover/html"))
+            }
+            xml { onCheck = true }
+            verify {
+                rule {
+                    name = "Refactored V2 - Line coverage >= 70%"
+                    bound { minValue = 70 }
+                    enable = true
+                }
+                rule {
+                    name = "Domain 100% critical"
+                    includes = ["com.questtick.domain.*"]
+                    bound { minValue = 80 }
+                }
+                onCheck = true
+            }
+        }
+    }
+}

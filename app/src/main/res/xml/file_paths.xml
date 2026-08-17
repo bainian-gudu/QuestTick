@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 导出的脱敏日志临时文件位于 cacheDir/exports。 -->
+    <cache-path name="exports" path="exports/" />
+    <!-- 自动更新下载的 APK 临时文件位于 cacheDir/apk_updates。 -->
+    <cache-path name="apk_updates" path="apk_updates/" />
+</paths>

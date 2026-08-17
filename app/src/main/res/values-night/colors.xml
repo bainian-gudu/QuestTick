@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="galaxy_bg">#0B1120</color>
+    <color name="galaxy_bg_dark">#0B1120</color>
+    <color name="oled_pure_black">#000000</color>
+</resources>
