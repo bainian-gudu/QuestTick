@@ -15,7 +15,7 @@ class AppUpdateNetworkTest {
     @Test
     fun `mirror builder only wraps trusted update source`() {
         val source =
-            "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1.2.3/MYS_Signin_v1.2.3_signed.apk"
+            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
 
         assertEquals("https://ghfast.top/$source", AppUpdateNetwork.mirrorUrl(source, "https://ghfast.top/"))
         assertEquals(source, AppUpdateNetwork.mirrorUrl(source, ""))
@@ -27,10 +27,10 @@ class AppUpdateNetworkTest {
     @Test
     fun `mirror builder rejects nested mirror and other repository`() {
         val source =
-            "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1.2.3/MYS_Signin_v1.2.3_signed.apk"
+            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
         val mirrored = "https://ghfast.top/$source"
         val otherRepository =
-            "https://github.com/attacker/MYS_Signin_Android/releases/download/v1.2.3/MYS_Signin_v1.2.3_signed.apk"
+            "https://github.com/attacker/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
 
         assertNull(AppUpdateNetwork.mirrorUrl(mirrored, "https://ghproxy.net/"))
         assertNull(AppUpdateNetwork.mirrorUrl(otherRepository, "https://ghfast.top/"))

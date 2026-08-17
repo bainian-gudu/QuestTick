@@ -10,10 +10,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * 重定向的逐跳校验由独立策略负责，不在这里以跟随重定向后的结果替代请求前检查。
  */
 object TrustedUrlPolicy {
-    private const val GITHUB_REPOSITORY_PATH = "/moon02222/MYS_Signin_Android"
+    private const val GITHUB_REPOSITORY_PATH = "/bainian-gudu/QuestTick"
     private const val GITHUB_API_REPOSITORY_PATH = "/repos$GITHUB_REPOSITORY_PATH"
     private const val GITHUB_RELEASE_ASSET_HOST = "release-assets.githubusercontent.com"
-    private const val GITHUB_REPOSITORY_ID = "1284672256"
+    private const val GITHUB_REPOSITORY_ID = "1337123825"
     private const val GITHUB_RELEASE_ASSET_PATH_PREFIX =
         "/github-production-release-asset/$GITHUB_REPOSITORY_ID/"
 

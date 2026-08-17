@@ -129,12 +129,8 @@ internal fun AboutDetailPage(
                 }
                 item(key = "about_links") {
                     SettingsCard(modifier = Modifier.fillParentMaxWidth(), contentPadding = PaddingValues(6.dp)) {
-                        AboutLinkRow("GitHub", "MYS_Signin_Android") {
-                            openExternalUrl(context, "https://github.com/moon02222/MYS_Signin_Android")
-                        }
-                        HairlineSpacer()
-                        AboutLinkRow("上游项目", "MYS_Game_Signin") {
-                            openExternalUrl(context, "https://github.com/moon02222/MYS_Game_Signin")
+                        AboutLinkRow("GitHub", "bainian-gudu/QuestTick") {
+                            openExternalUrl(context, "https://github.com/bainian-gudu/QuestTick")
                         }
                         HairlineSpacer()
                         AboutLinkRow("开源许可证", "GNU General Public License v3.0") { showLicenseDialog = true }

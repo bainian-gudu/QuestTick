@@ -111,7 +111,6 @@ internal val exactTranslations =
         "清理中…" to Translation("Clearing…", "消去中…", "지우는 중…"),
         "清理成功" to Translation("Cleared successfully", "消去しました", "성공적으로 지웠습니다"),
         "开源许可证" to Translation("Open-source licenses", "オープンソースライセンス", "오픈 소스 라이선스"),
-        "上游项目" to Translation("Upstream project", "アップストリームプロジェクト", "업스트림 프로젝트"),
         "免责声明" to Translation("Disclaimer", "免責事項", "면책 조항"),
         "账号管理" to Translation("Account management", "アカウント管理", "계정 관리"),
         "添加账号" to Translation("Add account", "アカウントを追加", "계정 추가"),

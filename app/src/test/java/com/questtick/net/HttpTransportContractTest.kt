@@ -203,7 +203,7 @@ class HttpTransportContractTest {
             first.executeStreaming(
                 HttpRequest(
                     method = HttpMethod.GET,
-                    url = "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1/app.apk",
+                    url = "https://github.com/bainian-gudu/QuestTick/releases/download/v1/app.apk",
                     config = HttpRequestConfig(maxResponseBytes = 4),
                 ),
             ) { response ->
@@ -212,7 +212,7 @@ class HttpTransportContractTest {
         second.executeStreaming(
             HttpRequest(
                 method = HttpMethod.GET,
-                url = "https://github.com/moon02222/MYS_Signin_Android/releases/download/v2/app.apk",
+                url = "https://github.com/bainian-gudu/QuestTick/releases/download/v2/app.apk",
             ),
         ) { response -> response.read(ByteArray(1)) }
 
@@ -231,7 +231,7 @@ class HttpTransportContractTest {
             fake.executeStreaming(
                 HttpRequest(
                     method = HttpMethod.GET,
-                    url = "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1/app.apk",
+                    url = "https://github.com/bainian-gudu/QuestTick/releases/download/v1/app.apk",
                     config = HttpRequestConfig(maxResponseBytes = 2),
                 ),
             ) { response -> response.copyTo(java.io.ByteArrayOutputStream()) }
