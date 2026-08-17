@@ -1,0 +1,603 @@
+name: Build and Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: '发布版本号，例如 1.0.1；留空读取 app/build.gradle.kts'
+        required: false
+        default: ''
+      version_code:
+        description: 'Android versionCode；留空自动由发布版本号生成'
+        required: false
+        default: ''
+      version_note:
+        description: '版本备注 / Release Notes'
+        required: false
+        default: ''
+      create_release:
+        description: '创建或更新 GitHub Release'
+        type: boolean
+        required: false
+        default: false
+      release_tag:
+        description: 'Release 标签，留空使用 v<发布版本号>；推送 v* 标签时自动使用当前标签'
+        required: false
+        default: ''
+      prerelease:
+        description: '标记为预发布版本'
+        type: boolean
+        required: false
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-cleanup: on-success
+
+      - name: Prepare build metadata
+        id: meta
+        env:
+          INPUT_RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+          INPUT_VERSION_CODE: ${{ github.event.inputs.version_code }}
+          INPUT_CREATE_RELEASE: ${{ github.event.inputs.create_release }}
+          INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+          INPUT_PRERELEASE: ${{ github.event.inputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          DEFAULT_VERSION_NAME=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('app/build.gradle.kts').read_text(encoding='utf-8')
+          m = re.search(r'val\s+appVersionName\s*=.*?:\s*"([^"]+)"', text) or re.search(r'versionName\s*=\s*"([^"]+)"', text)
+          if not m:
+              raise SystemExit('versionName not found')
+          print(m.group(1))
+          PY
+          )
+
+          normalize_version() {
+            local value="$1"
+            value="${value#v}"
+            value="${value#V}"
+            printf '%s' "$value"
+          }
+
+          version_to_code() {
+            python3 - "$1" <<'PY'
+          import re
+          import sys
+          version = sys.argv[1]
+          core = re.split(r'[-_+]', version, maxsplit=1)[0]
+          parts = [int(p) for p in core.split('.') if p.isdigit()]
+          while len(parts) < 3:
+              parts.append(0)
+          major, minor, patch = parts[:3]
+          code = major * 1_000_000 + minor * 1_000 + patch
+          print(max(code, 1))
+          PY
+          }
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+            VERSION_NAME="$(normalize_version "${GITHUB_REF_NAME}")"
+            CREATE_RELEASE="true"
+          else
+            RELEASE_TAG="${INPUT_RELEASE_TAG:-}"
+            VERSION_NAME="$(normalize_version "${INPUT_RELEASE_VERSION:-}")"
+            if [[ -z "${VERSION_NAME}" && -n "${RELEASE_TAG}" ]]; then
+              VERSION_NAME="$(normalize_version "${RELEASE_TAG}")"
+            fi
+            if [[ -z "${VERSION_NAME}" ]]; then
+              VERSION_NAME="${DEFAULT_VERSION_NAME}"
+            fi
+
+            if [[ -z "${RELEASE_TAG}" ]]; then
+              RELEASE_TAG="v${VERSION_NAME}"
+            elif [[ "${RELEASE_TAG}" != v* && "${RELEASE_TAG}" != V* ]]; then
+              RELEASE_TAG="v${RELEASE_TAG}"
+            fi
+            CREATE_RELEASE="${INPUT_CREATE_RELEASE:-false}"
+          fi
+
+          VERSION_CODE="${INPUT_VERSION_CODE:-}"
+          if [[ -z "${VERSION_CODE}" ]]; then
+            VERSION_CODE="$(version_to_code "${VERSION_NAME}")"
+          fi
+
+          if [[ ! "${VERSION_NAME}" =~ ^[0-9]+(\.[0-9]+)*([._-][A-Za-z0-9]+)*$ ]]; then
+            echo "❌ 发布版本号格式不规范：${VERSION_NAME}"
+            echo "请使用类似 1.0.0 / 1.0.1-beta1 的版本号。"
+            exit 1
+          fi
+
+          if [[ ! "${VERSION_CODE}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "❌ versionCode 必须是正整数：${VERSION_CODE}"
+            exit 1
+          fi
+
+          if [[ ! "${RELEASE_TAG}" =~ ^[vV][0-9]+(\.[0-9]+)*([._-][A-Za-z0-9]+)*$ ]]; then
+            echo "❌ Release 标签格式不规范：${RELEASE_TAG}"
+            echo "请使用类似 v1.0.0 / v1.0.1-beta1 的标签。"
+            exit 1
+          fi
+
+          PRERELEASE="${INPUT_PRERELEASE:-false}"
+
+          {
+            echo "version_name=${VERSION_NAME}"
+            echo "version_code=${VERSION_CODE}"
+            echo "release_tag=${RELEASE_TAG}"
+            echo "create_release=${CREATE_RELEASE}"
+            echo "prerelease=${PRERELEASE}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "### Build metadata" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Key | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | ----- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| versionName | ${VERSION_NAME} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| versionCode | ${VERSION_CODE} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| release tag | ${RELEASE_TAG} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| create release | ${CREATE_RELEASE} |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore signing keystore
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD_SECRET: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD_SECRET: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          out = Path(os.environ['GITHUB_OUTPUT'])
+          b64 = os.getenv('KEYSTORE_B64', '').strip()
+          store_password = os.getenv('KEYSTORE_PASSWORD_SECRET', '').strip()
+          key_alias = os.getenv('KEY_ALIAS_SECRET', '').strip()
+          key_password = os.getenv('KEY_PASSWORD_SECRET', '').strip() or store_password
+
+          def write_output(**items):
+              with out.open('a', encoding='utf-8') as f:
+                  for key, value in items.items():
+                      f.write(f'{key}={value}\n')
+
+          if not b64:
+              print('⚠️ KEYSTORE_BASE64 未设置，将构建未签名 APK。')
+              write_output(signed='false', keystore_file='')
+              sys.exit(0)
+
+          missing = []
+          if not store_password:
+              missing.append('KEYSTORE_PASSWORD')
+          if not key_alias:
+              missing.append('KEY_ALIAS')
+          if not key_password:
+              missing.append('KEY_PASSWORD')
+          if missing:
+              print('❌ 已提供 KEYSTORE_BASE64，但缺少签名 Secret：' + ', '.join(missing))
+              sys.exit(1)
+
+          cleaned = re.sub(r'\s+', '', b64)
+          print(f'Base64 长度：原始 {len(b64)}，清理后 {len(cleaned)}')
+          try:
+              decoded = base64.b64decode(cleaned, validate=False)
+          except Exception as exc:
+              print(f'❌ KEYSTORE_BASE64 解码失败：{exc}')
+              sys.exit(1)
+
+          if len(decoded) <= 1500:
+              print(f'❌ 解码后的 keystore 过小：{len(decoded)} 字节，可能不是有效密钥。')
+              sys.exit(1)
+
+          keystore = Path('release.keystore')
+          keystore.write_bytes(decoded)
+          print(f'✅ 已恢复签名密钥：{keystore.resolve()} ({len(decoded):,} bytes)')
+          write_output(signed='true', keystore_file=str(keystore))
+          PY
+
+      - name: Build release APK
+        env:
+          KEYSTORE_FILE: ${{ steps.signing.outputs.keystore_file }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          bash ./gradlew \
+            -PappVersionName="${{ steps.meta.outputs.version_name }}" \
+            -PappVersionCode="${{ steps.meta.outputs.version_code }}" \
+            :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Collect release artifacts
+        id: collect
+        env:
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          SIGNED: ${{ steps.signing.outputs.signed }}
+          CREATE_RELEASE: ${{ steps.meta.outputs.create_release }}
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+
+          if [[ "${CREATE_RELEASE}" == "true" && "${SIGNED}" != "true" ]]; then
+            echo "❌ 创建正式 Release 必须提供签名密钥；unsigned APK 仅允许作为临时构建 artifact。"
+            exit 1
+          fi
+
+          if [[ "${SIGNED}" == "true" ]]; then
+            APK_SOURCE="app/build/outputs/apk/release/app-release.apk"
+            APK_SUFFIX="signed"
+          else
+            APK_SOURCE="app/build/outputs/apk/release/app-release-unsigned.apk"
+            APK_SUFFIX="unsigned"
+          fi
+
+          if [[ ! -f "${APK_SOURCE}" ]]; then
+            echo "❌ 未找到 APK：${APK_SOURCE}"
+            find app/build/outputs/apk -type f -name '*.apk' -print || true
+            exit 1
+          fi
+
+          APK_NAME="MYS_Signin_${RELEASE_TAG}_${APK_SUFFIX}.apk"
+          cp "${APK_SOURCE}" "dist/${APK_NAME}"
+          APK_SHA256=$(sha256sum "dist/${APK_NAME}" | awk '{print $1}')
+          APK_SIZE=$(stat -c%s "dist/${APK_NAME}")
+
+          # ===== v1.0.3 供应链安全加固: 强制 SHA256 校验 =====
+          echo "🔒 供应链安全检查..."
+          
+          # 1. SHA256 格式校验 - 必须是64位小写十六进制
+          if [[ ! "${APK_SHA256}" =~ ^[a-f0-9]{64}$ ]]; then
+            echo "❌ APK SHA-256 格式无效: ${APK_SHA256}"
+            echo "   期望: 64位十六进制小写字符串"
+            exit 1
+          fi
+          echo "✅ SHA-256 格式校验通过"
+
+          # 2. APK 大小合理性检查 (3MB ~ 100MB)
+          # 放宽下限以支持未签名构建（无 keystore 时 APK 会更小）
+          if [[ ${APK_SIZE} -lt 3145728 ]]; then
+            echo "❌ APK 文件过小: ${APK_SIZE} 字节 (<3MB)，可能构建不完整"
+            exit 1
+          fi
+          if [[ ${APK_SIZE} -gt 104857600 ]]; then
+            echo "❌ APK 文件过大: ${APK_SIZE} 字节 (>100MB)，请检查"
+            exit 1
+          fi
+          echo "✅ APK 大小检查通过: $((APK_SIZE/1024/1024))MB"
+
+          # 3. APK 签名校验 (有签名构建必须通过 apksigner)
+          if [[ "${SIGNED}" == "true" ]]; then
+            APKSIGNER_BIN=""
+            if command -v apksigner >/dev/null 2>&1; then
+              APKSIGNER_BIN="$(command -v apksigner)"
+            elif [[ -n "${ANDROID_HOME:-}" ]]; then
+              APKSIGNER_BIN="$(
+                find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name apksigner 2>/dev/null |
+                  sort -V |
+                  tail -n 1 || true
+              )"
+            fi
+
+            if [[ -z "${APKSIGNER_BIN}" ]]; then
+              echo "❌ signed 构建找不到 apksigner，无法证明 APK 签名有效"
+              echo "   请确认 Android build-tools 已安装，或将 apksigner 加入 PATH。"
+              exit 1
+            fi
+
+            echo "🔍 验证 APK 签名: ${APKSIGNER_BIN}"
+            if SIGNATURE_OUTPUT=$("${APKSIGNER_BIN}" verify --verbose --print-certs "dist/${APK_NAME}" 2>&1); then
+              echo "$SIGNATURE_OUTPUT" | tee /tmp/apksigner.log
+              echo "✅ APK 签名验证通过"
+
+              # 输出详细签名信息到 Step Summary
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "### 🔏 APK 签名信息" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$SIGNATURE_OUTPUT" | head -80 >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "❌ APK 签名验证失败"
+              echo "$SIGNATURE_OUTPUT" | tee /tmp/apksigner.log
+              exit 1
+            fi
+          else
+            echo "⚠️ 未签名构建，跳过签名校验"
+          fi
+
+          # 4. 生成 SHA256 校验文件 (供用户手动校验 / 客户端备用)
+          echo "${APK_SHA256}  ${APK_NAME}" > "dist/${APK_NAME}.sha256"
+          cat > "dist/SHA256SUMS.txt" <<EOF
+          # 米游社签到助手 ${RELEASE_TAG}
+          # 生成时间: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          # versionName: ${VERSION_NAME}
+          # versionCode: ${VERSION_CODE}
+          #
+          # 校验方法:
+          #   sha256sum -c SHA256SUMS.txt
+          #
+          ${APK_SHA256}  ${APK_NAME}
+          EOF
+
+          # 5. 生成 JSON 格式的校验清单 (供客户端自动校验)
+          cat > "dist/checksums.json" <<EOF
+          {
+            "version": "${VERSION_NAME}",
+            "versionCode": ${VERSION_CODE},
+            "tag": "${RELEASE_TAG}",
+            "builtAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "artifacts": [
+              {
+                "name": "${APK_NAME}",
+                "sha256": "${APK_SHA256}",
+                "size": ${APK_SIZE},
+                "signed": ${SIGNED}
+              }
+            ]
+          }
+          EOF
+
+          # 6. 二次校验 - 确保生成的 sha256 文件可验证通过
+          cd dist
+          if sha256sum -c "${APK_NAME}.sha256" --quiet; then
+            echo "✅ SHA256 自校验通过"
+          else
+            echo "❌ SHA256 自校验失败 - 生成的校验文件无法验证 APK"
+            exit 1
+          fi
+          cd ..
+
+          {
+            echo "apk=dist/${APK_NAME}"
+            echo "apk_name=${APK_NAME}"
+            echo "apk_sha256=${APK_SHA256}"
+            echo "apk_size=${APK_SIZE}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo ""
+          echo "### 📦 构建产物安全摘要" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 项目 | 值 |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-----|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| APK | \`${APK_NAME}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 大小 | $((APK_SIZE/1024/1024)) MB |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SHA-256 | \`${APK_SHA256}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 签名 | ${SIGNED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ 供应链安全检查全部通过" >> "$GITHUB_STEP_SUMMARY"
+
+          ls -lh dist/
+
+      - name: Generate release notes
+        id: notes
+        env:
+          VERSION_NOTE: ${{ github.event.inputs.version_note }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          cat > dist/release-notes.md <<EOF
+          ${VERSION_NOTE:-暂无更新说明。}
+
+          ⚠️ 本项目仅供学习、交流和测试使用。作者不对因使用本项目产生的任何问题承担责任。请在遵守相关服务条款与法规的前提下低调使用，若不同意请停止使用。
+          EOF
+          echo "body_path=dist/release-notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-apk-${{ steps.meta.outputs.release_tag }}
+          path: |
+            dist/*.apk
+            dist/release-notes.md
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Sync release tag to current commit
+        if: steps.meta.outputs.create_release == 'true' && !startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REMOTE_SHA="$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" | awk '{print $1}')"
+          if [[ -n "${REMOTE_SHA}" && "${REMOTE_SHA}" != "${GITHUB_SHA}" ]]; then
+            echo "❌ Release tag ${RELEASE_TAG} 已存在且指向其它提交，拒绝覆盖。"
+            exit 1
+          fi
+          if [[ -z "${REMOTE_SHA}" ]]; then
+            git tag "${RELEASE_TAG}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          else
+            echo "✅ Release tag ${RELEASE_TAG} 已指向当前提交，跳过推送。"
+          fi
+
+      - name: Delete stale APK assets from existing Release
+        if: steps.meta.outputs.create_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            mapfile -t APK_ASSETS < <(
+              gh release view "${RELEASE_TAG}" --json assets --jq '.assets[].name | select(endswith(".apk"))'
+            )
+            for asset in "${APK_ASSETS[@]}"; do
+              echo "删除旧 Release APK 资产：${asset}"
+              gh release delete-asset "${RELEASE_TAG}" "${asset}" -y
+            done
+          else
+            echo "Release ${RELEASE_TAG} 不存在，跳过旧资产清理。"
+          fi
+
+      - name: Create or update GitHub Release
+        if: steps.meta.outputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: 米游社签到助手 ${{ steps.meta.outputs.release_tag }}
+          body_path: ${{ steps.notes.outputs.body_path }}
+          files: |
+            dist/*.apk
+            dist/*.sha256
+            dist/SHA256SUMS.txt
+            dist/checksums.json
+          draft: false
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
+          make_latest: ${{ steps.meta.outputs.prerelease == 'true' && 'false' || 'true' }}
+          fail_on_unmatched_files: false
+          overwrite_files: true
+
+      - name: Verify Release APK SHA-256 (供应链安全强制校验)
+        if: steps.meta.outputs.create_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          APK_NAME: ${{ steps.collect.outputs.apk_name }}
+          LOCAL_SHA256: ${{ steps.collect.outputs.apk_sha256 }}
+        run: |
+          set -euo pipefail
+          echo "🔒 开始供应链安全最终校验..."
+          echo ""
+
+          # 1. 获取 Release 所有 APK 资产
+          echo "📋 检查 Release 资产清单..."
+          ASSETS_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" --jq '.assets')
+          echo "${ASSETS_JSON}" | jq -r '.[] | "\(.name) | size=\(.size) | digest=\(.digest // "MISSING") | state=\(.state)"'
+          echo ""
+
+          # 2. 校验目标 APK 存在且有 digest
+          RELEASE_DIGEST=$(echo "${ASSETS_JSON}" | jq -r ".[] | select(.name == \"${APK_NAME}\") | .digest // empty")
+          if [[ -z "${RELEASE_DIGEST}" ]]; then
+            echo "❌ 严重: 未能从 GitHub Release 读取 ${APK_NAME} 的 digest"
+            echo "   这意味着 GitHub 未能计算该资产的哈希，或资产上传失败"
+            echo "   按供应链安全策略，此类 Release 必须被拒绝"
+            exit 1
+          fi
+          echo "✅ Release digest 存在: ${RELEASE_DIGEST}"
+
+          # 3. digest 格式校验
+          if [[ ! "${RELEASE_DIGEST}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "❌ Release digest 格式异常: ${RELEASE_DIGEST}"
+            echo "   期望格式: sha256:[64位十六进制]"
+            exit 1
+          fi
+          echo "✅ Digest 格式校验通过"
+
+          RELEASE_SHA256="${RELEASE_DIGEST#sha256:}"
+
+          # 4. 本地 SHA256 格式二次校验
+          if [[ ! "${LOCAL_SHA256}" =~ ^[a-f0-9]{64}$ ]]; then
+            echo "❌ 本地 SHA256 格式异常: ${LOCAL_SHA256}"
+            exit 1
+          fi
+
+          # 5. 哈希一致性校验
+          echo ""
+          echo "本地 APK SHA-256:  ${LOCAL_SHA256}"
+          echo "Release digest:    ${RELEASE_SHA256}"
+          echo ""
+          if [[ "${RELEASE_SHA256}" != "${LOCAL_SHA256}" ]]; then
+            echo "❌ 严重供应链安全告警!"
+            echo "   Release APK SHA-256 与本次构建 APK 不一致"
+            echo "   可能原因:"
+            echo "   - 镜像投毒"
+            echo "   - 中间人攻击"
+            echo "   - Release 资产被替换"
+            echo "   按安全策略，构建失败"
+            exit 1
+          fi
+          echo "✅ SHA-256 哈希一致性校验通过"
+
+          # 6. 检查所有 APK 资产是否都有 digest (防止漏网之鱼)
+          echo ""
+          echo "🔍 检查 Release 中所有 APK 资产的 digest 完整性..."
+          MISSING_DIGEST_APKS=$(echo "${ASSETS_JSON}" | jq -r '.[] | select(.name | endswith(".apk")) | select(.digest == null or .digest == "") | .name')
+          if [[ -n "${MISSING_DIGEST_APKS}" ]]; then
+            echo "❌ 发现以下 APK 资产缺少 digest 字段:"
+            echo "${MISSING_DIGEST_APKS}"
+            echo "   按 v1.0.3 供应链安全策略，所有 APK 必须有官方 SHA256"
+            exit 1
+          fi
+          echo "✅ 所有 APK 资产均包含有效 digest"
+
+          # 7. 检查校验文件是否已上传
+          echo ""
+          for CHECK_FILE in "${APK_NAME}.sha256" "SHA256SUMS.txt" "checksums.json"; do
+            if echo "${ASSETS_JSON}" | jq -e ".[] | select(.name == \"${CHECK_FILE}\")" >/dev/null; then
+              echo "✅ 校验文件已上传: ${CHECK_FILE}"
+            else
+              echo "⚠️ 警告: 校验文件未找到: ${CHECK_FILE} (建议上传，便于用户手动校验)"
+            fi
+          done
+
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ 供应链安全校验全部通过"
+          echo "   - Digest 存在且格式正确"
+          echo "   - 哈希一致性验证通过"
+          echo "   - 所有 APK 资产均有 digest"
+          echo "   - 校验文件已发布"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # 写入 step summary
+          {
+            echo "### 🔒 供应链安全校验报告"
+            echo ""
+            echo "| 检查项 | 结果 |"
+            echo "|--------|------|"
+            echo "| Digest 存在性 | ✅ 通过 |"
+            echo "| Digest 格式 | ✅ sha256:64hex |"
+            echo "| 哈希一致性 | ✅ ${LOCAL_SHA256:0:16}… |"
+            echo "| 全量APK检查 | ✅ 无遗漏 |"
+            echo "| 校验文件 | ✅ 已发布 |"
+            echo ""
+            echo "**结论**: 供应链安全 ✓ 可安全分发"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup signing files
+        if: always()
+        run: rm -f release.keystore

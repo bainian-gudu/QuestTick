@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.QuestTick.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/galaxy_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_transparent_icon</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.QuestTick</item>
+    </style>
+
+    <style name="Theme.QuestTick.Starting.Dark" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/galaxy_bg_dark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_transparent_icon</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.QuestTick.Dark</item>
+    </style>
+
+    <style name="Theme.QuestTick.Starting.Oled" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/oled_pure_black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_transparent_icon</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.QuestTick.Dark</item>
+    </style>
+
+    <style name="Theme.QuestTick" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/galaxy_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <style name="Theme.QuestTick.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/galaxy_bg_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

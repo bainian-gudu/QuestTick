@@ -1,0 +1,16 @@
+# ktlint EditorConfig
+# https://pinterest.github.io/ktlint/latest/rules/configuration-ktlint/
+
+root = true
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+ktlint_standard_import-ordering = disabled
+ktlint_standard_function-naming = disabled
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_max-line-length = 140
+ktlint_standard_no-consecutive-comments = disabled
+
+[**/ui/**]
+# Compose functions use PascalCase, which is fine
+ktlint_standard_function-naming = disabled

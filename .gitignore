@@ -1,0 +1,27 @@
+*.iml
+.gradle/
+/local.properties
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Build outputs
+app/build/
+build/
+
+# Keystore (do NOT commit signing keys)
+*.jks
+*.keystore
+keystore.properties
+# ...but DO keep the template that ships with the project
+!keystore.properties.template
+
+# IDE
+.idea/
+*.hprof
+
+# Local toolchain (not part of the project)
+.toolchain/
