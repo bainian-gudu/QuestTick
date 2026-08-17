@@ -51,34 +51,34 @@ class TrustedUrlPolicyTest {
 
     @Test
     fun `update metadata only accepts exact repository API`() {
-        val latest = "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases/latest"
-        val releases = "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases?per_page=20"
+        val latest = "https://api.github.com/repos/bainian-gudu/QuestTick/releases/latest"
+        val releases = "https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20"
         assertTrue(TrustedUrlPolicy.isUpdateMetadataUrl(latest))
         assertTrue(TrustedUrlPolicy.isUpdateMetadataUrl(releases))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/other/MYS_Signin_Android/releases/latest"))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/moon02222/MYS_Signin_Android/releases?per_page=100"))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/moon02222/MYS_Signin_Android/releases?per_page=20&x=1"))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com.evil.example/repos/moon02222/MYS_Signin_Android/releases/latest"))
+        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/other/QuestTick/releases/latest"))
+        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=100"))
+        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20&x=1"))
+        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com.evil.example/repos/bainian-gudu/QuestTick/releases/latest"))
     }
 
     @Test
     fun `update asset only accepts current repository release download`() {
         val asset =
-            "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1.2.3/MYS_Signin_v1.2.3_signed.apk"
+            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
         assertTrue(TrustedUrlPolicy.isUpdateAssetUrl(asset))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/other/MYS_Signin_Android/releases/download/v1/app.apk"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/moon02222/MYS_Signin_Android/archive/main.zip"))
+        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/other/QuestTick/releases/download/v1/app.apk"))
+        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/bainian-gudu/QuestTick/archive/main.zip"))
         assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://objects.githubusercontent.com/github-production-release-asset/app.apk"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com.evil.example/moon02222/MYS_Signin_Android/releases/download/v1/app.apk"))
+        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com.evil.example/bainian-gudu/QuestTick/releases/download/v1/app.apk"))
     }
 
     @Test
     fun `trusted mirror must wrap one direct trusted source`() {
         val source =
-            "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1.2.3/MYS_Signin_v1.2.3_signed.apk"
+            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
         val mirror = "https://ghfast.top/$source"
         val metadataSource =
-            "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases?per_page=20"
+            "https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20"
         val metadataMirror = "https://ghproxy.net/$metadataSource"
         assertTrue(TrustedUrlPolicy.isUpdateAssetUrl(mirror))
         assertEquals(source, TrustedUrlPolicy.trustedMirrorSource(mirror))
@@ -95,9 +95,9 @@ class TrustedUrlPolicyTest {
     @Test
     fun `update metadata redirects stay within the exact candidate source`() {
         val direct =
-            "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases?per_page=20"
+            "https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20"
         val latest =
-            "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases/latest"
+            "https://api.github.com/repos/bainian-gudu/QuestTick/releases/latest"
         val mirror = "https://ghfast.top/$direct"
 
         assertTrue(TrustedUrlPolicy.isUpdateMetadataRedirect(direct, direct))
@@ -116,9 +116,9 @@ class TrustedUrlPolicyTest {
     @Test
     fun `update asset redirects only allow official asset delivery or the original mirror`() {
         val source =
-            "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1.2.3/MYS_Signin_v1.2.3_signed.apk"
+            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
         val officialAsset =
-            "https://release-assets.githubusercontent.com/github-production-release-asset/1284672256/asset.apk?token=signed"
+            "https://release-assets.githubusercontent.com/github-production-release-asset/1337123825/asset.apk?token=signed"
         val mirror = "https://ghfast.top/$source"
 
         assertTrue(TrustedUrlPolicy.isUpdateAssetRedirect(source, source))
@@ -134,9 +134,9 @@ class TrustedUrlPolicyTest {
 
     @Test
     fun `release page only accepts current repository`() {
-        assertTrue(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/moon02222/MYS_Signin_Android/releases"))
-        assertTrue(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/moon02222/MYS_Signin_Android/releases/tag/v1.2.3"))
-        assertFalse(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/other/MYS_Signin_Android/releases"))
-        assertFalse(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/moon02222/MYS_Signin_Android/issues"))
+        assertTrue(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/bainian-gudu/QuestTick/releases"))
+        assertTrue(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/bainian-gudu/QuestTick/releases/tag/v1.2.3"))
+        assertFalse(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/other/QuestTick/releases"))
+        assertFalse(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/bainian-gudu/QuestTick/issues"))
     }
 }

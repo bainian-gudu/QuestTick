@@ -53,8 +53,8 @@ class AppUpdateCheckerTest {
         val untrustedAsset =
             asset("MYS_Signin_v1.0.5_signed.apk", sha = SHA_4)
                 .replace(
-                    "https://github.com/moon02222/MYS_Signin_Android/",
-                    "https://github.com/attacker/MYS_Signin_Android/",
+                    "https://github.com/bainian-gudu/QuestTick/",
+                    "https://github.com/attacker/QuestTick/",
                 )
         val body = releasesJson(release("v1.0.5", untrustedAsset))
 
@@ -69,13 +69,13 @@ class AppUpdateCheckerTest {
         val body =
             releasesJson(release("v1.0.5", asset("MYS_Signin_v1.0.5_signed.apk", sha = SHA_4)))
                 .replace(
-                    "https://github.com/moon02222/MYS_Signin_Android/releases/tag/v1.0.5",
+                    "https://github.com/bainian-gudu/QuestTick/releases/tag/v1.0.5",
                     "https://evil.example/fake-release",
                 )
 
         val info = AppUpdateChecker.parseReleasesJsonForTest(body, currentVersion = "1.0.1")
 
-        assertEquals("https://github.com/moon02222/MYS_Signin_Android/releases", info.releaseUrl)
+        assertEquals("https://github.com/bainian-gudu/QuestTick/releases", info.releaseUrl)
     }
 
     @Test
@@ -107,7 +107,7 @@ class AppUpdateCheckerTest {
           "name": "$tag",
           "draft": $draft,
           "prerelease": $prerelease,
-          "html_url": "https://github.com/moon02222/MYS_Signin_Android/releases/tag/$tag",
+          "html_url": "https://github.com/bainian-gudu/QuestTick/releases/tag/$tag",
           "published_at": "2026-07-03T00:00:00Z",
           "body": "notes $tag",
           "assets": [$asset]
@@ -122,7 +122,7 @@ class AppUpdateCheckerTest {
         return """
         {
           "name": "$name",
-          "browser_download_url": "https://github.com/moon02222/MYS_Signin_Android/releases/download/v1/$name",
+          "browser_download_url": "https://github.com/bainian-gudu/QuestTick/releases/download/v1/$name",
           "digest": "$digest"
         }
         """.trimIndent()

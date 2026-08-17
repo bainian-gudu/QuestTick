@@ -21,9 +21,9 @@ import kotlin.math.max
  * 以兼顾弱网场景下的响应速度与可用性。
  */
 object AppUpdateChecker {
-    private const val LATEST_RELEASE_API = "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases/latest"
-    private const val RELEASES_API = "https://api.github.com/repos/moon02222/MYS_Signin_Android/releases?per_page=20"
-    private const val RELEASES_PAGE = "https://github.com/moon02222/MYS_Signin_Android/releases"
+    private const val LATEST_RELEASE_API = "https://api.github.com/repos/bainian-gudu/QuestTick/releases/latest"
+    private const val RELEASES_API = "https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20"
+    private const val RELEASES_PAGE = "https://github.com/bainian-gudu/QuestTick/releases"
     private val VERSION_PATTERN = Regex("""\d+(?:\.\d+)*""")
     private val PRE_RELEASE_PATTERN =
         Regex(
