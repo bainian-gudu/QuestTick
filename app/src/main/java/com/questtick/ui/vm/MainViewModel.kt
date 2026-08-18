@@ -50,6 +50,11 @@ class MainViewModel
             appStateRepository.triggerToast(msg)
         }
 
+        /** 供非 ViewModel 的登录/资源流程复用应用级原始错误日志入口。 */
+        fun recordApplicationError(feature: String, detail: String) {
+            appErrorLogger.record(feature, IllegalStateException(detail), detail)
+        }
+
         // 账号操作。
 
         fun newAccountTemplate(): Account = Account(id = UUID.randomUUID().toString(), label = "新账号")
@@ -70,13 +75,7 @@ class MainViewModel
             val sanitized = sanitizeEditableCredentials(account)
             val updated =
                 accountRepository.update(account.id) { latest ->
-                    latest.copy(
-                        label = sanitized.label,
-                        mysCookie = sanitized.mysCookie,
-                        genshinToken = sanitized.genshinToken,
-                        starrailToken = sanitized.starrailToken,
-                        selectedGames = sanitized.selectedGames,
-                    )
+                    mergeEditableAccount(latest, sanitized)
                 }
             if (updated != null) return updated
             accountRepository.upsert(sanitized)
@@ -420,3 +419,13 @@ class MainViewModel
                 else -> account
             }
     }
+
+internal fun mergeEditableAccount(latest: Account, edited: Account): Account =
+    latest.copy(
+        label = edited.label,
+        mysCookie = edited.mysCookie,
+        genshinToken = edited.genshinToken,
+        starrailToken = edited.starrailToken,
+        selectedGames = edited.selectedGames,
+        mysCoinEnabled = edited.mysCoinEnabled,
+    )

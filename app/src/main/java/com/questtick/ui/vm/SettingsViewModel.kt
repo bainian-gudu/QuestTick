@@ -131,13 +131,11 @@ class SettingsViewModel
         fun saveLanguage(
             appSettings: AppSettings,
             language: String,
-            onSaved: () -> Unit,
         ) {
             if (!BuildConfig.DEBUG) return
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     settingsRepository.saveSettings(appSettings.copy(appLanguage = language))
-                    withContext(Dispatchers.Main) { onSaved() }
                 } catch (e: Exception) {
                     appErrorLogger.record("界面语言保存", e)
                     appStateRepository.triggerToast("保存失败: ${friendlyActionError(e)}")

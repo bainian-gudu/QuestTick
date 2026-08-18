@@ -78,8 +78,6 @@ class CloudSignIn(
             )
     }
 
-    // ========== V2 增强功能：动态版本支持 ==========
-
     private fun effectiveVersion(game: GameConfig): String {
         return when (game.key) {
             "CloudYS" -> CloudVersionRepository.effectiveYs().ifBlank { game.gameHeaders["x-rpc-app_version"] ?: "6.7.0" }
@@ -124,8 +122,6 @@ class CloudSignIn(
             "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
         return base
     }
-
-    // ========== 核心流程（V2 实现） ==========
 
     suspend fun runForToken(
         token: String,
@@ -213,8 +209,6 @@ class CloudSignIn(
             detail = details.joinToString("; "),
         )
     }
-
-    // ========== 私有辅助方法（V2 实现） ==========
 
     private data class Wallet(
         val ok: Boolean,

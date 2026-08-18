@@ -17,14 +17,6 @@ object TrustedUrlPolicy {
     private const val GITHUB_RELEASE_ASSET_PATH_PREFIX =
         "/github-production-release-asset/$GITHUB_REPOSITORY_ID/"
 
-    private val updateMirrorHosts =
-        setOf(
-            "ghfast.top",
-            "ghproxy.net",
-            "mirror.ghproxy.com",
-            "ghproxy.com",
-        )
-
     private val businessRequestHosts =
         setOf(
             "api-takumi.mihoyo.com",
@@ -54,6 +46,10 @@ object TrustedUrlPolicy {
             "upload-bbs.mihoyo.com",
             "uploadstatic.mihoyo.com",
             "webstatic.mihoyo.com",
+            "act-upload.mihoyo.com",
+            "act-webstatic.mihoyo.com",
+            "bbs-static.miyoushe.com",
+            "fastcdn.mihoyo.com",
         )
 
     /** 通用业务请求只接受固定业务主机上的规范 HTTPS 地址；重定向时还必须保持同源。 */
@@ -91,31 +87,30 @@ object TrustedUrlPolicy {
         return url.host in rewardIconHosts
     }
 
-    /** 更新候选源必须是当前仓库元数据或 APK 地址，镜像不能封装任意外部地址。 */
+    /** 更新地址只允许当前仓库的 GitHub 元数据或 APK 地址。 */
     fun isUpdateSourceUrl(rawUrl: String): Boolean =
         isUpdateMetadataUrl(rawUrl) || isUpdateAssetUrl(rawUrl)
 
-    /** GitHub Release 元数据仅允许当前仓库的 API；受信镜像必须封装同一原始地址。 */
+    /** GitHub Release 元数据仅允许当前仓库的 API。 */
     fun isUpdateMetadataUrl(rawUrl: String): Boolean =
-        isDirectUpdateMetadataUrl(rawUrl) ||
-            trustedMirrorSource(rawUrl)?.let(::isDirectUpdateMetadataUrl) == true
+        isDirectUpdateMetadataUrl(rawUrl)
 
-    /** APK 地址仅允许当前仓库的 GitHub Release；受信镜像必须封装同一原始地址。 */
+    /** APK 地址仅允许当前仓库的 GitHub Release。 */
     fun isUpdateAssetUrl(rawUrl: String): Boolean =
-        isDirectUpdateAssetUrl(rawUrl) ||
-            trustedMirrorSource(rawUrl)?.let(::isDirectUpdateAssetUrl) == true
+        isDirectUpdateAssetUrl(rawUrl)
 
-    /** 更新元数据每一跳都必须保持在同一个受信候选源中，禁止镜像与 GitHub 之间交叉跳转。 */
+    /** 更新元数据重定向必须保持在 GitHub 官方域名。 */
     fun isUpdateMetadataRedirect(
         initialRawUrl: String,
         candidateRawUrl: String,
     ): Boolean {
         if (!isUpdateMetadataUrl(initialRawUrl) || !isUpdateMetadataUrl(candidateRawUrl)) return false
-        return redirectSourceIdentity(initialRawUrl) == redirectSourceIdentity(candidateRawUrl)
+        return isDirectUpdateMetadataUrl(candidateRawUrl) &&
+            parseHttps(initialRawUrl)?.host == parseHttps(candidateRawUrl)?.host
     }
 
     /**
-     * APK 直连允许 GitHub 跳转到官方发布资产域；镜像候选只允许在原镜像源内跳转，不能转交其他镜像或任意站点。
+     * APK 直连允许 GitHub 跳转到官方发布资产域。
      */
     fun isUpdateAssetRedirect(
         initialRawUrl: String,
@@ -124,10 +119,6 @@ object TrustedUrlPolicy {
         if (!isUpdateAssetUrl(initialRawUrl)) return false
         val initial = parseHttps(initialRawUrl) ?: return false
         val candidate = parseHttps(candidateRawUrl) ?: return false
-        val wrappedSource = trustedMirrorSource(initialRawUrl)
-        if (wrappedSource != null) {
-            return candidate.host == initial.host && trustedMirrorSource(candidateRawUrl) == wrappedSource
-        }
         if (isDirectUpdateAssetUrl(candidateRawUrl)) return candidate.host == initial.host
         return candidate.host == GITHUB_RELEASE_ASSET_HOST &&
             candidate.encodedPath.startsWith(GITHUB_RELEASE_ASSET_PATH_PREFIX)
@@ -139,34 +130,6 @@ object TrustedUrlPolicy {
         return url.host == "github.com" &&
             (url.encodedPath == "$GITHUB_REPOSITORY_PATH/releases" ||
                 url.encodedPath.startsWith("$GITHUB_REPOSITORY_PATH/releases/"))
-    }
-
-    /** 返回受信镜像内封装的 GitHub 原始地址；直连或非法镜像返回 null。 */
-    fun trustedMirrorSource(rawUrl: String): String? {
-        val mirrorUrl = parseHttps(rawUrl) ?: return null
-        if (mirrorUrl.host !in updateMirrorHosts) return null
-
-        val canonical = mirrorUrl.toString()
-        val prefix = "https://${mirrorUrl.host}/"
-        if (!canonical.startsWith(prefix)) return null
-        val source = canonical.removePrefix(prefix)
-        if (!source.startsWith("https://")) return null
-        // 禁止镜像再次封装镜像，保持候选地址结构唯一且可审计。
-        val sourceUrl = parseHttps(source) ?: return null
-        if (sourceUrl.host in updateMirrorHosts) return null
-        return source
-    }
-
-    fun isUpdateMirrorHost(host: String): Boolean = normalizeHost(host) in updateMirrorHosts
-
-    private fun redirectSourceIdentity(rawUrl: String): String? {
-        val url = parseHttps(rawUrl) ?: return null
-        val source = trustedMirrorSource(rawUrl)
-        return if (source == null) {
-            "${url.host}|${url.encodedPath}|${url.encodedQuery.orEmpty()}"
-        } else {
-            "${url.host}|$source"
-        }
     }
 
     private fun isDirectUpdateMetadataUrl(rawUrl: String): Boolean {

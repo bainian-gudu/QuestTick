@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.questtick.data.GameInfo
 import com.questtick.data.Games
+import com.questtick.sign.MysCoinCheckIn
 import com.questtick.ui.components.AnimatedSwitch
 import com.questtick.ui.components.GameIcon
 import com.questtick.ui.components.PanelCard
@@ -51,7 +52,7 @@ internal fun GamesTab(
     val cloud = Games.ALL.filter { it.cloud }
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Spacer(Modifier.height(8.dp)) }
-        item {
+        if (MysCoinCheckIn.featureEnabled) item {
             Row(Modifier.fillMaxWidth().padding(start = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 GroupLabel("米游社")
                 Spacer(Modifier.weight(1f))
@@ -67,6 +68,31 @@ internal fun GamesTab(
         items(cloud, key = { it.key }) { game -> GameSelectRow(game, selected.contains(game.key)) { onToggle(game.key) } }
         item { Spacer(Modifier.height(28.dp)) }
     }
+}
+
+/** 米游币移动端接口使用 SToken，并要求 v2 SToken 配套 mid、旧版 SToken 配套 stuid。 */
+internal fun hasMysCoinCredential(
+    cookie: String,
+    savedStoken: String,
+    savedMid: String,
+    savedUid: String,
+): Boolean {
+    fun field(name: String): String =
+        Regex("(?:^|;)\\s*${Regex.escape(name)}\\s*=\\s*([^;\\s]+)", RegexOption.IGNORE_CASE)
+            .find(cookie)
+            ?.groupValues
+            ?.getOrNull(1)
+            .orEmpty()
+
+    val stoken = field("stoken_v2").ifBlank { field("stoken") }.ifBlank { savedStoken.trim() }
+    if (stoken.isBlank()) return false
+    val v2 = stoken.startsWith("v2_", ignoreCase = true)
+    val identity = if (v2) {
+        field("mid").ifBlank { field("stmid") }.ifBlank { field("account_mid_v2") }.ifBlank { savedMid.trim() }
+    } else {
+        field("stuid").ifBlank { field("account_id") }.ifBlank { savedUid.trim() }
+    }
+    return identity.isNotBlank()
 }
 
 @Composable

@@ -155,7 +155,8 @@ fun LogsScreen(
             else -> "$totalEntryCount 条日志"
         }
 
-    var verbose by rememberSaveable { mutableStateOf(false) }
+    // 导出默认包含详情和 DEBUG 内容，便于直接提交完整诊断信息；用户仍可手动关闭。
+    var verbose by rememberSaveable { mutableStateOf(true) }
     // 展开状态只响应用户手动展开/收起，不随日志分组刷新自动清理，
     // 避免任务完成瞬间的短暂重组把已展开日志误恢复为折叠。
     var expandedLogGroupIds by rememberSaveable { mutableStateOf(emptyList<String>()) }

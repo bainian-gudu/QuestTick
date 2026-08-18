@@ -8,7 +8,6 @@ import android.content.pm.Signature
 import android.net.Uri
 import android.provider.Settings
 import android.os.Build
-import android.os.SystemClock
 import androidx.core.content.FileProvider
 import com.questtick.net.HttpMethod
 import com.questtick.net.HttpRequest
@@ -18,9 +17,6 @@ import com.questtick.net.StreamingHttpTransport
 import com.questtick.net.TrustedUrlPolicy
 import com.questtick.core.runCatchingCancellable
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -32,9 +28,6 @@ object AppUpdateInstaller {
     private const val DIR_NAME = "apk_updates"
     private const val APK_MIME = "application/vnd.android.package-archive"
 
-    // 下载与测速参数统一收敛在这里，便于后续按网络表现调节。
-    private const val SPEED_TEST_BYTES = 16 * 1024
-    private const val SPEED_TEST_TIMEOUT_MS = 800L
     private const val DOWNLOAD_BUFFER_SIZE = 128 * 1024
     private const val PROGRESS_EMIT_INTERVAL_MS = 250L
     private const val MAX_APK_BYTES = 512 * 1024 * 1024
@@ -92,12 +85,7 @@ object AppUpdateInstaller {
                 require(TrustedUrlPolicy.isUpdateAssetUrl(info.apkUrl)) { "更新地址不受信任" }
                 val appContext = context.applicationContext
                 val enforceSha = isSha256Enforced(info)
-                preparedUrlCache[cacheKey(info)] =
-                    if (AppUpdateNetwork.isVpnActive(appContext)) {
-                        downloadUrlCandidates(appContext, info.apkUrl, enforceSha)
-                    } else {
-                        selectFastestUrls(downloadUrlCandidates(appContext, info.apkUrl, enforceSha), streamingHttpTransport)
-                    }
+                preparedUrlCache[cacheKey(info)] = downloadUrlCandidates(appContext, info.apkUrl, enforceSha)
             }
         }
 
@@ -125,15 +113,7 @@ object AppUpdateInstaller {
                 val candidates =
                     preparedUrlCache[cacheKey(info)] ?: run {
                         val enforceSha = isSha256Enforced(info)
-                        val selected =
-                            if (AppUpdateNetwork.isVpnActive(appContext)) {
-                                downloadUrlCandidates(appContext, url, enforceSha)
-                            } else {
-                                selectFastestUrls(
-                                    downloadUrlCandidates(appContext, url, enforceSha),
-                                    streamingHttpTransport,
-                                )
-                            }
+                        val selected = downloadUrlCandidates(appContext, url, enforceSha)
                         preparedUrlCache[cacheKey(info)] = selected
                         selected
                     }
@@ -202,104 +182,12 @@ object AppUpdateInstaller {
             info.latestVersion,
             info.apkUrl,
             info.apkSha256,
-            AppUpdateNetwork.currentSourceKey(),
+            "DIRECT",
         ).joinToString("|")
-
-    private suspend fun selectFastestUrls(
-        urls: List<String>,
-        streamingHttpTransport: StreamingHttpTransport,
-    ): List<String> =
-        coroutineScope {
-            if (urls.size <= 1) return@coroutineScope urls
-            val results =
-                urls.mapIndexed { index, url ->
-                    async(Dispatchers.IO) {
-                        SpeedTestResult(
-                            url = url,
-                            index = index,
-                            bytesPerSecond = measureDownloadSpeed(url, streamingHttpTransport),
-                        )
-                    }
-                }.awaitAll()
-            if (results.all { it.bytesPerSecond <= 0L }) {
-                urls
-            } else {
-                results
-                    .sortedWith(
-                        compareByDescending<SpeedTestResult> { it.bytesPerSecond }
-                            .thenBy { it.index },
-                    )
-                    .map { it.url }
-            }
-        }
-
-    private data class SpeedTestResult(
-        val url: String,
-        val index: Int,
-        val bytesPerSecond: Long,
-    )
 
     private class UpdateCandidateHttpException(
         val statusCode: Int,
     ) : java.io.IOException("下载失败：HTTP $statusCode")
-
-    // 以小样本和短超时快速估计各镜像的可用速度。
-    private suspend fun measureDownloadSpeed(
-        url: String,
-        streamingHttpTransport: StreamingHttpTransport,
-    ): Long =
-        withContext(Dispatchers.IO) {
-            if (!TrustedUrlPolicy.isUpdateAssetUrl(url)) return@withContext 0L
-            runCatchingCancellable {
-                val request =
-                    HttpRequest(
-                        method = HttpMethod.GET,
-                        url = url,
-                        headers =
-                            mapOf(
-                                "User-Agent" to "MYS-Signin-Android/2.0",
-                                "Accept" to "*/*",
-                                "Range" to "bytes=0-${SPEED_TEST_BYTES - 1}",
-                                "Cache-Control" to "max-age=30",
-                                "Connection" to "keep-alive",
-                            ),
-                        config =
-                            HttpRequestConfig(
-                                // 即使候选不支持 Range，也只采样前 16 KiB 后主动关闭；上限约束完整候选大小。
-                                maxResponseBytes = MAX_APK_BYTES,
-                                connectTimeoutMillis = 800,
-                                readTimeoutMillis = 800,
-                                writeTimeoutMillis = 800,
-                                callTimeoutMillis = 1_200,
-                            ),
-                    )
-                val startedAt = SystemClock.elapsedRealtime()
-                val bytesRead =
-                    streamingHttpTransport.executeStreaming(request) { response ->
-                        if (response.code !in 200..299) return@executeStreaming 0L
-                        val buffer = ByteArray(32 * 1024)
-                        var readTotal = 0L
-                        while (readTotal < SPEED_TEST_BYTES) {
-                            val elapsed = SystemClock.elapsedRealtime() - startedAt
-                            if (elapsed > SPEED_TEST_TIMEOUT_MS) break
-                            if (readTotal == 0L && elapsed > 400) return@executeStreaming 0L
-                            val remaining = (SPEED_TEST_BYTES - readTotal).toInt().coerceAtMost(buffer.size)
-                            val read = response.read(buffer, 0, remaining)
-                            if (read <= 0) break
-                            readTotal += read
-                        }
-                        readTotal
-                    }
-                val elapsedMs = (SystemClock.elapsedRealtime() - startedAt).coerceAtLeast(1L)
-                val speed = bytesRead * 1000L / elapsedMs
-                val ttfb = elapsedMs - (bytesRead * elapsedMs / SPEED_TEST_BYTES.coerceAtLeast(1))
-                when {
-                    ttfb < 150 -> speed * 12 / 10
-                    ttfb > 400 -> speed * 7 / 10
-                    else -> speed
-                }
-            }.getOrDefault(0L)
-        }
 
     private suspend fun downloadFromCandidates(
         urls: List<String>,
@@ -396,30 +284,15 @@ object AppUpdateInstaller {
         }
     }
 
-    // 生成候选下载地址，优先交给镜像策略模块排序。
+    // 生成唯一的 GitHub 官方下载地址。
     private fun downloadUrlCandidates(
         context: Context,
         url: String,
         enforceSha256: Boolean = true,
     ): List<String> {
         if (!TrustedUrlPolicy.isUpdateAssetUrl(url)) return emptyList()
-        return try {
-            val candidates = AppUpdateNetwork.buildCandidateUrls(context, url)
-                .filter(TrustedUrlPolicy::isUpdateAssetUrl)
-            if (enforceSha256) {
-                candidates
-            } else {
-                // 无 SHA256 校验时：仅允许官方域名，禁止第三方加速镜像
-                // 防止镜像投毒无法被发现
-                candidates.filter { candidateUrl ->
-                    TrustedUrlPolicy.isUpdateAssetUrl(candidateUrl) &&
-                        TrustedUrlPolicy.trustedMirrorSource(candidateUrl) == null
-                }.ifEmpty { listOf(url) }
-            }
-        } catch (_: Exception) {
-            // 镜像策略异常时退回直连
-            listOf(url)
-        }
+        return AppUpdateNetwork.buildCandidateUrls(url)
+            .filter(TrustedUrlPolicy::isUpdateAssetUrl)
     }
 
     private fun targetFile(
@@ -569,8 +442,7 @@ object AppUpdateInstaller {
     }
 
     /**
-     * 判断当前更新信息是否携带有效的 SHA-256 校验值
-     * 用于决定是否允许使用第三方镜像加速
+     * 判断当前更新信息是否携带有效的 SHA-256 校验值。
      */
     private fun isSha256Enforced(info: AppUpdateChecker.AppUpdateInfo): Boolean {
         return info.apkSha256.isNotBlank() && info.apkSha256.matches(Regex("^[a-fA-F0-9]{64}$"))

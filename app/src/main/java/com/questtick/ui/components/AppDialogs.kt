@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.questtick.i18n.Text
-import com.questtick.ui.theme.LocalAppUiTheme
 
 /** 全应用警示、确认与进度弹窗共用的视觉语义，避免各页面在深浅主题下产生不同底色。 */
 object AppDialogTokens {
@@ -43,16 +42,15 @@ data class AppDialogColors(
 
 @Composable
 fun appDialogColors(): AppDialogColors {
-    val theme = LocalAppUiTheme.current
     val scheme = androidx.compose.material3.MaterialTheme.colorScheme
     return AppDialogColors(
-        container = theme.cardElevated,
-        title = theme.textPrimary,
-        body = theme.textSecondary,
-        border = theme.hairline,
-        progressTrack = theme.field,
-        primaryAction = theme.brand,
-        neutralAction = theme.textSecondary,
+        container = scheme.surface,
+        title = scheme.onSurface,
+        body = scheme.onSurfaceVariant,
+        border = scheme.outline,
+        progressTrack = scheme.surfaceVariant,
+        primaryAction = scheme.primary,
+        neutralAction = scheme.onSurfaceVariant,
         destructiveAction = scheme.error,
     )
 }
@@ -90,8 +88,7 @@ fun AppDialogActionButton(
 /**
  * 统一的应用弹窗骨架。
  *
- * 弹窗固定使用白色内容面，确保 Root、更新、删除和退出等同类型弹窗不会随调用位置出现不同颜色；
- * 标题、正文、描边与按钮颜色均使用满足白底可读性的专用语义色，深色主题下也保持一致对比度。
+ * Root、更新、删除和退出等同类型弹窗统一使用当前 Material 主题色，跟随动态配色、深色与 OLED 模式。
  */
 @Composable
 fun AppAlertDialog(

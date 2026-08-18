@@ -50,6 +50,7 @@ fun QRLoginScreen(
     visible: Boolean = true,
     onResult: (QRLoginResult) -> Unit,
     onCancel: () -> Unit,
+    onError: (String) -> Unit = {},
 ) {
     val httpTransport = LocalHttpTransport.current
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -81,10 +82,13 @@ fun QRLoginScreen(
         confirmedData = null
         showPendingCancelDialog = false
 
-        val result = withContext(Dispatchers.IO) { QRLoginManager.createQRCode(deviceId, httpTransport) }
+        val result = withContext(Dispatchers.IO) {
+            QRLoginManager.createQRCode(deviceId, httpTransport, onError)
+        }
         val qr =
             result.getOrElse { e ->
                 errorMsg = e.message ?: "生成二维码失败"
+                onError("createQRLogin result failure: ${e.message.orEmpty()}")
                 loading = false
                 return@LaunchedEffect
             }
@@ -101,10 +105,11 @@ fun QRLoginScreen(
     // 轮询扫码状态。
     LaunchedEffect(ticket) {
         if (ticket.isBlank()) return@LaunchedEffect
-        QRLoginManager.pollStatus(ticket, deviceId, httpTransport)
+        QRLoginManager.pollStatus(ticket, deviceId, httpTransport, recordError = onError)
             .flowOn(Dispatchers.IO)
             .collect { s ->
                 status = s
+                if (s is QRLoginManager.ScanStatus.Error) onError("扫码轮询终态: ${s.msg}")
                 if (s !is QRLoginManager.ScanStatus.Scanned) {
                     showPendingCancelDialog = false
                 }

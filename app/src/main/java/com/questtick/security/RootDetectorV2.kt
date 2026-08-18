@@ -9,15 +9,7 @@ import java.io.File
 import java.io.InputStreamReader
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * 增强版 Root 检测 - 多重检测引擎
- *
- * 取代原版简单的 RootBeer + 路径检查
- * 新增 12 层检测，总计 >40 个检测点
- *
- * 依赖:
- * implementation("com.scottyab:rootbeer-lib:0.1.2") // 最新 2026-03
- */
+/** 多重证据 Root 检测器；明确的 Root 证据会阻断签到，弱风险仅用于记录。 */
 object RootDetectorV2 {
     data class RootCheckResult(
         val isRooted: Boolean,

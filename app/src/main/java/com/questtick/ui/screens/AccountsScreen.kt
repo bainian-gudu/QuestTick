@@ -301,7 +301,7 @@ private fun AccountCard(
                         Spacer(Modifier.width(8.dp))
                         AccountTagChip("云崩铁扫码✓", color = SuccessGreen)
                     }
-                    if (account.mysCoinEnabled) {
+                    if (com.questtick.sign.MysCoinCheckIn.featureEnabled && account.mysCoinEnabled) {
                         Spacer(Modifier.width(8.dp))
                         AccountTagChip("米游币", color = Color(0xFFE0A22B))
                     }

@@ -5,7 +5,6 @@ import com.questtick.data.MailSettings
 import com.questtick.data.SecureStore
 import com.questtick.repository.base.StatefulRepository
 import com.questtick.work.Scheduler
-import com.questtick.sign.AppUpdateNetwork
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,7 +35,7 @@ class SettingsRepository
 
         override suspend fun loadFromStore(): AppSettings {
             return withContext(kotlinx.coroutines.Dispatchers.IO) {
-                store.getAppSettings().also { AppUpdateNetwork.setSource(it.appUpdateSource) }
+                store.getAppSettings()
             }
         }
 
@@ -44,7 +43,6 @@ class SettingsRepository
             withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val previous = getCurrentState()
                 store.saveAppSettings(data)
-                AppUpdateNetwork.setSource(data.appUpdateSource)
                 val scheduleChanged =
                     previous.scheduleEnabled != data.scheduleEnabled ||
                         previous.scheduleHour != data.scheduleHour ||

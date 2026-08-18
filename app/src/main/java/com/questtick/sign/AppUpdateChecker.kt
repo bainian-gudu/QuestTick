@@ -10,14 +10,12 @@ import com.questtick.core.throwIfCancellation
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.max
 
 /**
  * 通过 GitHub Release 检查应用版本。
  *
- * 检查流程优先命中本地缓存，未命中时再对候选镜像并发请求，
+ * 检查流程优先命中本地缓存，未命中时再请求 GitHub 官方 API，
  * 以兼顾弱网场景下的响应速度与可用性。
  */
 object AppUpdateChecker {
@@ -97,25 +95,7 @@ object AppUpdateChecker {
             return cache.info
         }
 
-        // 尝试使用冠军镜像快速获取；弱网下给足时间，避免过早 cancel
-        val championUrl = AppUpdateCache.getFastestMirror(context)
-        if (!championUrl.isNullOrBlank()) {
-            try {
-                val res =
-                    withTimeoutOrNull(2500L) {
-                        fetchRace(context, currentVersion, cache.etag, httpTransport, championUrl)
-                    }
-                if (res != null) {
-                    AppUpdateCache.put(context, res.first, res.second)
-                    return res.first
-                }
-            } catch (error: Exception) {
-                error.throwIfCancellation()
-                // 冠军失效，回退到全量竞速
-            }
-        }
-
-        // 缓存不足或冠军失效时再进入网络竞速。
+        // 缓存不足时仅请求 GitHub 官方 API。
         try {
             val res = fetchRace(context, currentVersion, cache.etag, httpTransport)
             AppUpdateCache.put(context, res.first, res.second)
@@ -146,21 +126,18 @@ object AppUpdateChecker {
             } ?: (cache.info ?: throw java.net.SocketTimeoutException("update check timeout"))
         }
 
-    // -------- 网络竞速核心 --------
+    // -------- GitHub 官方 API 请求 --------
     private suspend fun fetchRace(
         context: Context,
         currentVersion: String,
         etag: String,
         httpTransport: HttpTransport,
-        championUrl: String? = null,
     ): Pair<AppUpdateInfo, String> =
         fetchBodyRace(
             context = context,
             originalUrl = LATEST_RELEASE_API,
             etag = etag,
-            championUrl = championUrl,
             allowHttpCache = true,
-            rememberFastest = true,
             httpTransport = httpTransport,
         ) { body -> parseJson(JSONObject(body), currentVersion) }
 
@@ -181,9 +158,7 @@ object AppUpdateChecker {
                 context = appContext,
                 originalUrl = RELEASES_API,
                 etag = "",
-                championUrl = null,
                 allowHttpCache = false,
-                rememberFastest = false,
                 httpTransport = httpTransport,
             ) { body -> parseReleasesJson(body, currentVersion) }
         }
@@ -193,60 +168,16 @@ object AppUpdateChecker {
         context: Context,
         originalUrl: String,
         etag: String,
-        championUrl: String? = null,
         allowHttpCache: Boolean,
-        rememberFastest: Boolean,
         httpTransport: HttpTransport,
         parse: (String) -> AppUpdateInfo,
-    ): Pair<AppUpdateInfo, String> =
-        supervisorScope {
-            require(TrustedUrlPolicy.isUpdateMetadataUrl(originalUrl)) { "untrusted update metadata URL" }
-            val appContext = context.applicationContext
-            val baseUrls = AppUpdateNetwork.buildCandidateUrls(appContext, originalUrl)
-            val urls =
-                if (championUrl.isNullOrBlank()) {
-                    baseUrls.take(4)
-                } else {
-                    (listOf(championUrl) + baseUrls).distinct().take(4)
-                }
-            require(urls.isNotEmpty() && urls.all(TrustedUrlPolicy::isUpdateMetadataUrl)) {
-                "no trusted update metadata URL"
-            }
-            val (connectMs, readMs) = updateTimeouts(appContext)
-
-            val firstSuccess = CompletableDeferred<Pair<AppUpdateInfo, String>>()
-            val completedFailures = AtomicInteger(0)
-            val lastError = AtomicReference<Throwable?>(null)
-
-            val jobs =
-                urls.map { url ->
-                    launch(Dispatchers.IO) {
-                        val start = System.currentTimeMillis()
-                        try {
-                            val response = fetchBodyOnce(url, etag, connectMs, readMs, allowHttpCache, httpTransport)
-                            val info = parse(response.body)
-                            val latency = System.currentTimeMillis() - start
-                            AppUpdateNetwork.reportMirrorResult(appContext, url, true, latency)
-                            firstSuccess.complete(info to response.etag)
-                            if (rememberFastest) AppUpdateCache.saveFastestMirror(url, appContext)
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            AppUpdateNetwork.reportMirrorResult(appContext, url, false, 9999)
-                            lastError.set(e)
-                            if (completedFailures.incrementAndGet() == urls.size && !firstSuccess.isCompleted) {
-                                firstSuccess.completeExceptionally(lastError.get() ?: IllegalStateException("update check failed"))
-                            }
-                        }
-                    }
-                }
-
-            try {
-                firstSuccess.await()
-            } finally {
-                jobs.forEach { it.cancel() }
-            }
-        }
+    ): Pair<AppUpdateInfo, String> {
+        require(TrustedUrlPolicy.isUpdateMetadataUrl(originalUrl)) { "untrusted update metadata URL" }
+        val appContext = context.applicationContext
+        val (connectMs, readMs) = updateTimeouts(appContext)
+        val response = fetchBodyOnce(originalUrl, etag, connectMs, readMs, allowHttpCache, httpTransport)
+        return parse(response.body) to response.etag
+    }
 
     private fun updateTimeouts(context: Context): Pair<Long, Long> =
         when (AppUpdateNetwork.networkLevel(context.applicationContext)) {

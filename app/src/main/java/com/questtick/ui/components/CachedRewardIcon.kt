@@ -24,6 +24,7 @@ import coil3.compose.AsyncImage
 import com.questtick.data.RewardIconCache
 import com.questtick.net.TrustedUrlPolicy
 import com.questtick.ui.LocalHttpTransport
+import com.questtick.ui.LocalAppErrorReporter
 import java.io.File
 
 /** 从本地缓存加载奖励图标；缓存缺失时下载一次并写入本地。 */
@@ -35,15 +36,21 @@ fun CachedRewardIcon(
 ) {
     val context = LocalContext.current
     val httpTransport = LocalHttpTransport.current
+    val reportError = LocalAppErrorReporter.current
     val trustedUrl = remember(url) { url.takeIf(TrustedUrlPolicy::isRewardIconUrl).orEmpty() }
     var localFile by remember(trustedUrl) { mutableStateOf<File?>(null) }
 
     // 后台读取/预取到本地持久缓存，不在 Composable 组合阶段直接访问文件系统。
     LaunchedEffect(trustedUrl) {
         localFile = null
-        if (trustedUrl.isNotBlank()) {
+        if (trustedUrl.isBlank()) {
+            if (url.isNotBlank()) reportError("奖励图片加载", "奖励图片地址不受信任或为空: $url")
+        } else {
             localFile = RewardIconCache.cachedFile(context, trustedUrl)
-                ?: RewardIconCache.getOrDownload(context, trustedUrl, httpTransport)
+                ?: RewardIconCache.getOrDownload(context, trustedUrl, httpTransport) { detail ->
+                    reportError("奖励图片加载", detail)
+                }
+            if (localFile == null) reportError("奖励图片加载", "奖励图片下载失败: $trustedUrl")
         }
     }
 

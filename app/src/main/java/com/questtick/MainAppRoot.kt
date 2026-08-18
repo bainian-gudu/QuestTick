@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.data.Account
 import com.questtick.net.HttpTransport
 import com.questtick.ui.LocalHttpTransport
+import com.questtick.ui.LocalAppErrorReporter
 import com.questtick.i18n.LocalAppLanguageSetting
 import com.questtick.i18n.AppLanguage
 import com.questtick.ui.theme.LocalAppUiTheme
@@ -56,11 +57,15 @@ internal fun ThemedAppRoot(
     CompositionLocalProvider(
         LocalAppLanguageSetting provides if (BuildConfig.DEBUG) appSettings.appLanguage else AppLanguage.SYSTEM.settingValue,
         LocalHttpTransport provides httpTransport,
+        LocalAppErrorReporter provides { feature, detail -> vm.recordApplicationError(feature, detail) },
     ) {
         QuestTickTheme(
             themeMode = appSettings.appThemeMode,
             oledPureBlackEnabled = appSettings.oledPureBlackEnabled,
             dynamicColorEnabled = appSettings.dynamicColorEnabled,
+            customThemeColor = appSettings.customThemeColor,
+            customThemeSecondaryColor = appSettings.customThemeSecondaryColor,
+            customThemeTertiaryColor = appSettings.customThemeTertiaryColor,
         ) {
             AppRoot(
                 requestedTab = requestedTab,

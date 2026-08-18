@@ -138,6 +138,7 @@ fun AccountEditScreen(
     var refreshingStarrailToken by rememberSaveable(editorSessionKey, initial.id) { mutableStateOf(false) }
     var starrailTokenRefreshDone by rememberSaveable(editorSessionKey, initial.id) { mutableStateOf(false) }
     var starrailTokenRefreshFailed by rememberSaveable(editorSessionKey, initial.id) { mutableStateOf(false) }
+    var showMysCoinCredentialWarning by rememberSaveable(editorSessionKey, initial.id) { mutableStateOf(false) }
 
     fun requestCancel() {
         if (ui.hasFormChangesFrom(initial)) {
@@ -212,6 +213,21 @@ fun AccountEditScreen(
             dismissLabel = "继续编辑",
             onDismissAction = { showDiscardDialog = false },
             onDismissRequest = { showDiscardDialog = false },
+        )
+    }
+
+    if (showMysCoinCredentialWarning) {
+        AppMessageDialog(
+            title = "米游币打卡凭证不完整",
+            message = "当前 Cookie 未发现米游币打卡所需的 SToken 及对应身份字段（mid 或 stuid）。开启后可能返回“登录失效”，建议先扫码登录或填写完整 Cookie。",
+            confirmLabel = "仍然开启",
+            onConfirm = {
+                showMysCoinCredentialWarning = false
+                viewModel.setMysCoinEnabled(true)
+            },
+            dismissLabel = "取消",
+            onDismissAction = { showMysCoinCredentialWarning = false },
+            onDismissRequest = { showMysCoinCredentialWarning = false },
         )
     }
 
@@ -375,7 +391,13 @@ fun AccountEditScreen(
                             selected = ui.selectedGames,
                             onToggle = viewModel::toggleGame,
                             mysCoinEnabled = ui.mysCoinEnabled,
-                            onMysCoinEnabledChange = viewModel::setMysCoinEnabled,
+                            onMysCoinEnabledChange = { enabled ->
+                                if (enabled && !hasMysCoinCredential(ui.cookie, initial.stoken, initial.stmid, initial.mysUid)) {
+                                    showMysCoinCredentialWarning = true
+                                } else {
+                                    viewModel.setMysCoinEnabled(enabled)
+                                }
+                            },
                         )
                 }
             }

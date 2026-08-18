@@ -312,7 +312,7 @@ private fun localizeDynamicText(
         val count = match.groupValues[1]
         return t("All $count", "すべて $count", "전체 $count")
     }
-    Regex("^(签到进行中|签到日志|其它日志) · (.+)$").matchEntire(text)?.let { match ->
+    Regex("^(签到进行中|运行日志|错误日志|其它日志) · (.+)$").matchEntire(text)?.let { match ->
         val kind = localizeText(match.groupValues[1], language)
         val time = match.groupValues[2]
         return "$kind · $time"

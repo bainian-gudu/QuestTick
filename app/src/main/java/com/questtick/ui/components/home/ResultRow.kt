@@ -1,6 +1,7 @@
 package com.questtick.ui.components.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,12 +24,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.questtick.data.FailureCategory
 import com.questtick.data.Games
 import com.questtick.data.TaskResult
+import com.questtick.R
 import com.questtick.ui.components.CachedRewardIcon
 import com.questtick.ui.components.GameIcon
 import com.questtick.ui.theme.DangerRed
@@ -83,7 +86,14 @@ fun ResultRow(
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (loadRewardImage && r.rewardIcon.isNotBlank()) {
+                if (loadRewardImage && r.gameKey == "MysCoin") {
+                    Image(
+                        painter = painterResource(R.drawable.mys_coin),
+                        contentDescription = r.rewardName,
+                        modifier = Modifier.size(28.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                } else if (loadRewardImage && r.rewardIcon.isNotBlank()) {
                     CachedRewardIcon(
                         url = r.rewardIcon,
                         contentDescription = r.rewardName,

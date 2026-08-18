@@ -120,6 +120,10 @@ class RunPersistenceRepository
         fun uncertainTaskIdsForDay(timestamp: Long): Set<String> =
             calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_RESULT_UNKNOWN).toSet()
 
+        /** 返回当天已经确认成功的任务，供定时签到跳过手动完成的任务。 */
+        fun signedTaskIdsForDay(timestamp: Long): Set<String> =
+            calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_SIGNED).toSet()
+
         fun isTaskRunning(
             runId: String,
             taskId: String,

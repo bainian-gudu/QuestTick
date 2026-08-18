@@ -352,6 +352,7 @@ fun SettingsScreen(
         // 子页面浮层。
         SettingsPageOverlay(
             visible = currentPage != SettingsPage.None,
+            consumeHorizontalGestures = displayedPage != SettingsPage.Appearance,
             onExitFinished = {
                 overlayActive = false
                 displayedPage = SettingsPage.None
@@ -527,12 +528,19 @@ private fun ScheduleDetailPage(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     FieldBox(hour, { hour = it.filter { c -> c.isDigit() }.take(2) }, "时", Modifier.width(90.dp))
-                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        ":",
+                                        modifier = Modifier.width(12.dp),
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
                                     FieldBox(minute, { minute = it.filter { c -> c.isDigit() }.take(2) }, "分", Modifier.width(90.dp))
                                     Spacer(Modifier.width(12.dp))
                                     Text("24小时制", fontSize = 12.sp, color = TextSecondary)
                                     Spacer(Modifier.weight(1f))
-                                    Box(Modifier.width(92.dp)) {
+                                    Box(Modifier.width(80.dp)) {
                                         PrimaryButton("保存") {
                                             onSave(
                                                 settings.copy(

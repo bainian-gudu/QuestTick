@@ -29,6 +29,8 @@ class MysSignIn(
     private val customVersion: String = "",
     /** 多账号并行时保护 actIdCache 读写的 Mutex。 */
     private val cacheMutex: Mutex? = null,
+    /** act_id 获取失败的应用级错误回调。 */
+    private val recordError: ((feature: String, detail: String) -> Unit)? = null,
 ) {
     data class GameConfig(
         val key: String,
@@ -151,7 +153,7 @@ class MysSignIn(
         game: GameConfig,
     ): RoleResult {
         val query = Ds.sortedQueryString("game_biz=${game.gameBiz}")
-        val ds = Ds.generate(query = query)
+        val ds = Ds.generateWeb()
         val headers = MysHeaders.role(cookie, deviceId, customVersion, ds)
         return try {
             val res =
@@ -265,7 +267,7 @@ class MysSignIn(
                 put("region", region)
                 put("uid", role.gameUid)
             }
-        val ds = Ds.generate(body = Ds.sortedJsonString(body))
+        val ds = Ds.generateWeb()
 
         return try {
             val res = httpTransport.postJson(signUrl(game), signHeaders(cookie, game, ds), body)
@@ -345,7 +347,9 @@ class MysSignIn(
     ): SignResult? {
         onLog("WARN", "[${game.name}] act_id 疑似失效（当前 $staleActId），尝试自动获取最新 act_id…")
 
-        val latest = ActId.fetchLatest(game, httpTransport)
+        val latest = ActId.fetchLatest(game, httpTransport) { detail ->
+            recordError?.invoke("ACT_ID 自动刷新", detail)
+        }
         if (latest == null) {
             onLog("WARN", "[${game.name}] 未能获取最新 act_id，跳过重试")
             return null
@@ -394,9 +398,9 @@ class MysSignIn(
             // 通用 luna /home 不接受 region / uid，单游戏 /home 才需要携带。
             val homeQuery = if (game.signgame != null) infoQuery else Ds.sortedQueryString("act_id=$actId&lang=zh-cn")
 
-            val infoDs = Ds.generate(query = infoQuery)
+            val infoDs = Ds.generateWeb()
             val infoData = httpTransport.getIdempotent("${infoUrl(game)}?$infoQuery", signHeaders(cookie, game, infoDs)).json()
-            val homeDs = Ds.generate(query = homeQuery)
+            val homeDs = Ds.generateWeb()
             val homeData = httpTransport.getIdempotent("${homeUrl(game)}?$homeQuery", signHeaders(cookie, game, homeDs)).json()
 
             val infoRetcode = infoData.optInt("retcode", -999)
@@ -405,7 +409,8 @@ class MysSignIn(
                 Log.w(TAG, "getReward failed: ${game.key}, infoRetcode=$infoRetcode, homeRetcode=$homeRetcode")
                 onLog(
                     "ERROR",
-                    "[${game.name}] 奖励查询失败",
+                    "[${game.name}] 奖励查询失败：infoRetcode=$infoRetcode, infoMessage=${infoData.optString("message")}, " +
+                        "homeRetcode=$homeRetcode, homeMessage=${homeData.optString("message")}",
                 )
                 return null
             }
@@ -419,16 +424,28 @@ class MysSignIn(
             val awards = homeObject?.optJSONArray("awards")
                 ?: homeObject?.optJSONArray("award_list")
                 ?: infoObject?.optJSONArray("awards")
-            if (totalSignDay <= 0 || awards == null || awards.length() == 0) return null
+            if (totalSignDay <= 0 || awards == null || awards.length() == 0) {
+                onLog(
+                    "ERROR",
+                    "[${game.name}] 奖励数据缺失：totalSignDay=$totalSignDay, awards=${awards?.length() ?: 0}",
+                )
+                return null
+            }
 
-            val award = awards.optJSONObject(totalSignDay - 1) ?: return null
+            val award = awards.optJSONObject(totalSignDay - 1)
+            if (award == null) {
+                onLog("ERROR", "[${game.name}] 奖励数据缺失：无法读取第${totalSignDay}天奖励")
+                return null
+            }
+            val icon = normalizeRewardIcon(extractRewardIcon(award))
+            if (icon.isBlank()) {
+                onLog("ERROR", "[${game.name}] 奖励图片地址缺失：${award.toString()}")
+            }
             Reward(
                 day = totalSignDay,
                 name = award.optString("name"),
                 cnt = award.optString("cnt"),
-                icon = normalizeRewardIcon(award.optString("icon").ifBlank {
-                    award.optString("icon_url").ifBlank { award.optString("iconUrl") }
-                }),
+                icon = icon,
             )
         } catch (e: Exception) {
             e.throwIfCancellation()
@@ -459,6 +476,17 @@ class MysSignIn(
         }
     }
 
+    private fun extractRewardIcon(json: JSONObject): String {
+        val directKeys = listOf("icon", "icon_url", "iconUrl", "reward_icon", "rewardIcon", "image", "image_url", "imageUrl")
+        directKeys.firstNotNullOfOrNull { key -> json.optString(key).trim().takeIf { it.isNotBlank() } }?.let { return it }
+        listOf("award", "reward", "item").forEach { key ->
+            json.optJSONObject(key)?.let { nested ->
+                directKeys.firstNotNullOfOrNull { name -> nested.optString(name).trim().takeIf { it.isNotBlank() } }?.let { return it }
+            }
+        }
+        return ""
+    }
+
     /** 执行单个 Cookie、单个游戏的完整流程：查角色、查奖励并提交签到。 */
     suspend fun runForCookie(
         cookie: String,
@@ -468,7 +496,8 @@ class MysSignIn(
             is RoleResult.NoRole -> return Outcome(
                 success = true,
                 skipped = true,
-                message = "未绑定角色，已跳过",
+                message = "未注册该游戏，已跳过签到",
+                detail = "getUserGameRolesByCookie returned no role for game_biz=${game.gameBiz}",
                 failure = TaskFailureDescriptor(FailureCategory.NO_ROLE),
             )
             is RoleResult.Failed -> return Outcome(

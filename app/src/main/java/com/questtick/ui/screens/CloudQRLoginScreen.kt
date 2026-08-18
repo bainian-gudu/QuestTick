@@ -49,6 +49,7 @@ fun CloudQRLoginScreen(
     visible: Boolean = true,
     onResult: (CloudQRLoginResult) -> Unit,
     onCancel: () -> Unit,
+    onError: (String) -> Unit = {},
 ) {
     val httpTransport = LocalHttpTransport.current
     val gameName = if (gameKey == "CloudYS") "云原神" else "云崩铁"
@@ -89,10 +90,11 @@ fun CloudQRLoginScreen(
         confirmed = null
         showPendingCancelDialog = false
 
-        val result = withContext(Dispatchers.IO) { CloudQRLogin.createQRCode(gameKey, deviceId, httpTransport) }
+        val result = withContext(Dispatchers.IO) { CloudQRLogin.createQRCode(gameKey, deviceId, httpTransport, onError) }
         val qr =
             result.getOrElse { e ->
                 errorMsg = e.message ?: "生成二维码失败"
+                onError("$gameName createQRLogin result failure: ${e.message.orEmpty()}")
                 loading = false
                 return@LaunchedEffect
             }
@@ -109,10 +111,11 @@ fun CloudQRLoginScreen(
     // 轮询扫码状态。
     LaunchedEffect(ticket) {
         if (ticket.isBlank()) return@LaunchedEffect
-        CloudQRLogin.pollStatus(gameKey, ticket, deviceId, httpTransport)
+        CloudQRLogin.pollStatus(gameKey, ticket, deviceId, httpTransport, recordError = onError)
             .flowOn(Dispatchers.IO)
             .collect { s ->
                 status = s
+                if (s is CloudQRLogin.ScanStatus.Error) onError("$gameName 扫码轮询终态: ${s.msg}")
                 if (s !is CloudQRLogin.ScanStatus.Scanned) {
                     showPendingCancelDialog = false
                 }
@@ -129,7 +132,7 @@ fun CloudQRLoginScreen(
         exchangeError = ""
         val result =
             withContext(Dispatchers.IO) {
-                CloudQRLogin.exchangeComboToken(gameKey, c.cookieHeader, deviceId, httpTransport)
+                CloudQRLogin.exchangeComboToken(gameKey, c.cookieHeader, deviceId, httpTransport, onError)
             }
         val token =
             result.getOrElse { e ->

@@ -6,6 +6,7 @@ import com.questtick.data.FailureCategory
 import com.questtick.data.TaskResult
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpTransport
+import com.questtick.net.TrustedUrlPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -24,6 +25,7 @@ internal class MysSignExecutor(
     private val httpTransport: HttpTransport,
     private val requestLimiter: Semaphore,
     private val log: (level: String, message: String, detail: String) -> Unit,
+    private val recordError: ((feature: String, detail: String) -> Unit)? = null,
 ) {
     suspend fun runAccount(
         acc: Account,
@@ -42,7 +44,7 @@ internal class MysSignExecutor(
         val games = acc.selectedMysGames().filter { game ->
             shouldExecuteTask(progressTaskId(acc, RunTaskType.MYS, game.key))
         }
-        if (games.isEmpty() && !acc.mysCoinEnabled) {
+        if (games.isEmpty() && !(MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled)) {
             log("INFO", "[${acc.label}] 未选择或未配置可执行的米游社签到任务，跳过米游社签到", "")
             return acc
         }
@@ -64,6 +66,7 @@ internal class MysSignExecutor(
                 onLog = { level, message -> log(level, message, "") },
                 customVersion = runMysAppVersion,
                 cacheMutex = actIdCacheMutex,
+                recordError = recordError,
             )
 
         var currentAccount = acc
@@ -138,6 +141,17 @@ internal class MysSignExecutor(
             val result = buildMysTaskResult(game.name, game.key, acc, outcome)
 
             val reward = outcome.reward
+            if (reward != null && reward.icon.isBlank()) {
+                recordError?.invoke(
+                    "米游社奖励图片",
+                    "${game.name} 奖励图片地址为空：name=${reward.name}, count=${reward.cnt}, day=${reward.day}",
+                )
+            } else if (reward != null && !TrustedUrlPolicy.isRewardIconUrl(reward.icon)) {
+                recordError?.invoke("米游社奖励图片", "${game.name} 奖励图片地址不受信任：${reward.icon}")
+            }
+            if (!outcome.success && outcome.detail.isNotBlank()) {
+                recordError?.invoke("米游社签到", "${game.name}: ${outcome.detail}")
+            }
             val rewardInfo =
                 if (reward != null) {
                     " | 奖励: ${reward.name}×${reward.cnt}（第${reward.day}天）"
@@ -158,7 +172,7 @@ internal class MysSignExecutor(
             if (index < games.size - 1) randomSleep(2, 5)
         }
 
-        if (acc.mysCoinEnabled) {
+        if (MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled) {
             val startedAt = System.currentTimeMillis()
             val taskId = progressTaskId(acc, RunTaskType.MYS, MysCoinCheckIn.GAME_KEY)
             onProgress("${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}", done.get(), total)
@@ -168,7 +182,15 @@ internal class MysSignExecutor(
                         check(onTaskStarted(taskId, "${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}")) {
                             "无法获取任务执行权: $taskId"
                         }
-                        MysCoinCheckIn.run(cookie, mysDeviceId, runMysAppVersion, httpTransport)
+                        MysCoinCheckIn.run(
+                            cookie = cookie,
+                            deviceId = mysDeviceId,
+                            appVersion = runMysAppVersion,
+                            httpTransport = httpTransport,
+                            stoken = currentAccount.stoken,
+                            mid = currentAccount.stmid,
+                            uid = currentAccount.mysUid,
+                        )
                     }
                 } catch (e: Exception) {
                     e.throwIfCancellation()
