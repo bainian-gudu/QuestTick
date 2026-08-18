@@ -19,6 +19,7 @@ class TrustedUrlPolicyTest {
         assertTrue(TrustedUrlPolicy.isRewardIconUrl("https://upload-bbs.miyoushe.com/upload/icon.png"))
         assertTrue(TrustedUrlPolicy.isRewardIconUrl("https://upload-bbs.mihoyo.com/upload/icon.png"))
         assertTrue(TrustedUrlPolicy.isRewardIconUrl("https://uploadstatic.mihoyo.com/icon.webp"))
+        assertTrue(TrustedUrlPolicy.isRewardIconUrl("https://act-webstatic.mihoyo.com/event-static/reward.png"))
         assertFalse(TrustedUrlPolicy.isRewardIconUrl("https://act.mihoyo.com/icon.png"))
         assertFalse(TrustedUrlPolicy.isRewardIconUrl("https://upload-bbs.miyoushe.com.evil.example/icon.png"))
     }
@@ -73,38 +74,13 @@ class TrustedUrlPolicyTest {
     }
 
     @Test
-    fun `trusted mirror must wrap one direct trusted source`() {
-        val source =
-            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
-        val mirror = "https://ghfast.top/$source"
-        val metadataSource =
-            "https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20"
-        val metadataMirror = "https://ghproxy.net/$metadataSource"
-        assertTrue(TrustedUrlPolicy.isUpdateAssetUrl(mirror))
-        assertEquals(source, TrustedUrlPolicy.trustedMirrorSource(mirror))
-        assertTrue(TrustedUrlPolicy.isUpdateMetadataUrl(metadataMirror))
-        assertEquals(metadataSource, TrustedUrlPolicy.trustedMirrorSource(metadataMirror))
-
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://evil.example/$source"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://ghfast.top/https://evil.example/app.apk"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://ghfast.top/https://ghproxy.net/$source"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://ghfast.top.evil.example/$source"))
-        assertNull(TrustedUrlPolicy.trustedMirrorSource(source))
-    }
-
-    @Test
     fun `update metadata redirects stay within the exact candidate source`() {
         val direct =
             "https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20"
         val latest =
             "https://api.github.com/repos/bainian-gudu/QuestTick/releases/latest"
-        val mirror = "https://ghfast.top/$direct"
-
         assertTrue(TrustedUrlPolicy.isUpdateMetadataRedirect(direct, direct))
-        assertTrue(TrustedUrlPolicy.isUpdateMetadataRedirect(mirror, mirror))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataRedirect(direct, latest))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataRedirect(direct, mirror))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataRedirect(mirror, direct))
+        assertTrue(TrustedUrlPolicy.isUpdateMetadataRedirect(direct, latest))
         assertFalse(
             TrustedUrlPolicy.isUpdateMetadataRedirect(
                 direct,
@@ -114,22 +90,16 @@ class TrustedUrlPolicyTest {
     }
 
     @Test
-    fun `update asset redirects only allow official asset delivery or the original mirror`() {
+    fun `update asset redirects only allow official asset delivery`() {
         val source =
             "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
         val officialAsset =
             "https://release-assets.githubusercontent.com/github-production-release-asset/1337123825/asset.apk?token=signed"
-        val mirror = "https://ghfast.top/$source"
-
         assertTrue(TrustedUrlPolicy.isUpdateAssetRedirect(source, source))
         assertTrue(TrustedUrlPolicy.isUpdateAssetRedirect(source, officialAsset))
-        assertTrue(TrustedUrlPolicy.isUpdateAssetRedirect(mirror, mirror))
         assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(source, "http://release-assets.githubusercontent.com/file"))
         assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(source, "https://release-assets.githubusercontent.com/other/file"))
         assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(source, "https://objects.githubusercontent.com/file"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(mirror, source))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(mirror, "https://ghproxy.net/$source"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(mirror, officialAsset))
     }
 
     @Test

@@ -76,6 +76,7 @@ object QRLoginManager {
     suspend fun createQRCode(
         deviceId: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): Result<QRCode> {
         return try {
             val headers = qrPassportHeaders(deviceId)
@@ -83,6 +84,7 @@ object QRLoginManager {
             val json = resp.json()
             val retcode = json.optInt("retcode", -999)
             if (retcode != 0) {
+                recordError?.invoke("createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
                 Log.w(TAG, "createQRCode failed: retcode=$retcode")
                 return Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
             }
@@ -97,6 +99,7 @@ object QRLoginManager {
             Result.success(QRCode(ticket = ticket, url = url))
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("createQRLogin exception: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "createQRCode failed", e)
             Result.failure(e)
         }
@@ -107,6 +110,7 @@ object QRLoginManager {
         ticket: String,
         deviceId: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): ScanStatus {
         return try {
             val body = JSONObject().apply { put("ticket", ticket) }
@@ -131,12 +135,17 @@ object QRLoginManager {
                     JSONObject()
                 }
             val retcode = json.optInt("retcode", -999)
+            if (response.code !in 200..299 || retcode != 0) {
+                recordError?.invoke("queryQRLoginStatus http=${response.code}, retcode=$retcode, message=${json.optString("message")}")
+            }
 
             val data = json.optJSONObject("data")
             val dataStatus = data?.optString("status")
             val confirmedData = data?.takeIf { retcode == 0 && it.optString("status") == "Confirmed" }
             if (confirmedData != null) {
-                parseConfirmed(response.headerValues("Set-Cookie"), confirmedData, httpTransport)
+                parseConfirmed(response.headerValues("Set-Cookie"), confirmedData, httpTransport, recordError).also { result ->
+                    if (result is ScanStatus.Error) recordError?.invoke("queryQRLoginStatus confirmed: ${result.msg}")
+                }
             } else {
                 mapQueryStatus(
                     retcode = retcode,
@@ -147,6 +156,7 @@ object QRLoginManager {
             }
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("queryQRLoginStatus exception: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "queryStatus transient failure", e)
             ScanStatus.TransientError(Mask.sensitive(ErrorText.fromException(e)))
         }
@@ -159,12 +169,13 @@ object QRLoginManager {
         httpTransport: HttpTransport,
         intervalMs: Long = 800,
         maxIntervalMs: Long = 2000,
+        recordError: ((String) -> Unit)? = null,
     ): Flow<ScanStatus> =
         flow {
             var attempts = 0
             var currentInterval = intervalMs.coerceAtLeast(500L)
             while (true) {
-                val status = queryStatus(ticket, deviceId, httpTransport)
+                val status = queryStatus(ticket, deviceId, httpTransport, recordError)
                 emit(status)
                 when (status) {
                     is ScanStatus.Confirmed,
@@ -384,18 +395,30 @@ object QRLoginManager {
         uid: String,
         loginTicket: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): Result<MultiToken> {
         if (uid.isBlank() || loginTicket.isBlank()) {
+            recordError?.invoke("getMultiTokenByLoginTicket 缺少 login_ticket 或 UID")
             return Result.failure(IllegalArgumentException("login_ticket 或 UID 为空"))
         }
         return try {
             val url = MULTI_TOKEN_URL +
                 "?login_ticket=${urlEncode(loginTicket)}&token_types=$MULTI_TOKEN_TYPES_STOKEN&uid=${urlEncode(uid)}"
-            val headers = mapOf("Cookie" to "login_ticket=$loginTicket; login_uid=$uid")
+            val headers = linkedMapOf(
+                "Cookie" to "login_ticket=$loginTicket; login_uid=$uid",
+                "User-Agent" to HYP_USER_AGENT,
+                "Accept" to "application/json, text/plain, */*",
+                "Referer" to "https://user.mihoyo.com/",
+                "Origin" to "https://user.mihoyo.com",
+                "x-rpc-app_version" to Endpoints.APP_VERSION,
+                "x-rpc-client_type" to CLIENT_TYPE,
+                "x-rpc-app_id" to APP_ID,
+            )
             val resp = httpTransport.get(url, headers)
             val json = resp.json()
             val retcode = json.optInt("retcode", -999)
             if (retcode != 0) {
+                recordError?.invoke("getMultiTokenByLoginTicket http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
                 return Result.failure(
                     RuntimeException("getMultiTokenByLoginTicket retcode=$retcode: ${json.optString("message")}"),
                 )
@@ -408,6 +431,7 @@ object QRLoginManager {
             }
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("getMultiTokenByLoginTicket exception: ${ErrorText.detailOf(e)}")
             Result.failure(e)
         }
     }
@@ -452,6 +476,7 @@ object QRLoginManager {
     private suspend fun fetchMysUserNickname(
         uid: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): String {
         if (uid.isBlank()) return ""
         return try {
@@ -463,6 +488,7 @@ object QRLoginManager {
             if (json.optInt("retcode", -999) == 0) parseMysUserNickname(json) else ""
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("二维码账号昵称获取失败: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "fetch mys nickname failed, uid=${Mask.uid(uid)}", e)
             ""
         }
@@ -485,6 +511,7 @@ object QRLoginManager {
         setCookieHeaders: List<String>,
         data: JSONObject,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): ScanStatus {
         val parsed = parseConfirmedData(
             setCookieHeaders = setCookieHeaders,
@@ -494,7 +521,7 @@ object QRLoginManager {
             return parsed
         }
 
-        val named = parsed.copy(nickname = parsed.nickname.ifBlank { fetchMysUserNickname(parsed.uid, httpTransport) })
+        val named = parsed.copy(nickname = parsed.nickname.ifBlank { fetchMysUserNickname(parsed.uid, httpTransport, recordError) })
         val withBodyStokenCookie = fillCookieTokenByStokenIfNeeded(named, httpTransport)
         if (withBodyStokenCookie.stoken.isNotBlank()) {
             return withBodyStokenCookie
@@ -504,7 +531,9 @@ object QRLoginManager {
             uid = named.uid,
             loginTicket = named.loginTicket,
             httpTransport = httpTransport,
+            recordError = recordError,
         ).getOrElse { e ->
+            recordError?.invoke("扫码确认凭据解析失败: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "exchange stoken by login_ticket failed: ${e.message}")
             return if (named.cookieToken.isBlank() && named.stoken.isBlank()) {
                 ScanStatus.Error("扫码确认成功，但未能通过 login_ticket 换取 stoken")

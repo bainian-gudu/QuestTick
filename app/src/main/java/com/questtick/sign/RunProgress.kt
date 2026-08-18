@@ -99,7 +99,7 @@ internal fun buildRunTaskPlan(
                 )
             }
         val coinTask =
-            if (account.mysCoinEnabled) {
+            if (MysCoinCheckIn.featureEnabled && account.mysCoinEnabled) {
                 listOf(
                     RunTaskProgress(
                         id = progressTaskId(account, RunTaskType.MYS, MysCoinCheckIn.GAME_KEY),

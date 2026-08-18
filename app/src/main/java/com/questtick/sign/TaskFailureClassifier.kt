@@ -35,7 +35,7 @@ internal object TaskFailureClassifier {
 
         // 先处理明确语义，再读取技术错误码；部分风控响应会返回 retcode=0 但 data.success=1。
         when {
-            containsAny(lower, "未绑定角色", "no role") ->
+            containsAny(lower, "未绑定角色", "未注册该游戏", "no role") ->
                 return TaskFailureDescriptor(FailureCategory.NO_ROLE)
             containsAny(lower, "短信", "sms", "mobile verify", "phone verify") ->
                 return TaskFailureDescriptor(FailureCategory.SMS_REQUIRED)

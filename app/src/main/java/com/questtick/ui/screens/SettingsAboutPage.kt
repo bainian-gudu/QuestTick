@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -18,11 +17,10 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
@@ -38,8 +36,8 @@ import com.questtick.BuildConfig
 import com.questtick.R
 import com.questtick.data.AppSettings
 import com.questtick.sign.AppUpdateChecker.AppUpdateInfo
-import com.questtick.sign.AppUpdateNetwork
 import com.questtick.ui.components.GalaxyBackground
+import com.questtick.ui.components.AnimatedSwitch
 
 /** 关于、更新与许可证入口页面。 */
 @Composable
@@ -55,7 +53,6 @@ internal fun AboutDetailPage(
     }
     var checkingUpdate by remember { mutableStateOf(false) }
     var showLicenseDialog by remember { mutableStateOf(false) }
-    var sourceMenuExpanded by remember { mutableStateOf(false) }
 
     fun startUpdateCheck() {
         if (checkingUpdate) return
@@ -80,41 +77,25 @@ internal fun AboutDetailPage(
                     ) { startUpdateCheck() }
                 }
                 item(key = "about_update") {
-                    SettingsSwitchCard(
-                        title = "自动更新",
-                        subtitle = "",
-                        checked = settings.appUpdateAutoCheck,
-                        modifier = Modifier.fillParentMaxWidth(),
-                        onCheckedChange = { enabled -> onSaveSettings(settings.copy(appUpdateAutoCheck = enabled)) },
-                    )
-                }
-                item(key = "about_update_source") {
                     SettingsCard {
-                        SettingsSectionTitle("自动更新下载源")
-                        Spacer(Modifier.height(10.dp))
-                        val selectedSource = AppUpdateNetwork.UpdateSource.fromKey(settings.appUpdateSource)
-                        Box {
-                            OutlinedButton(
-                                onClick = { sourceMenuExpanded = true },
-                                modifier = Modifier.fillMaxWidth().height(44.dp),
-                            ) {
-                                Text(selectedSource.displayName, modifier = Modifier.weight(1f), fontSize = 13.sp)
-                                Text("⌄", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            DropdownMenu(
-                                expanded = sourceMenuExpanded,
-                                onDismissRequest = { sourceMenuExpanded = false },
-                            ) {
-                                AppUpdateNetwork.UpdateSource.entries.forEach { source ->
-                                    DropdownMenuItem(
-                                        text = { Text(source.displayName) },
-                                        onClick = {
-                                            sourceMenuExpanded = false
-                                            onSaveSettings(settings.copy(appUpdateSource = source.key))
-                                        },
-                                    )
-                                }
-                            }
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "自动更新",
+                                fontSize = 16.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.weight(1f))
+                            AnimatedSwitch(
+                                checked = settings.appUpdateAutoCheck,
+                                onCheckedChange = { enabled ->
+                                    onSaveSettings(settings.copy(appUpdateAutoCheck = enabled))
+                                },
+                                offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                            )
                         }
                     }
                 }

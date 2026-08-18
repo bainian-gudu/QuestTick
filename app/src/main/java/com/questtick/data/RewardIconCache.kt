@@ -1,17 +1,19 @@
 package com.questtick.data
 
 import android.content.Context
-import com.questtick.core.runCatchingCancellable
+import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
 import com.questtick.net.HttpTransport
 import com.questtick.net.get
 import com.questtick.net.TrustedUrlPolicy
+import com.questtick.sign.ErrorText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /**
  * 签到奖励图标本地缓存。
@@ -42,9 +44,13 @@ object RewardIconCache {
         context: Context,
         url: String,
         httpTransport: HttpTransport,
+        onFailure: ((String) -> Unit)? = null,
     ): File? =
         withContext(Dispatchers.IO) {
-            if (!TrustedUrlPolicy.isRewardIconUrl(url)) return@withContext null
+            if (!TrustedUrlPolicy.isRewardIconUrl(url)) {
+                onFailure?.invoke("奖励图片地址为空或不受信任: $url")
+                return@withContext null
+            }
             val appContext = context.applicationContext
             maybeCleanup(appContext)
             val file = targetFile(appContext, url)
@@ -54,7 +60,13 @@ object RewardIconCache {
             val mutex = locks.getOrPut(key) { Mutex() }
             mutex.withLock {
                 if (isUsableCacheFile(file)) return@withLock file
-                runCatchingCancellable { downloadIconToCache(url, file, httpTransport) }.getOrNull()
+                try {
+                    downloadIconToCache(url, file, httpTransport, onFailure)
+                } catch (e: Exception) {
+                    e.throwIfCancellation()
+                    onFailure?.invoke("奖励图片下载异常: ${ErrorText.detailOf(e)}")
+                    null
+                }
             }
         }
 
@@ -78,31 +90,59 @@ object RewardIconCache {
         url: String,
         file: File,
         httpTransport: HttpTransport,
+        onFailure: ((String) -> Unit)? = null,
     ): File? {
         if (!TrustedUrlPolicy.isRewardIconUrl(url)) return null
         file.parentFile?.mkdirs()
-        val response =
-            httpTransport.get(
-                url = url,
-                headers = mapOf("User-Agent" to "Mozilla/5.0"),
-                config = HttpRequestConfig(maxResponseBytes = MAX_ICON_BYTES),
-            )
-        if (response.code !in 200..299) return null
-        val bytes = response.bodyBytes()
-        if (bytes.isEmpty() || bytes.size > MAX_ICON_BYTES) return null
-
-        val tmp = File(file.parentFile, "${file.name}.tmp")
-        runCatching { tmp.delete() }
-        try {
-            tmp.outputStream().buffered().use { output -> output.write(bytes) }
-            if (!tmp.renameTo(file)) {
-                tmp.copyTo(file, overwrite = true)
-                tmp.delete()
+        // 米游社部分 CDN 会在查询参数中附加缩略图处理；优先尝试去掉处理参数的原图地址。
+        for (candidate in highResolutionCandidates(url)) {
+            val response =
+                runCatching {
+                    httpTransport.get(
+                        url = candidate,
+                        headers = mapOf("User-Agent" to "Mozilla/5.0"),
+                        config = HttpRequestConfig(maxResponseBytes = MAX_ICON_BYTES),
+                    )
+            }.getOrElse { error ->
+                onFailure?.invoke("奖励图片请求异常 candidate=$candidate: ${ErrorText.detailOf(error)}")
+                continue
             }
-            return file.takeIf(::isUsableCacheFile)
-        } finally {
-            if (tmp.exists()) runCatching { tmp.delete() }
+            if (response.code !in 200..299) {
+                onFailure?.invoke("奖励图片请求失败 candidate=$candidate http=${response.code}")
+                continue
+            }
+            val bytes = response.bodyBytes()
+            if (bytes.isEmpty() || bytes.size > MAX_ICON_BYTES) {
+                onFailure?.invoke("奖励图片响应无效 candidate=$candidate bytes=${bytes.size}")
+                continue
+            }
+
+            val tmp = File(file.parentFile, "${file.name}.tmp")
+            runCatching { tmp.delete() }
+            try {
+                tmp.outputStream().buffered().use { output -> output.write(bytes) }
+                if (!tmp.renameTo(file)) {
+                    tmp.copyTo(file, overwrite = true)
+                    tmp.delete()
+                }
+                return file.takeIf(::isUsableCacheFile)
+            } finally {
+                if (tmp.exists()) runCatching { tmp.delete() }
+            }
         }
+        onFailure?.invoke("奖励图片所有高清候选地址均下载失败: $url")
+        return null
+    }
+
+    private fun highResolutionCandidates(url: String): List<String> {
+        val parsed = url.toHttpUrlOrNull() ?: return listOf(url)
+        val processingParameters = setOf("x-oss-process", "imageMogr2/thumbnail", "thumbnail", "resize", "format", "quality")
+        val original = parsed.newBuilder().apply {
+            parsed.queryParameterNames
+                .filter { it in processingParameters }
+                .forEach { removeAllQueryParameters(it) }
+        }.build().toString()
+        return listOf(original, url).distinct().filter(TrustedUrlPolicy::isRewardIconUrl)
     }
 
     private fun targetFile(

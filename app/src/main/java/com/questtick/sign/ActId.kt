@@ -131,7 +131,11 @@ object ActId {
         return candidate
     }
 
-    private suspend fun fetchFromNavigation(game: MysSignIn.GameConfig, httpTransport: HttpTransport): String? {
+    private suspend fun fetchFromNavigation(
+        game: MysSignIn.GameConfig,
+        httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
+    ): String? {
         val source = NAVIGATION_SOURCES[game.key] ?: return null
         val url = "$NAVIGATION_URL?gids=${source.gids}"
         return try {
@@ -147,6 +151,7 @@ object ActId {
             parseFromNavigation(response.body, game.key)
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("${game.name} act_id 导航获取失败: ${ErrorText.detailOf(e)}")
             android.util.Log.w("ActId", "导航 act_id 获取失败: ${game.key}", e)
             null
         }
@@ -160,10 +165,14 @@ object ActId {
     suspend fun fetchLatest(
         game: MysSignIn.GameConfig,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): String? {
         // 优先从首页导航解析活动入口，失败时再尝试活动页本身。
-        fetchFromNavigation(game, httpTransport)?.let { return it }
-        if (!TrustedUrlPolicy.isActivityResourceUrl(game.actPage)) return null
+        fetchFromNavigation(game, httpTransport, recordError)?.let { return it }
+        if (!TrustedUrlPolicy.isActivityResourceUrl(game.actPage)) {
+            recordError?.invoke("${game.name} act_id 地址不受信任: ${game.actPage}")
+            return null
+        }
         return try {
             val headers =
                 mapOf(
@@ -202,6 +211,7 @@ object ActId {
                         parseFromText(js)
                     } catch (e: Exception) {
                         e.throwIfCancellation()
+                        recordError?.invoke("${game.name} act_id 脚本解析失败: ${ErrorText.detailOf(e)}")
                         android.util.Log.d("ActId", "解析 JS 失败: $scriptUrl, ${e.javaClass.simpleName}: ${e.message}")
                         null
                     }
@@ -210,6 +220,7 @@ object ActId {
             null
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("${game.name} act_id 获取失败: ${ErrorText.detailOf(e)}")
             android.util.Log.w("ActId", "获取最新 act_id 失败: ${game.actPage}", e)
             null
         }

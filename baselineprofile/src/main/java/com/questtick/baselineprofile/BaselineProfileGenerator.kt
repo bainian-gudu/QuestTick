@@ -64,7 +64,7 @@ class BaselineProfileGenerator {
         repeat(2) {
             listOf("账号", "记录", "日志", "设置", "主页").forEach { tab ->
                 clickTextOrDesc(tab)
-                device.waitForIdle()
+                waitForIdleSafely()
                 // 列表页上下滚动，覆盖列表复用与回收逻辑。
                 flingDownUp()
             }
@@ -72,13 +72,13 @@ class BaselineProfileGenerator {
 
         // 点击首页签到按钮，覆盖主页上的主要交互与 ViewModel 热路径。
         clickTextOrDesc("立即全部签到")
-        device.waitForIdle()
+        waitForIdleSafely()
         Thread.sleep(500)
 
         // 展开与收起最近签到卡片，覆盖主要动画路径。
         repeat(2) {
             clickTextOrDesc("最近签到")
-            device.waitForIdle()
+            waitForIdleSafely()
             Thread.sleep(200)
         }
     }
@@ -94,32 +94,31 @@ class BaselineProfileGenerator {
 
         // --- 账号管理 ---
         clickTextOrDesc("账号")
-        device.waitForIdle()
+        waitForIdleSafely()
         flingDownUp()
 
         // 打开添加账号 BottomSheet
         clickTextOrDesc("添加账号")
-        device.wait(Until.hasObject(By.text("基本信息")), 3000)
-        device.waitForIdle()
+        waitForText("基本信息", 1500)
+        waitForIdleSafely()
 
         // AccountEditScreen 3 个 Tab 切换
         listOf("云游戏", "游戏选择", "基本信息").forEach { tab ->
             clickTextOrDesc(tab)
-            device.waitForIdle()
+            waitForIdleSafely()
             // 游戏选择网格滚动
             if (tab == "游戏选择") flingDownUp()
         }
 
         // 打开扫码登录，触发 QRLoginScreen / ZXing
         clickTextOrDesc("扫码登录") ?: clickTextOrDesc("米游社扫码")
-        device.waitForIdle()
+        waitForIdleSafely()
         Thread.sleep(400)
-        device.pressBack()
-        device.waitForIdle()
+        pressBackSafely()
 
         // 关闭编辑页
-        clickTextOrDesc("关闭") ?: device.pressBack()
-        device.waitForIdle()
+        clickTextOrDesc("关闭") ?: pressBackSafely()
+        waitForIdleSafely()
 
         // --- 设置页 ---
         clickTextOrDesc("设置")
@@ -128,66 +127,83 @@ class BaselineProfileGenerator {
         // 4 个子页面切换 + 开关点击
         listOf("定时任务", "邮件推送", "设备 ID", "实验功能").forEach { tab ->
             clickTextOrDesc(tab)
-            device.waitForIdle()
+            waitForIdleSafely()
             // 点击开关，触发 AnimatedSwitch 重组
             repeat(2) {
-                device.findObject(By.clickable(true))?.click()
-                device.waitForIdle()
+                runCatching { device.findObject(By.clickable(true))?.click() }
+                waitForIdleSafely()
             }
         }
-        device.pressBack()
-        device.waitForIdle()
+        pressBackSafely()
+        waitForIdleSafely()
 
         // --- 日志页 ---
         clickTextOrDesc("日志")
-        device.waitForIdle()
+        waitForIdleSafely()
         flingDownUp()
         flingDownUp()
 
         // 日志导出
         clickTextOrDesc("导出")
-        device.waitForIdle()
-        device.pressBack()
-        device.waitForIdle()
+        waitForIdleSafely()
+        pressBackSafely()
+        waitForIdleSafely()
 
         // --- 记录页 ---
         clickTextOrDesc("记录")
-        device.waitForIdle()
+        waitForIdleSafely()
         flingDownUp()
 
         // 返回主页，触发一次签到
         clickTextOrDesc("主页")
-        device.waitForIdle()
+        waitForIdleSafely()
         clickTextOrDesc("立即全部签到")
-        device.waitForIdle()
+        waitForIdleSafely()
     }
 
     // === 辅助 ===
 
     private fun MacrobenchmarkScope.waitForIdleAndContent() {
-        device.wait(Until.hasObject(By.pkg(packageName).depth(0)), 5_000)
-        device.waitForIdle()
+        runCatching { device.wait(Until.hasObject(By.pkg(packageName).depth(0)), 3_000) }
+        waitForIdleSafely()
+    }
+
+    private fun MacrobenchmarkScope.waitForText(text: String, timeoutMs: Long) {
+        runCatching { device.wait(Until.hasObject(By.text(text)), timeoutMs) }
+    }
+
+    private fun MacrobenchmarkScope.waitForIdleSafely() {
+        runCatching { device.waitForIdle(1_000) }
+    }
+
+    private fun MacrobenchmarkScope.pressBackSafely() {
+        runCatching { device.pressBack() }
     }
 
     private fun MacrobenchmarkScope.clickTextOrDesc(text: String): UiObject2? {
-        val node = device.findObject(By.desc(text))
-            ?: device.findObject(By.text(text))
-            ?: device.findObject(By.textContains(text))
-        node?.click()
-        return node
+        return runCatching {
+            val node = device.findObject(By.desc(text))
+                ?: device.findObject(By.text(text))
+                ?: device.findObject(By.textContains(text))
+            node?.let { runCatching { it.click() } }
+            node
+        }.getOrNull()
     }
 
     private fun MacrobenchmarkScope.flingDownUp() {
         try {
-            // 向下 fling
-            device.findObject(By.scrollable(true))?.let {
-                it.setGestureMargin(device.displayWidth / 5)
-                it.fling(Direction.DOWN)
-                device.waitForIdle()
-                Thread.sleep(150)
-                it.fling(Direction.UP)
-                device.waitForIdle()
+            // 每次手势都重新获取节点；Compose 列表重组后旧 UiObject2 可能失效。
+            fun fling(direction: Direction) {
+                runCatching {
+                    device.findObject(By.scrollable(true))?.let { scrollable ->
+                        scrollable.fling(direction)
+                        waitForIdleSafely()
+                    }
+                }
             }
+            fling(Direction.DOWN)
+            Thread.sleep(150)
+            fling(Direction.UP)
         } catch (_: Exception) { }
     }
 }

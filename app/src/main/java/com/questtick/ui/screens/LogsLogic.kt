@@ -140,7 +140,8 @@ internal fun buildLogGroups(
         val title =
             when {
                 currentIsRun && running -> "签到进行中 · ${first.formattedTime}"
-                currentIsRun -> "签到日志 · ${first.formattedTime}"
+                currentIsRun -> "运行日志 · ${first.formattedTime}"
+                stats.error > 0 -> "错误日志 · ${first.formattedTime}"
                 else -> "其它日志 · ${first.formattedTime}"
             }
         val subtitle = stats.subtitle(list.size)

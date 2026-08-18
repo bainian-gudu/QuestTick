@@ -1,6 +1,7 @@
 package com.questtick.ui.vm
 
 import androidx.lifecycle.ViewModel
+import com.questtick.sign.MysCoinCheckIn
 import androidx.lifecycle.viewModelScope
 import com.questtick.data.Account
 import com.questtick.data.Games
@@ -143,6 +144,7 @@ class AddAccountViewModel
         }
 
         fun setMysCoinEnabled(enabled: Boolean) {
+            if (!MysCoinCheckIn.featureEnabled) return
             _uiState.update { it.copy(mysCoinEnabled = enabled) }
         }
 

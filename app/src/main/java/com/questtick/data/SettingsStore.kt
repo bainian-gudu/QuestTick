@@ -20,6 +20,11 @@ internal class SettingsStore(
                 appThemeMode = prefs.getString("appThemeMode", "SYSTEM").orEmpty().normalizeThemeMode(),
                 oledPureBlackEnabled = prefs.getBoolean("oledPureBlackEnabled", false),
                 dynamicColorEnabled = prefs.getBoolean("dynamicColorEnabled", false),
+                customThemeColor = prefs.getString("customThemeColor", "").orEmpty(),
+                customThemeSecondaryColor = prefs.getString("customThemeSecondaryColor", "").orEmpty(),
+                customThemeTertiaryColor = prefs.getString("customThemeTertiaryColor", "").orEmpty(),
+                customThemeName = prefs.getString("customThemeName", "").orEmpty(),
+                customThemePresets = parseThemePresets(prefs.getString("customThemePresets", "[]").orEmpty()),
                 appLanguage = prefs.getString("appLanguage", "SYSTEM").orEmpty().normalizeAppLanguage(),
                 mysDeviceId = prefs.getString("mysDeviceIdUser", "").orEmpty(),
                 cloudDeviceId = prefs.getString("cloudDeviceIdUser", "").orEmpty(),
@@ -29,7 +34,6 @@ internal class SettingsStore(
                 mysAppVersionAutoFetch = prefs.getBoolean("mysAppVersionAutoFetch", false),
                 parallelEnabled = prefs.getBoolean("parallelEnabled", false),
                 appUpdateAutoCheck = prefs.getBoolean("appUpdateAutoCheck", true),
-                appUpdateSource = prefs.getString("appUpdateSource", "AUTO").orEmpty().normalizeUpdateSource(),
                 debugLoggingEnabled = prefs.getBoolean("debugLoggingEnabled", false),
                 cloudYsVersion = prefs.getString("cloudYsVersion", "").orEmpty(),
                 cloudSrVersion = prefs.getString("cloudSrVersion", "").orEmpty(),
@@ -50,6 +54,11 @@ internal class SettingsStore(
                 .putString("appThemeMode", settings.appThemeMode.normalizeThemeMode())
                 .putBoolean("oledPureBlackEnabled", settings.oledPureBlackEnabled)
                 .putBoolean("dynamicColorEnabled", settings.dynamicColorEnabled)
+                .putString("customThemeColor", settings.customThemeColor.trim())
+                .putString("customThemeSecondaryColor", settings.customThemeSecondaryColor.trim())
+                .putString("customThemeTertiaryColor", settings.customThemeTertiaryColor.trim())
+                .putString("customThemeName", settings.customThemeName.trim())
+                .putString("customThemePresets", serializeThemePresets(settings.customThemePresets))
                 .putString("appLanguage", settings.appLanguage.normalizeAppLanguage())
                 .putString("mysDeviceIdUser", settings.mysDeviceId.trim())
                 .putString("cloudDeviceIdUser", settings.cloudDeviceId.trim())
@@ -59,7 +68,6 @@ internal class SettingsStore(
                 .putBoolean("mysAppVersionAutoFetch", settings.mysAppVersionAutoFetch)
                 .putBoolean("parallelEnabled", settings.parallelEnabled)
                 .putBoolean("appUpdateAutoCheck", settings.appUpdateAutoCheck)
-                .putString("appUpdateSource", settings.appUpdateSource.normalizeUpdateSource())
                 .putBoolean("debugLoggingEnabled", settings.debugLoggingEnabled)
                 .putString("cloudYsVersion", settings.cloudYsVersion.trim())
                 .putString("cloudSrVersion", settings.cloudSrVersion.trim())
@@ -80,10 +88,33 @@ internal class SettingsStore(
                 else -> "SYSTEM"
             }
 
-        private fun String.normalizeUpdateSource(): String =
-            when (uppercase()) {
-                "DIRECT", "GHFAST", "GHPROXY" -> uppercase()
-                else -> "AUTO"
-            }
     }
+
+    private fun parseThemePresets(raw: String): List<SavedThemePreset> =
+        runCatching {
+            val array = org.json.JSONArray(raw)
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                SavedThemePreset(
+                    name = item.optString("name").trim(),
+                    primary = item.optString("primary").trim(),
+                    secondary = item.optString("secondary").trim(),
+                    tertiary = item.optString("tertiary").trim(),
+                )
+            }.filter { it.name.isNotBlank() && it.primary.isNotBlank() }
+        }.getOrDefault(emptyList())
+
+    private fun serializeThemePresets(presets: List<SavedThemePreset>): String =
+        org.json.JSONArray().apply {
+            presets.forEach { preset ->
+                put(
+                    org.json.JSONObject().apply {
+                        put("name", preset.name)
+                        put("primary", preset.primary)
+                        put("secondary", preset.secondary)
+                        put("tertiary", preset.tertiary)
+                    },
+                )
+            }
+        }.toString()
 }

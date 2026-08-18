@@ -18,6 +18,8 @@ import kotlin.random.Random
 object Ds {
     private const val CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
     private const val BBS_X6_SALT = "t0qEgfub6cvueAPgR5m9aQWWVciEer7v"
+    // 普通 luna 网页接口使用独立的 Web DS，不读取米游币 X6 动态配置。
+    private const val WEB_SALT = "d9200c84610886e8c874fc33c8f308b"
 
     private fun md5(input: String): String {
         val bytes = MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8))
@@ -59,6 +61,13 @@ object Ds {
         val timestampSeconds = System.currentTimeMillis() / 1000
         val random = Random.nextInt(100001, 200001).toString()
         return generateMd5V2(timestampSeconds, random, BBS_X6_SALT, body, query)
+    }
+
+    /** 普通游戏签到/奖励接口使用的网页端 md5_v1 DS。 */
+    fun generateWeb(): String {
+        val timestampSeconds = System.currentTimeMillis() / 1000
+        val random = randomString(6)
+        return generateMd5V1(timestampSeconds, random, WEB_SALT)
     }
 
     /**

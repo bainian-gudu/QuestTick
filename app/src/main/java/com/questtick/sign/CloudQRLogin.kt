@@ -112,6 +112,7 @@ object CloudQRLogin {
         gameKey: String,
         deviceId: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): Result<QRCode> {
         return try {
             val config = configFor(gameKey)
@@ -124,6 +125,7 @@ object CloudQRLogin {
             val json = resp.json()
             val retcode = json.optInt("retcode", -999)
             if (retcode != 0) {
+                recordError?.invoke("$gameKey createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
                 Log.w(TAG, "createQRLogin failed: retcode=$retcode")
                 return Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
             }
@@ -138,6 +140,7 @@ object CloudQRLogin {
             Result.success(QRCode(ticket = ticket, url = qrUrl))
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("$gameKey createQRLogin exception: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "createQRCode failed", e)
             Result.failure(e)
         }
@@ -149,6 +152,7 @@ object CloudQRLogin {
         ticket: String,
         deviceId: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): ScanStatus {
         return try {
             val config = configFor(gameKey)
@@ -173,14 +177,20 @@ object CloudQRLogin {
                     JSONObject()
                 }
             val retcode = json.optInt("retcode", -999)
+            if (response.code !in 200..299 || retcode != 0) {
+                recordError?.invoke("$gameKey queryQRLoginStatus http=${response.code}, retcode=$retcode, message=${json.optString("message")}")
+            }
 
             val data = json.optJSONObject("data")
             val dataStatus = data?.optString("status")
             val confirmedData = data?.takeIf { retcode == 0 && it.optString("status") == "Confirmed" }
             if (retcode == 0 && data == null) {
+                recordError?.invoke("$gameKey queryQRLoginStatus confirmed: data is null")
                 ScanStatus.Error("queryQRLoginStatus: data is null")
             } else if (confirmedData != null) {
-                parsePassportConfirmed(response.headerValues("Set-Cookie"), confirmedData)
+                parsePassportConfirmed(response.headerValues("Set-Cookie"), confirmedData).also { result ->
+                    if (result is ScanStatus.Error) recordError?.invoke("$gameKey queryQRLoginStatus confirmed: ${result.msg}")
+                }
             } else {
                 mapQueryStatus(
                     retcode = retcode,
@@ -191,6 +201,7 @@ object CloudQRLogin {
             }
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("$gameKey queryQRLoginStatus exception: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "queryStatus transient failure", e)
             ScanStatus.TransientError(Mask.sensitive(ErrorText.fromException(e)))
         }
@@ -204,12 +215,13 @@ object CloudQRLogin {
         httpTransport: HttpTransport,
         intervalMs: Long = 800,
         maxIntervalMs: Long = 2000,
+        recordError: ((String) -> Unit)? = null,
     ): Flow<ScanStatus> =
         flow {
             var attempts = 0
             var currentInterval = intervalMs.coerceAtLeast(500L)
             while (true) {
-                val status = queryStatus(gameKey, ticket, deviceId, httpTransport)
+                val status = queryStatus(gameKey, ticket, deviceId, httpTransport, recordError)
                 emit(status)
                 when (status) {
                     is ScanStatus.Confirmed,
@@ -259,6 +271,7 @@ object CloudQRLogin {
         cookieHeader: String,
         deviceId: String,
         httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)? = null,
     ): Result<String> {
         return try {
             val config = configFor(gameKey)
@@ -280,6 +293,7 @@ object CloudQRLogin {
             val json = resp.json()
             val retcode = json.optInt("retcode", -999)
             if (retcode != 0) {
+                recordError?.invoke("$gameKey webLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
                 Log.w(TAG, "combo webLogin failed: retcode=$retcode")
                 return Result.failure(RuntimeException("combo webLogin retcode=$retcode: ${json.optString("message")}"))
             }
@@ -287,6 +301,7 @@ object CloudQRLogin {
             parseWebLoginComboToken(gameKey, json)
         } catch (e: Exception) {
             e.throwIfCancellation()
+            recordError?.invoke("$gameKey webLogin exception: ${ErrorText.detailOf(e)}")
             Log.w(TAG, "exchangeComboToken failed", e)
             Result.failure(e)
         }

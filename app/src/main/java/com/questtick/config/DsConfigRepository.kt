@@ -32,8 +32,4 @@ object DsConfigRepository {
         currentRef.set(local.load(channel))
     }
 
-    /** 测试专用：直接覆盖当前配置。 */
-    internal fun overrideForTest(config: DsConfig) {
-        currentRef.set(config)
-    }
 }

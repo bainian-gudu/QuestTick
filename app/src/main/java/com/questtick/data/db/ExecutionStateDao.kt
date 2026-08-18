@@ -88,6 +88,9 @@ interface ExecutionStateDao {
     @Query("DELETE FROM account_execution_guards WHERE accountId = :accountId")
     fun deleteAccountGuard(accountId: String): Int
 
+    @Query("DELETE FROM account_execution_guards")
+    fun deleteAllAccountGuards(): Int
+
     @Query("DELETE FROM account_execution_guards WHERE resumeAfter > 0 AND resumeAfter <= :now")
     fun deleteExpiredAccountGuards(now: Long): Int
 }

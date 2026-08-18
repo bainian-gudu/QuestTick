@@ -171,31 +171,15 @@ class ExecutionStateRepository
         ) =
             withContext(Dispatchers.IO) {
                 database.withTransaction {
-                    val dao = database.executionStateDao()
-                    record.results.groupBy { it.accountId }.forEach { (accountId, results) ->
-                        if (accountId.isBlank()) return@forEach
-                        val blocking =
-                            results.map { it.failureCategory to it.errorCode }
-                                .maxByOrNull { guardPriority(it.first) }
-                                ?.takeIf { guardPriority(it.first) > 0 }
-                        when {
-                            blocking != null -> {
-                                val (reason, errorCode) = blocking
-                                dao.upsertAccountGuard(
-                                    AccountExecutionGuardEntity(
-                                        accountId = accountId,
-                                        reason = reason.name,
-                                        errorCode = errorCode,
-                                        pausedAt = now,
-                                        resumeAfter = 0L,
-                                        updatedAt = now,
-                                    ),
-                                )
-                            }
-                            results.any { it.success } -> dao.deleteAccountGuard(accountId)
-                        }
-                    }
+                    // 单个签到任务失败只记录任务结果，不再冻结整个账号；Root 阻断仍由运行器单独处理。
+                    database.executionStateDao().deleteAllAccountGuards()
                 }
+            }
+
+        /** 清理旧版本遗留的账号冻结记录，避免历史状态阻止本次签到。 */
+        suspend fun clearAccountGuards() =
+            withContext(Dispatchers.IO) {
+                database.executionStateDao().deleteAllAccountGuards()
             }
 
         suspend fun resumeAccount(accountId: String) =

@@ -122,6 +122,7 @@ class HomeViewModel
                         }
 
                         try {
+                            executionStateRepository.clearAccountGuards()
                             val useParallel = settingsRepository.settings.value.parallelEnabled
                             val record =
                                 runnerFactory.create(useParallel).runAll(

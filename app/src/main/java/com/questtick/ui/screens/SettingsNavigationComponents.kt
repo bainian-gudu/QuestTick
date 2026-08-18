@@ -41,6 +41,7 @@ internal fun themeModeLabel(mode: String): String =
 @Composable
 internal fun SettingsPageOverlay(
     visible: Boolean,
+    consumeHorizontalGestures: Boolean = true,
     onExitFinished: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
@@ -49,7 +50,11 @@ internal fun SettingsPageOverlay(
         enter = AppMotion.screenEnter(),
         exit = AppMotion.screenExit(),
     ) {
-        Box(modifier = Modifier.fillMaxSize().consumeHorizontalPageSwipe()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (consumeHorizontalGestures) Modifier.consumeHorizontalPageSwipe() else Modifier),
+        ) {
             DisposableEffect(Unit) {
                 onDispose { onExitFinished() }
             }

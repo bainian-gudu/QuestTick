@@ -179,8 +179,10 @@ class TaskFailureClassifierTest {
     fun `root block and no role use explicit categories`() {
         val root = TaskFailureClassifier.classify(false, true, "检测到Root，已阻断本次签到。")
         val noRole = TaskFailureClassifier.classify(true, true, "未绑定角色，已跳过")
+        val unregistered = TaskFailureClassifier.classify(true, true, "未注册该游戏，已跳过签到")
 
         assertEquals(FailureCategory.SECURITY_BLOCKED, root.category)
         assertEquals(FailureCategory.NO_ROLE, noRole.category)
+        assertEquals(FailureCategory.NO_ROLE, unregistered.category)
     }
 }

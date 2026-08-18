@@ -144,6 +144,7 @@ internal fun MysQrLoginOverlayHost(
             )
         },
         onCancel = onDismiss,
+        onError = { detail -> vm.recordApplicationError("米游社二维码登录", detail) },
     )
 }
 
@@ -191,5 +192,6 @@ internal fun CloudQrLoginOverlayHost(
             )
         },
         onCancel = onDismiss,
+        onError = { detail -> vm.recordApplicationError("云游戏二维码登录", detail) },
     )
 }

@@ -20,6 +20,7 @@ internal class CloudSignExecutor(
     private val httpTransport: HttpTransport,
     private val requestLimiter: Semaphore,
     private val log: (level: String, message: String, detail: String) -> Unit,
+    private val recordError: ((feature: String, detail: String) -> Unit)? = null,
 ) {
     suspend fun runAccount(
         acc: Account,
@@ -70,6 +71,7 @@ internal class CloudSignExecutor(
                     )
                 val result = buildCloudTaskResult(game.name, game.key, currentAccount, outcome)
                 logOutcome(currentAccount.label, game.name, false, false, message, elapsedMs = taskElapsed)
+                recordError?.invoke("云游戏签到", "${game.name}: $message")
                 onTaskCompleted(taskId, result, "${currentAccount.label} · ${game.name}")
                 continue
             }
@@ -100,6 +102,9 @@ internal class CloudSignExecutor(
             val taskElapsed = System.currentTimeMillis() - taskStart
             val result = buildCloudTaskResult(game.name, game.key, currentAccount, outcome)
             logOutcome(currentAccount.label, game.name, outcome.success, outcome.skipped, outcome.message, outcome.detail, taskElapsed)
+            if (!outcome.success && !outcome.skipped) {
+                recordError?.invoke("云游戏签到", "${game.name}: ${outcome.detail.ifBlank { outcome.message }}")
+            }
             onTaskCompleted(taskId, result, "${currentAccount.label} · ${game.name}")
 
             if (idx < bindings.lastIndex) {

@@ -349,6 +349,15 @@ data class MailSettings(
     }
 }
 
+/** 已保存的自定义主题预设。 */
+@Immutable
+data class SavedThemePreset(
+    val name: String,
+    val primary: String,
+    val secondary: String,
+    val tertiary: String,
+)
+
 /** 应用通用设置。 */
 @Immutable
 data class AppSettings(
@@ -362,6 +371,16 @@ data class AppSettings(
     val oledPureBlackEnabled: Boolean = false,
     /** Android 12+ 使用系统动态配色。 */
     val dynamicColorEnabled: Boolean = false,
+    /** 自定义主题主色，使用 #RRGGBB；为空时使用内置或系统动态配色。 */
+    val customThemeColor: String = "",
+    /** 自定义主题辅色，使用 #RRGGBB；为空时跟随主色。 */
+    val customThemeSecondaryColor: String = "",
+    /** 自定义主题第三色，使用 #RRGGBB；为空时跟随主色。 */
+    val customThemeTertiaryColor: String = "",
+    /** 当前自定义配色名称。 */
+    val customThemeName: String = "",
+    /** 用户手动保存的自定义主题预设。 */
+    val customThemePresets: List<SavedThemePreset> = emptyList(),
     /** 界面语言：SYSTEM / ZH_CN / ZH_TW / EN / JA / KO。 */
     val appLanguage: String = "SYSTEM",
     val mysDeviceId: String = "",
@@ -377,8 +396,6 @@ data class AppSettings(
     val parallelEnabled: Boolean = false,
     /** 启动应用后在后台静默检查应用更新；默认开启，首次打开即可提示新版本。 */
     val appUpdateAutoCheck: Boolean = true,
-    /** 自动更新下载源：AUTO / DIRECT / GHFAST / GHPROXY。 */
-    val appUpdateSource: String = "AUTO",
     /** 调试日志开关；开启后写入 DEBUG 级别诊断日志。 */
     val debugLoggingEnabled: Boolean = false,
     /** 云原神自定义版本；为空时自动获取 */

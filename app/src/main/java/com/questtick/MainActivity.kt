@@ -48,6 +48,8 @@ class MainActivity : ComponentActivity() {
         ThemeModeController.syncApplicationNightMode(this, launchThemeMode)
         val darkLaunchTheme = shouldUseDarkLaunchTheme(launchThemeMode)
         val oledPureBlack = darkLaunchTheme && readOledPureBlackPreference()
+        val dynamicColorEnabled = readDynamicColorPreference()
+        val customThemeColor = readCustomThemeColorPreference()
         if (oledPureBlack) {
             setTheme(R.style.Theme_QuestTick_Starting_Oled)
         } else if (darkLaunchTheme) {
@@ -59,7 +61,7 @@ class MainActivity : ComponentActivity() {
             !splashCanHide && (SystemClock.uptimeMillis() - launchStart) < 1_500L
         }
         super.onCreate(savedInstanceState)
-        applyLaunchThemeColors(darkLaunchTheme, oledPureBlack)
+        applyLaunchThemeColors(darkLaunchTheme, oledPureBlack, dynamicColorEnabled, customThemeColor)
         enableEdgeToEdge()
         // Android 16+：接入预测性返回。
         if (Build.VERSION.SDK_INT >= 36) {
@@ -100,6 +102,12 @@ class MainActivity : ComponentActivity() {
         consumeTabIntent(intent)
     }
 
+    override fun onResume() {
+        super.onResume()
+        // 系统可能在省电模式、外接屏或旋转后重新协商刷新率。
+        applyDisplayTweaks()
+    }
+
     private fun consumeTabIntent(intent: Intent?) {
         val tab = intent?.getIntExtra(EXTRA_OPEN_TAB, -1) ?: -1
         if (tab in 0 until TAB_COUNT) {
@@ -113,15 +121,31 @@ class MainActivity : ComponentActivity() {
     private fun applyLaunchThemeColors(
         darkTheme: Boolean,
         oledPureBlack: Boolean,
+        dynamicColorEnabled: Boolean,
+        customThemeColor: String,
     ) {
         val palette = when {
             oledPureBlack -> AppUiThemeCatalog.OledDark
             darkTheme -> AppUiThemeCatalog.Dark
             else -> AppUiThemeCatalog.Light
         }
-        window.setBackgroundDrawable(ColorDrawable(palette.backgroundBottom.toArgb()))
+        val customColor = runCatching {
+            if (customThemeColor.isBlank()) null else android.graphics.Color.parseColor(customThemeColor)
+        }.getOrNull()
+        val background = if (customColor != null) {
+            customColor
+        } else if (dynamicColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            runCatching {
+                val colorRes = if (darkTheme) android.R.color.system_neutral1_900 else android.R.color.system_neutral1_10
+                getColor(colorRes)
+            }.getOrDefault(palette.backgroundBottom.toArgb())
+        } else {
+            palette.backgroundBottom.toArgb()
+        }
+        val resolvedBackground = if (oledPureBlack) Color.Black.toArgb() else background
+        window.setBackgroundDrawable(ColorDrawable(resolvedBackground))
         window.statusBarColor = Color.Transparent.toArgb()
-        window.navigationBarColor = palette.backgroundBottom.toArgb()
+        window.navigationBarColor = resolvedBackground
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
@@ -140,6 +164,15 @@ class MainActivity : ComponentActivity() {
     private fun readOledPureBlackPreference(): Boolean =
         getSharedPreferences("signin_preferences", Context.MODE_PRIVATE)
             .getBoolean("oledPureBlackEnabled", false)
+
+    private fun readDynamicColorPreference(): Boolean =
+        getSharedPreferences("signin_preferences", Context.MODE_PRIVATE)
+            .getBoolean("dynamicColorEnabled", false)
+
+    private fun readCustomThemeColorPreference(): String =
+        getSharedPreferences("signin_preferences", Context.MODE_PRIVATE)
+            .getString("customThemeColor", "")
+            .orEmpty()
 
     private fun shouldUseDarkLaunchTheme(mode: String): Boolean =
         when (mode) {
@@ -187,8 +220,17 @@ class MainActivity : ComponentActivity() {
         try {
             @Suppress("DEPRECATION")
             val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display else windowManager.defaultDisplay
-            val modes = display?.supportedModes ?: return
-            val best = modes.maxByOrNull { it.refreshRate } ?: return
+            val modes = display?.supportedModes.orEmpty()
+            if (modes.isEmpty()) return
+            val current = display?.mode
+            // 不跨分辨率切换显示模式，避免部分设备因高刷模式分辨率不同而闪屏。
+            val sameResolution = current?.let { mode ->
+                modes.filter { it.physicalWidth == mode.physicalWidth && it.physicalHeight == mode.physicalHeight }
+            }.orEmpty()
+            val candidates = if (sameResolution.isNotEmpty()) sameResolution else modes.toList()
+            val best = candidates
+                .filter { it.refreshRate.isFinite() && it.refreshRate > 0f }
+                .maxByOrNull { it.refreshRate } ?: return
             val lp = window.attributes
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 lp.preferredDisplayModeId = best.modeId

@@ -24,6 +24,7 @@ import com.questtick.repository.auth.AuthRepository
 import com.questtick.repository.history.HistoryRepository
 import com.questtick.repository.calendar.SignInCalendarRepository
 import com.questtick.repository.log.LogRepository
+import com.questtick.repository.log.AppErrorLogger
 import com.questtick.repository.run.RunPersistenceRepository
 import com.questtick.repository.run.PostRunActionRequest
 import com.questtick.repository.run.PostRunActionType
@@ -89,6 +90,7 @@ class SignInRunner(
     private val postRunActionScheduler: PostRunActionScheduler,
     private val parallel: Boolean = false,
     private val runCoordinator: SignInRunCoordinator? = null,
+    private val appErrorLogger: AppErrorLogger? = null,
 ) {
     // 并发执行时通过线程安全队列收集日志；任务结果由单次运行专属收集器保证唯一终态。
     private val logs = ConcurrentLinkedQueue<LogEntry>()
@@ -145,6 +147,9 @@ class SignInRunner(
             httpTransport = httpTransport,
             requestLimiter = mysRequestLimiter,
             log = ::log,
+            recordError = { feature, detail ->
+                appErrorLogger?.record(feature, IllegalStateException(detail), detail)
+            },
         )
     private val cloudSignExecutor =
         CloudSignExecutor(
@@ -152,6 +157,9 @@ class SignInRunner(
             httpTransport = httpTransport,
             requestLimiter = cloudRequestLimiter,
             log = ::log,
+            recordError = { feature, detail ->
+                appErrorLogger?.record(feature, IllegalStateException(detail), detail)
+            },
         )
 
     private fun logPlannedTasksForAccount(account: Account) {
@@ -351,9 +359,17 @@ class SignInRunner(
         }
         // 每次运行随机化账号顺序，减少长期固定请求轨迹带来的风控特征。
         val accounts = enabledAccounts.shuffled(Random(System.nanoTime()))
+        // 定时签到复用当天手动签到结果；已确认成功的任务不再重复请求，失败任务仍可按定时重试策略处理。
+        val signedTaskIdsForDay =
+            if (trigger == RunTrigger.SCHEDULED || trigger == RunTrigger.RETRY) {
+                runPersistenceRepository.signedTaskIdsForDay(startTime)
+            } else {
+                emptySet()
+            }
         val taskPlan =
             buildRunTaskPlan(accounts, cloudGameBindings)
                 .filter { task -> allowedTaskIds == null || task.id in allowedTaskIds }
+                .filter { task -> task.id !in signedTaskIdsForDay }
         val plannedTaskIds = taskPlan.mapTo(linkedSetOf()) { it.id }
         val resultAccumulator = TaskResultAccumulator(plannedTaskIds)
         runCoordinator?.setTaskPlan(taskPlan)
@@ -397,7 +413,7 @@ class SignInRunner(
             // 版本自动获取必须由本次真正可执行的对应签到任务触发，不能只看账号是否保存了凭证。
             val hasMysTasks =
                 taskPlan.any { it.type == RunTaskType.MYS && it.id !in uncertainTaskIds } ||
-                    accounts.any { it.mysCoinEnabled }
+                    accounts.any { MysCoinCheckIn.featureEnabled && it.mysCoinEnabled }
             val hasCloudYsTasks =
                 taskPlan.any {
                     it.type == RunTaskType.CLOUD && it.id !in uncertainTaskIds &&
@@ -1024,7 +1040,7 @@ class SignInRunner(
         logAccountProcessingStart(acc)
 
         val afterMys =
-            if (acc.selectedMysGames().isNotEmpty() || acc.mysCoinEnabled) {
+            if (acc.selectedMysGames().isNotEmpty() || (MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled)) {
                 val prepared = mysPreparation.await()
                 mysSignExecutor.runAccount(
                     acc = acc,

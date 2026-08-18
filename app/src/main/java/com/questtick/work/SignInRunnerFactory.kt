@@ -10,6 +10,7 @@ import com.questtick.repository.auth.AuthRepository
 import com.questtick.repository.history.HistoryRepository
 import com.questtick.repository.calendar.SignInCalendarRepository
 import com.questtick.repository.log.LogRepository
+import com.questtick.repository.log.AppErrorLogger
 import com.questtick.repository.run.RunPersistenceRepository
 import com.questtick.security.RootEnvironmentChecker
 import com.questtick.sign.SignInRunCoordinator
@@ -34,6 +35,7 @@ class SignInRunnerFactory
         private val authRepository: AuthRepository,
         private val postRunActionScheduler: PostRunActionScheduler,
         private val runCoordinator: SignInRunCoordinator,
+        private val appErrorLogger: AppErrorLogger,
     ) {
         fun create(parallel: Boolean): SignInRunner =
             SignInRunner(
@@ -50,5 +52,6 @@ class SignInRunnerFactory
                 postRunActionScheduler = postRunActionScheduler,
                 parallel = parallel,
                 runCoordinator = runCoordinator,
+                appErrorLogger = appErrorLogger,
             )
     }

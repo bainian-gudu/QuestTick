@@ -1,38 +1,18 @@
 package com.questtick.sign
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppUpdateNetworkTest {
     @Test
-    fun `source keys normalize to supported update channels`() {
-        assertEquals(AppUpdateNetwork.UpdateSource.AUTO, AppUpdateNetwork.UpdateSource.fromKey("unknown"))
-        assertEquals(AppUpdateNetwork.UpdateSource.GHFAST, AppUpdateNetwork.UpdateSource.fromKey("ghfast"))
-        assertEquals("GitHub 直连", AppUpdateNetwork.sourceName("direct"))
+    fun `update source is always official github`() {
+        val source = "https://api.github.com/repos/bainian-gudu/QuestTick/releases/latest"
+        assertEquals(listOf(source), AppUpdateNetwork.buildCandidateUrls(source))
     }
 
     @Test
-    fun `mirror builder only wraps trusted update source`() {
-        val source =
-            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
-
-        assertEquals("https://ghfast.top/$source", AppUpdateNetwork.mirrorUrl(source, "https://ghfast.top/"))
-        assertEquals(source, AppUpdateNetwork.mirrorUrl(source, ""))
-        assertNull(AppUpdateNetwork.mirrorUrl("https://evil.example/app.apk", "https://ghfast.top/"))
-        assertNull(AppUpdateNetwork.mirrorUrl(source, "https://ghfast.top.evil.example/"))
-        assertNull(AppUpdateNetwork.mirrorUrl(source, "http://ghfast.top/"))
-    }
-
-    @Test
-    fun `mirror builder rejects nested mirror and other repository`() {
-        val source =
-            "https://github.com/bainian-gudu/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
-        val mirrored = "https://ghfast.top/$source"
-        val otherRepository =
-            "https://github.com/attacker/QuestTick/releases/download/v1.2.3/QuestTick_v1.2.3_signed.apk"
-
-        assertNull(AppUpdateNetwork.mirrorUrl(mirrored, "https://ghproxy.net/"))
-        assertNull(AppUpdateNetwork.mirrorUrl(otherRepository, "https://ghfast.top/"))
+    fun `untrusted update url has no candidate`() {
+        assertTrue(AppUpdateNetwork.buildCandidateUrls("https://evil.example/app.apk").isEmpty())
     }
 }

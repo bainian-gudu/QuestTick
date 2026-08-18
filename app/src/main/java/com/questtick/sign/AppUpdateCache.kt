@@ -18,7 +18,6 @@ object AppUpdateCache {
     private const val KEY_TIMESTAMP = "last_update_ts"
     private const val KEY_ETAG = "last_etag"
     private const val KEY_CURRENT_VERSION = "last_current_version"
-    private const val KEY_MIRROR_SCORES = "mirror_scores"
 
     // 强缓存保留 5 分钟，弱缓存保留 60 分钟。
     private const val STRONG_CACHE_MS = 5 * 60 * 1000L
@@ -112,19 +111,6 @@ object AppUpdateCache {
         return CacheResult(null, Long.MAX_VALUE, false, true, "")
     }
 
-    /** 记录上一次竞速的胜利者 URL */
-    fun saveFastestMirror(
-        url: String,
-        context: Context,
-    ) {
-        if (!TrustedUrlPolicy.isUpdateMetadataUrl(url)) return
-        prefs(context).edit().putString("last_fastest_mirror", url).apply()
-    }
-
-    fun getFastestMirror(context: Context): String? =
-        prefs(context).getString("last_fastest_mirror", null)
-            ?.takeIf(TrustedUrlPolicy::isUpdateMetadataUrl)
-
     /** 同时更新内存与磁盘缓存；磁盘写入使用 apply 避免阻塞主线程。 */
     fun put(
         context: Context,
@@ -169,49 +155,6 @@ object AppUpdateCache {
         return prefs(context).getString(KEY_ETAG, "").orEmpty()
     }
 
-    /** 持久化镜像评分映射 */
-    fun saveMirrorScores(
-        context: Context,
-        scores: Map<String, AppUpdateNetwork.MirrorStat>,
-    ) {
-        val json = JSONObject()
-        scores.forEach { (url, stat) ->
-            val statObj =
-                JSONObject().apply {
-                    put("success", stat.success)
-                    put("fail", stat.fail)
-                    put("avgMs", stat.avgMs)
-                    put("lastUse", stat.lastUse)
-                }
-            json.put(url, statObj)
-        }
-        prefs(context).edit().putString(KEY_MIRROR_SCORES, json.toString()).apply()
-    }
-
-    /** 从持久化存储加载镜像评分 */
-    fun getMirrorScores(context: Context): Map<String, AppUpdateNetwork.MirrorStat> {
-        val jsonStr = prefs(context).getString(KEY_MIRROR_SCORES, null) ?: return emptyMap()
-        return try {
-            val json = JSONObject(jsonStr)
-            val keys = json.keys()
-            val result = mutableMapOf<String, AppUpdateNetwork.MirrorStat>()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                val obj = json.getJSONObject(key)
-                result[key] =
-                    AppUpdateNetwork.MirrorStat(
-                        success = obj.optInt("success"),
-                        fail = obj.optInt("fail"),
-                        avgMs = obj.optLong("avgMs"),
-                        lastUse = obj.optLong("lastUse"),
-                    )
-            }
-            result
-        } catch (_: Exception) {
-            emptyMap()
-        }
-    }
-
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
@@ -243,12 +186,4 @@ object AppUpdateCache {
         return 0
     }
 
-    /** 启动时预热一次缓存读取，把磁盘内容同步到内存。 */
-    fun warmUp(
-        context: Context,
-        currentVersion: String,
-    ) {
-        // 触发一次快速读取，把磁盘缓存预热到内存
-        getFast(context, currentVersion)
-    }
 }

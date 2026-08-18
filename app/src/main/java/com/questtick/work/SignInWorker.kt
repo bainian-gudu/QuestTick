@@ -176,7 +176,8 @@ class SignInWorker
                     executionStateRepository.completeScheduledSlot(workId, businessDayKey, null)
                     return Result.success()
                 }
-                val guardedAccountIds = executionStateRepository.activeAccountGuards().mapTo(mutableSetOf()) { it.accountId }
+                // 任务失败不再冻结账号；清理旧版本遗留的账号保护记录后继续执行全部启用账号。
+                executionStateRepository.clearAccountGuards()
                 val actualRunCount =
                     executionStateRepository.markScheduledRunStarted(workId, businessDayKey)
                 val trigger = if (actualRunCount > 1) RunTrigger.RETRY else RunTrigger.SCHEDULED
@@ -184,7 +185,6 @@ class SignInWorker
                     runnerFactory.create(settings.parallelEnabled).runAll(
                         trigger = trigger,
                         allowedTaskIds = allowedTaskIds,
-                        excludedAccountIds = guardedAccountIds,
                     )
 
                 if (record.total == 0) {

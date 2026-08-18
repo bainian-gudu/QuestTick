@@ -57,7 +57,7 @@ class LogsLogicTest {
         val groups = buildLogGroups(listOf(prelude, start, ok, end, misc))
 
         assertEquals(2, groups.size)
-        assertEquals("签到日志 · 00:00:01", groups[0].title)
+        assertEquals("运行日志 · 00:00:01", groups[0].title)
         assertEquals("2026-07-03", groups[0].dateKey)
         assertFalse(groups[0].running)
         assertEquals(listOf(prelude, start, ok, end), groups[0].entries)
@@ -119,6 +119,17 @@ class LogsLogicTest {
     }
 
     @Test
+    fun buildLogGroupsNamesNonRunErrorsAsErrorLogs() {
+        val info = entry(1000, "INFO", message = "应用功能开始")
+        val error = entry(2000, "ERROR", message = "应用功能失败")
+
+        val group = buildLogGroups(listOf(info, error)).single()
+
+        assertEquals("错误日志 · 00:00:01", group.title)
+        assertFalse(group.running)
+    }
+
+    @Test
     fun buildLogGroupsDoesNotOverrideEndedRunWhenCoordinatorStillActive() {
         val start = entry(1000, "INFO", message = "开始执行签到")
         val end = entry(2000, "INFO", message = "签到结束")
@@ -126,7 +137,7 @@ class LogsLogicTest {
         val groups = buildLogGroups(listOf(start, end), activeRunStartedAt = 900)
 
         assertEquals(1, groups.size)
-        assertEquals("签到日志 · 00:00:01", groups.single().title)
+        assertEquals("运行日志 · 00:00:01", groups.single().title)
         assertFalse(groups.single().running)
     }
 
