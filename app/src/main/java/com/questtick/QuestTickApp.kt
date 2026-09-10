@@ -99,7 +99,6 @@ class QuestTickApp :
             AppLog.w(TAG, "CloudVersionRepository 初始化失败", t)
             appErrorLogger.record("云游戏版本初始化", t)
         }
-        // 初始化米游社版本缓存
         try {
             MysAppVersionRepository.initialize(this)
         } catch (t: Throwable) {

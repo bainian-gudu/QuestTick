@@ -80,8 +80,6 @@ object CloudQRLogin {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 
-    // 数据结构。
-
     data class QRCode(
         val ticket: String,
         val url: String,
@@ -111,8 +109,6 @@ object CloudQRLogin {
             val msg: String,
         ) : ScanStatus()
     }
-
-    // 对外 API。
 
     /** 生成电脑网页版 Passport 扫码二维码。 */
     suspend fun createQRCode(
@@ -381,8 +377,6 @@ object CloudQRLogin {
 
         return ScanStatus.Confirmed(uid = uid, mid = mid, cookieHeader = cookieHeader)
     }
-
-    // 内部辅助方法。
 
     private fun configFor(gameKey: String): CloudWebConfig = CONFIGS[gameKey] ?: CONFIGS.getValue("CloudYS")
 

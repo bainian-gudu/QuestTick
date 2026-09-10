@@ -201,8 +201,6 @@ object RootDetectorV2 {
         )
     }
 
-    // === 具体检测实现 ===
-
     private val SU_PATHS =
         listOf(
             "/system/app/Superuser.apk",

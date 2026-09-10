@@ -212,7 +212,6 @@ class SignInRunner(
         delay(delayMs)
     }
 
-    // 对外入口。
     suspend fun runAll(
         onProgress: (label: String, done: Int, total: Int) -> Unit = { _, _, _ -> },
         precheckedRootResult: RootDetectorV2.RootCheckResult? = null,

@@ -284,7 +284,6 @@ object AppUpdateInstaller {
         }
     }
 
-    // 生成唯一的 GitHub 官方下载地址。
     private fun downloadUrlCandidates(
         context: Context,
         url: String,

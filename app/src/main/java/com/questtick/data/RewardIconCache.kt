@@ -183,10 +183,8 @@ object RewardIconCache {
             val dir = File(context.applicationContext.filesDir, DIR_NAME)
             if (!dir.exists()) return
             val files = dir.listFiles() ?: return
-            // 1. 删除过期文件
             val cutoff = now - MAX_AGE_MILLIS
             files.filter { it.lastModified() < cutoff }.forEach { it.delete() }
-            // 2. 超过总大小时按 LRU 删除
             val remaining = dir.listFiles() ?: return
             var total = remaining.sumOf { it.length() }
             if (total > MAX_CACHE_BYTES) {

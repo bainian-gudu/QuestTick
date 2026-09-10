@@ -201,7 +201,6 @@ class AddAccountViewModel
                         latestAccount.hasGenshinCloudKeepLogin ||
                         latestAccount.hasStarrailCloudKeepLogin
 
-                // 表单验证。
                 if (cookieTrimmed.isBlank() &&
                     genshinTrimmed.isBlank() &&
                     starrailTrimmed.isBlank() &&
