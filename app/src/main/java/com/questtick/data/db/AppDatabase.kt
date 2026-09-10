@@ -49,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
                         context.applicationContext,
                         AppDatabase::class.java,
                         DATABASE_NAME,
-                    ).fallbackToDestructiveMigration(dropAllTables = true)
+                    ).addMigrations(arrayOf())
                     // 使用 WAL 提升读写并发，减少主线程等待。
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                     .setQueryExecutor(
