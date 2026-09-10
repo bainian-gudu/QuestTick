@@ -19,9 +19,10 @@ internal enum class TaskResultAcceptance {
 internal class TaskResultAccumulator(
     expectedTaskIds: Collection<String>,
 ) {
-    private val expected = expectedTaskIds.toHashSet().also { uniqueIds ->
-        require(uniqueIds.size == expectedTaskIds.size) { "Task plan contains duplicate task IDs" }
-    }
+    private val expected =
+        expectedTaskIds.toHashSet().also { uniqueIds ->
+            require(uniqueIds.size == expectedTaskIds.size) { "Task plan contains duplicate task IDs" }
+        }
     private val resultsByTaskId = ConcurrentHashMap<String, TaskResult>()
 
     fun accept(

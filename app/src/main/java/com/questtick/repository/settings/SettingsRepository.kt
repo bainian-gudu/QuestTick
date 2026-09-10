@@ -33,11 +33,10 @@ class SettingsRepository
             }
         }
 
-        override suspend fun loadFromStore(): AppSettings {
-            return withContext(kotlinx.coroutines.Dispatchers.IO) {
+        override suspend fun loadFromStore(): AppSettings =
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
                 store.getAppSettings()
             }
-        }
 
         override suspend fun saveToStore(data: AppSettings) {
             withContext(kotlinx.coroutines.Dispatchers.IO) {

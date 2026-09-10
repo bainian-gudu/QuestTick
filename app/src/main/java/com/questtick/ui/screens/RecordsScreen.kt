@@ -75,12 +75,22 @@ import com.questtick.ui.vm.EmailDeliveryUiState
 import com.questtick.ui.vm.RecordsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 private fun formatRecordTime(timestamp: Long): String = formatLocalizedShortDateTime(timestamp)
 
 private const val RECORD_RUN_INITIAL_LIMIT = 24
 private const val RECORD_RUN_BATCH_SIZE = 24
+
+/** 仅用首尾标识触发缓存更新，避免 Compose 为比较整份历史列表而阻塞主线程。 */
+private data class HistorySnapshotKey(
+    val identity: Int,
+    val size: Int,
+    val newestRunId: String,
+    val oldestRunId: String,
+    val newestTimestamp: Long,
+    val oldestTimestamp: Long,
+)
 
 @Composable
 fun RecordsScreen(
@@ -92,52 +102,62 @@ fun RecordsScreen(
     val emailDeliveries by viewModel.emailDeliveries.collectAsStateWithLifecycle()
 
     var filter by rememberSaveable { mutableStateOf(RecFilter.ALL) }
-    var cache by remember { mutableStateOf<RecordsCache?>(null) }
+    var recordsIndex by remember { mutableStateOf<RecordsIndex?>(null) }
     var visibleRunLimit by rememberSaveable(filter) { mutableIntStateOf(RECORD_RUN_INITIAL_LIMIT) }
     val listState = rememberLazyListState()
     val filterScrollState = rememberScrollState()
+    val historyKey =
+        HistorySnapshotKey(
+            identity = System.identityHashCode(history),
+            size = history.size,
+            newestRunId = history.firstOrNull()?.runId.orEmpty(),
+            oldestRunId = history.lastOrNull()?.runId.orEmpty(),
+            newestTimestamp = history.firstOrNull()?.timestamp ?: 0L,
+            oldestTimestamp = history.lastOrNull()?.timestamp ?: 0L,
+        )
 
     LaunchedEffect(isVisible) {
         if (isVisible) viewModel.refresh()
     }
 
-    LaunchedEffect(history) {
+    LaunchedEffect(historyKey, isVisible) {
+        // 页面切走时保留现有索引，避免分页器预加载的隐藏页面抢占 CPU。
+        if (!isVisible) return@LaunchedEffect
         if (history.isEmpty()) {
-            cache = RecordsCache(emptyList(), emptyMap(), emptyMap())
+            recordsIndex = RecordsIndex(0, emptyMap(), emptyMap())
             return@LaunchedEffect
         }
-        val previous = cache
-        cache = previous
-        cache = withContext(Dispatchers.Default) { buildRecordsCache(history, ::formatRecordTime) }
+        recordsIndex = withContext(Dispatchers.Default) { buildRecordsIndex(history) }
     }
 
-    // 过滤结果已在后台缓存中预计算，切换筛选时只读取对应分组，减少列表重组成本。
-    val currentFilteredRuns = remember(filter, cache) {
-        cache?.filteredRuns?.get(filter).orEmpty()
-    }
-    val buildingInitialCache = loadState !is RepositoryLoadState.InitialLoading && history.isNotEmpty() && cache == null
-    val visibleFilteredRuns = remember(currentFilteredRuns, visibleRunLimit) {
-        currentFilteredRuns.take(visibleRunLimit.coerceAtMost(currentFilteredRuns.size))
-    }
-    val hasMoreRuns = visibleFilteredRuns.size < currentFilteredRuns.size
+    // 过滤索引只保存运行摘要；结果行在对应卡片展开后才读取。
+    val currentRunSummaries =
+        remember(filter, recordsIndex) { recordsIndex?.runsByFilter?.get(filter).orEmpty() }
+    val buildingInitialIndex =
+        loadState !is RepositoryLoadState.InitialLoading && history.isNotEmpty() && recordsIndex == null
+    val visibleFilteredRuns =
+        remember(currentRunSummaries, visibleRunLimit) {
+            currentRunSummaries.take(visibleRunLimit.coerceAtMost(currentRunSummaries.size))
+        }
+    val hasMoreRuns = visibleFilteredRuns.size < currentRunSummaries.size
 
-    LaunchedEffect(filter, currentFilteredRuns.size) {
-        visibleRunLimit = visibleRunLimit.coerceAtMost(currentFilteredRuns.size.coerceAtLeast(RECORD_RUN_INITIAL_LIMIT))
+    LaunchedEffect(filter, currentRunSummaries.size) {
+        visibleRunLimit = visibleRunLimit.coerceAtMost(currentRunSummaries.size.coerceAtLeast(RECORD_RUN_INITIAL_LIMIT))
     }
 
-    LaunchedEffect(listState, hasMoreRuns, currentFilteredRuns.size, visibleRunLimit) {
+    LaunchedEffect(listState, hasMoreRuns, currentRunSummaries.size, visibleRunLimit) {
         if (!hasMoreRuns) return@LaunchedEffect
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.any { it.key == "load_more_records" } }
+            .distinctUntilChanged()
             .collect { loadMoreVisible ->
                 if (loadMoreVisible) {
-                    visibleRunLimit = (visibleRunLimit + RECORD_RUN_BATCH_SIZE).coerceAtMost(currentFilteredRuns.size)
+                    visibleRunLimit = (visibleRunLimit + RECORD_RUN_BATCH_SIZE).coerceAtMost(currentRunSummaries.size)
                 }
             }
     }
 
-    val countMap = remember(cache, history) {
-        cache?.counts ?: RecFilter.entries.associateWith { f -> if (f == RecFilter.ALL) history.sumOf { it.results.size } else 0 }
-    }
+    val countMap = remember(recordsIndex) { recordsIndex?.counts.orEmpty() }
+    val displayedResultCount = recordsIndex?.allResultCount ?: 0
 
     fun count(f: RecFilter) = countMap[f] ?: 0
 
@@ -149,7 +169,7 @@ fun RecordsScreen(
         ) {
             item(key = "spacer_top") { Spacer(Modifier.height(8.dp)) }
             item(key = "page_title") {
-                PageTitle("签到记录", "共 ${cache?.allResults?.size ?: history.sumOf { it.results.size }} 条记录") {
+                PageTitle("签到记录", "共 $displayedResultCount 条记录") {
                     if (history.isNotEmpty()) {
                         Text(
                             "清空",
@@ -181,7 +201,9 @@ fun RecordsScreen(
                         EmptyState(
                             badge = {
                                 Box(
-                                    Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
+                                    Modifier
+                                        .size(64.dp)
+                                        .clip(RoundedCornerShape(20.dp))
                                         .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -194,7 +216,7 @@ fun RecordsScreen(
                         )
                     }
                 }
-                loadState is RepositoryLoadState.InitialLoading || buildingInitialCache -> {
+                loadState is RepositoryLoadState.InitialLoading || buildingInitialIndex -> {
                     item(key = "skeleton_1") {
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 90.dp, lineCount = 4)
                     }
@@ -207,9 +229,11 @@ fun RecordsScreen(
                         EmptyState(
                             badge = {
                                 Box(
-                                    Modifier.size(
-                                        64.dp,
-                                    ).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                    Modifier
+                                        .size(
+                                            64.dp,
+                                        ).clip(RoundedCornerShape(20.dp))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
@@ -225,18 +249,22 @@ fun RecordsScreen(
                         )
                     }
                 }
-                currentFilteredRuns.isNotEmpty() -> {
-                    // LazyColumn 使用稳定 key…
+                currentRunSummaries.isNotEmpty() -> {
+                    // LazyColumn 只组合视口附近的运行卡片；详情在展开时按需读取。
                     items(
                         visibleFilteredRuns,
                         key = { it.id },
                         contentType = { "run_card" },
-                    ) { group ->
-                        RunCard(
-                            group = group,
-                            emailDelivery = emailDeliveries[group.run.runId],
-                            onRetryEmail = viewModel::retryEmail,
-                        )
+                    ) { summary ->
+                        history.getOrNull(summary.runIndex)?.let { run ->
+                            RunCard(
+                                summary = summary,
+                                run = run,
+                                filter = filter,
+                                emailDelivery = emailDeliveries[run.runId],
+                                onRetryEmail = viewModel::retryEmail,
+                            )
+                        }
                     }
                     if (hasMoreRuns) {
                         item(key = "load_more_records", contentType = "load_more_records") {
@@ -264,8 +292,9 @@ private fun FilterChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val localizedLabel = localizedText(label)
     StatusBadge(
-        text = "$label $count",
+        text = "$localizedLabel $count",
         color = MaterialTheme.colorScheme.primary,
         shape = RoundedCornerShape(999.dp),
         horizontalPadding = 14.dp,
@@ -283,28 +312,66 @@ private fun FilterChip(
 
 /** 可折叠的签到记录卡片。 */
 @Composable
+@Suppress("detekt:LongMethod", "detekt:CyclomaticComplexMethod", "detekt:FunctionNaming")
 private fun RunCard(
-    group: RecordRunGroup,
+    summary: RecordRunSummary,
+    run: com.questtick.data.RunRecord,
+    filter: RecFilter,
     emailDelivery: EmailDeliveryUiState?,
     onRetryEmail: (String) -> Unit,
 ) {
-    val results = group.results
-    val formattedTime = group.formattedTime
-    val succeeded = group.succeeded
-    val already = group.alreadySigned
-    val failed = group.failed
-    val resultUnknown = group.resultUnknown
-
-    var expanded by rememberSaveable(group.id) { mutableStateOf(false) }
+    val resultCount = summary.count(filter)
+    val succeeded =
+        if (filter == RecFilter.ALL) {
+            summary.succeeded
+        } else if (filter == RecFilter.SUCCESS) {
+            resultCount
+        } else {
+            0
+        }
+    val already =
+        if (filter == RecFilter.ALL) {
+            summary.alreadySigned
+        } else if (filter == RecFilter.ALREADY) {
+            resultCount
+        } else {
+            0
+        }
+    val failed =
+        if (filter == RecFilter.ALL) {
+            summary.failed
+        } else if (filter == RecFilter.FAILED) {
+            resultCount
+        } else {
+            0
+        }
+    val resultUnknown =
+        if (filter == RecFilter.ALL) {
+            summary.resultUnknown
+        } else if (filter == RecFilter.RESULT_UNKNOWN) {
+            resultCount
+        } else {
+            0
+        }
+    var expanded by rememberSaveable("${summary.id}_${filter.name}") { mutableStateOf(false) }
+    val loadedResults =
+        remember(expanded, summary.id, filter) {
+            if (!expanded) {
+                emptyList()
+            } else if (filter == RecFilter.ALL) {
+                run.results
+            } else {
+                run.results.filter { matchesRecordFilter(it, filter) }
+            }
+        }
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(AppMotion.ArrowDurationMillis),
+        animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
         label = "arrow",
     )
 
     PanelCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            // 头部始终可见，点击切换折叠状态。
             Row(
                 Modifier.fillMaxWidth().clickableNoRipple { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically,
@@ -321,7 +388,7 @@ private fun RunCard(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                formattedTime,
+                                formatRecordTime(summary.timestamp),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -332,7 +399,7 @@ private fun RunCard(
                             if (resultUnknown > 0) MiniStat("待确认$resultUnknown", WarnAmber)
                         }
                         Spacer(Modifier.size(8.dp))
-                        Text("${results.size} 项任务", fontSize = 12.sp, color = TextSecondary)
+                        Text("$resultCount 项任务", fontSize = 12.sp, color = TextSecondary)
                     }
                 }
                 Spacer(Modifier.size(8.dp))
@@ -349,7 +416,6 @@ private fun RunCard(
                 EmailDeliveryStatusRow(delivery, onRetryEmail)
             }
 
-            // 折叠 / 展开的详情区域。
             AnimatedVisibility(
                 visible = expanded,
                 enter = AppMotion.expandEnter(),
@@ -359,8 +425,7 @@ private fun RunCard(
                     Spacer(Modifier.height(10.dp))
                     HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.height(6.dp))
-                    RunResultRows(results, loadRewardImages = expanded)
-                    // 收起按钮。
+                    RunResultRows(loadedResults, loadRewardImages = true)
                     Spacer(Modifier.height(8.dp))
                     Row(
                         Modifier.fillMaxWidth().clickableNoRipple { expanded = false },
@@ -407,7 +472,8 @@ private fun EmailDeliveryStatusRow(
 
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(color.copy(alpha = 0.08f))
                 .border(0.5.dp, color.copy(alpha = 0.3f), RoundedCornerShape(8.dp))

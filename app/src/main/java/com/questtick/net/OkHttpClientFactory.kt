@@ -15,9 +15,7 @@ object OkHttpClientFactory {
 
     private val connectionPool =
         ConnectionPool(
-            // maxIdleConnections =
             3,
-            // keepAliveDuration =
             90,
             TimeUnit.SECONDS,
         )
@@ -36,7 +34,8 @@ object OkHttpClientFactory {
         certificatePinner: CertificatePinner = provideCertificatePinner(),
     ): OkHttpClient {
         val builder =
-            OkHttpClient.Builder()
+            OkHttpClient
+                .Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)

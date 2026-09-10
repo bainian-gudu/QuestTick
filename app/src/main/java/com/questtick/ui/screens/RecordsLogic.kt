@@ -2,12 +2,13 @@ package com.questtick.ui.screens
 
 /** 签到记录筛选、分组和展示状态的纯 UI 逻辑。 */
 
-import androidx.compose.runtime.Immutable
 import com.questtick.data.FailureCategory
 import com.questtick.data.RunRecord
 import com.questtick.data.TaskResult
 
-internal enum class RecFilter(val label: String) {
+internal enum class RecFilter(
+    val label: String,
+) {
     ALL("全部"),
     SUCCESS("成功"),
     FAILED("失败"),
@@ -29,137 +30,89 @@ internal fun matchesRecordFilter(
         RecFilter.SKIPPED -> result.skipped && result.failureCategory != FailureCategory.RESULT_UNKNOWN
     }
 
-@Immutable
-internal data class RecordRunGroup(
+/**
+ * 记录卡片的轻量索引。索引只保存运行位置和统计数字，不持有筛选后的结果列表。
+ * 详情结果在用户展开对应卡片时才从历史快照中读取。
+ */
+internal data class RecordRunSummary(
+    val runIndex: Int,
     val id: String,
-    val run: RunRecord,
-    val formattedTime: String,
-    val results: List<TaskResult>,
+    val timestamp: Long,
+    val total: Int,
     val succeeded: Int,
     val alreadySigned: Int,
     val failed: Int,
     val resultUnknown: Int,
     val skipped: Int,
+    private val filterCounts: IntArray,
 ) {
-    val total: Int get() = results.size
+    fun count(filter: RecFilter): Int = filterCounts[filter.ordinal]
 }
 
-@Immutable
-internal data class RecordsCache(
-    val allResults: List<TaskResult>,
+internal class RecordsIndex(
+    val allResultCount: Int,
     val counts: Map<RecFilter, Int>,
-    val filteredRuns: Map<RecFilter, List<RecordRunGroup>>,
+    val runsByFilter: Map<RecFilter, List<RecordRunSummary>>,
 )
 
-internal fun buildRecordsCache(
+/** 在后台建立轻量索引；不会为未显示的运行复制结果列表。 */
+internal fun buildRecordsIndex(
     history: List<RunRecord>,
-    formatTimestamp: (Long) -> String = { it.toString() },
-): RecordsCache {
-    if (history.isEmpty()) {
-        return RecordsCache(emptyList(), emptyMap(), emptyMap())
-    }
+): RecordsIndex {
+    if (history.isEmpty()) return RecordsIndex(0, emptyMap(), emptyMap())
 
-    val estimatedSize = history.sumOf { it.results.size }
-    val allResults = ArrayList<TaskResult>(estimatedSize)
     val counts = RecFilter.entries.associateWithTo(HashMap(RecFilter.entries.size)) { 0 }
-    val groupedByFilter = RecFilter.entries.associateWithTo(HashMap(RecFilter.entries.size)) { ArrayList<RecordRunGroup>() }
+    val grouped = RecFilter.entries.associateWithTo(HashMap(RecFilter.entries.size)) { ArrayList<RecordRunSummary>() }
+    var allResultCount = 0
 
-    history.forEach { run ->
-        allResults.addAll(run.results)
-        val formattedTime = formatTimestamp(run.timestamp)
-        val baseId = recordRunStableId(run)
-        val allStats = MutableRecordStats()
-        val bucketStats = RecFilter.entries.associateWithTo(HashMap(RecFilter.entries.size)) { MutableRecordStats() }
-        val buckets = RecFilter.entries.associateWithTo(HashMap(RecFilter.entries.size)) { ArrayList<TaskResult>() }
+    history.forEachIndexed { index, run ->
+        val filterCounts = IntArray(RecFilter.entries.size)
+        var succeeded = 0
+        var alreadySigned = 0
+        var failed = 0
+        var resultUnknown = 0
+        var skipped = 0
 
-        for (result in run.results) {
-            val filter = recordPrimaryFilter(result)
-            allStats.add(result)
-            bucketStats.getValue(filter).add(result)
-            buckets.getValue(filter).add(result)
+        run.results.forEach { result ->
+            val primary = recordPrimaryFilter(result)
+            filterCounts[RecFilter.ALL.ordinal]++
+            filterCounts[primary.ordinal]++
             counts[RecFilter.ALL] = counts.getValue(RecFilter.ALL) + 1
-            counts[filter] = counts.getValue(filter) + 1
-        }
-
-        val allRecordStats = allStats.toRecordStats()
-        groupedByFilter.getValue(RecFilter.ALL).add(
-            RecordRunGroup(
-                id = "${baseId}_all",
-                run = run,
-                formattedTime = formattedTime,
-                results = run.results,
-                succeeded = allRecordStats.succeeded,
-                alreadySigned = allRecordStats.alreadySigned,
-                failed = allRecordStats.failed,
-                resultUnknown = allRecordStats.resultUnknown,
-                skipped = allRecordStats.skipped,
-            ),
-        )
-
-        for (filter in RecFilter.entries) {
-            if (filter == RecFilter.ALL) continue
-            val filtered = buckets.getValue(filter)
-            if (filtered.isNotEmpty()) {
-                val results = filtered.toList()
-                val stats = bucketStats.getValue(filter).toRecordStats()
-                groupedByFilter.getValue(filter).add(
-                    RecordRunGroup(
-                        id = "${baseId}_${filter.name}",
-                        run = run,
-                        formattedTime = formattedTime,
-                        results = results,
-                        succeeded = stats.succeeded,
-                        alreadySigned = stats.alreadySigned,
-                        failed = stats.failed,
-                        resultUnknown = stats.resultUnknown,
-                        skipped = stats.skipped,
-                    ),
-                )
+            counts[primary] = counts.getValue(primary) + 1
+            allResultCount++
+            when (primary) {
+                RecFilter.SUCCESS -> succeeded++
+                RecFilter.ALREADY -> alreadySigned++
+                RecFilter.FAILED -> failed++
+                RecFilter.RESULT_UNKNOWN -> resultUnknown++
+                RecFilter.SKIPPED -> skipped++
+                RecFilter.ALL -> Unit
             }
         }
-    }
 
-    return RecordsCache(
-        allResults = allResults,
-        counts = counts,
-        filteredRuns = groupedByFilter.mapValues { it.value.toList() },
-    )
-}
-
-private data class RecordStats(
-    val succeeded: Int,
-    val alreadySigned: Int,
-    val failed: Int,
-    val resultUnknown: Int,
-    val skipped: Int,
-)
-
-private class MutableRecordStats {
-    private var succeeded = 0
-    private var alreadySigned = 0
-    private var failed = 0
-    private var resultUnknown = 0
-    private var skipped = 0
-
-    fun add(result: TaskResult) {
-        when (recordPrimaryFilter(result)) {
-            RecFilter.SUCCESS -> succeeded++
-            RecFilter.ALREADY -> alreadySigned++
-            RecFilter.FAILED -> failed++
-            RecFilter.RESULT_UNKNOWN -> resultUnknown++
-            RecFilter.SKIPPED -> skipped++
-            RecFilter.ALL -> Unit
+        val summary =
+            RecordRunSummary(
+                runIndex = index,
+                id = recordRunStableId(run),
+                timestamp = run.timestamp,
+                total = run.results.size,
+                succeeded = succeeded,
+                alreadySigned = alreadySigned,
+                failed = failed,
+                resultUnknown = resultUnknown,
+                skipped = skipped,
+                filterCounts = filterCounts,
+            )
+        RecFilter.entries.forEach { filter ->
+            if (summary.count(filter) > 0) grouped.getValue(filter).add(summary)
         }
     }
 
-    fun toRecordStats(): RecordStats =
-        RecordStats(
-            succeeded = succeeded,
-            alreadySigned = alreadySigned,
-            failed = failed,
-            resultUnknown = resultUnknown,
-            skipped = skipped,
-        )
+    return RecordsIndex(
+        allResultCount = allResultCount,
+        counts = counts,
+        runsByFilter = grouped.mapValues { (_, values) -> values.toList() },
+    )
 }
 
 internal fun recordPrimaryFilter(result: TaskResult): RecFilter =
@@ -170,12 +123,6 @@ internal fun recordPrimaryFilter(result: TaskResult): RecFilter =
         result.success -> RecFilter.SUCCESS
         else -> RecFilter.FAILED
     }
-
-private fun countRecordStats(results: List<TaskResult>): RecordStats {
-    val stats = MutableRecordStats()
-    for (result in results) stats.add(result)
-    return stats.toRecordStats()
-}
 
 internal fun recordRunStableId(run: RunRecord): String {
     val first = run.results.firstOrNull()

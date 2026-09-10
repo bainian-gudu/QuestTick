@@ -1,5 +1,10 @@
 package com.questtick.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
@@ -39,6 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.TextButton
 import com.questtick.i18n.Text
+import com.questtick.i18n.localizedText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,9 +57,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.questtick.BuildConfig
 import com.questtick.data.AppSettings
 import com.questtick.i18n.AppLanguage
 import com.questtick.ui.components.GalaxyBackground
@@ -62,26 +68,25 @@ import com.questtick.ui.components.consumeHorizontalScrollOverflow
 import com.questtick.ui.theme.TextSecondary
 import kotlin.math.roundToInt
 
-/** 外观、主题与调试版界面语言设置页面。 */
+/** 外观与主题设置页面；语言切换位于独立的二级页面。 */
 @Composable
+@Suppress("detekt:LongMethod", "detekt:CyclomaticComplexMethod", "detekt:FunctionNaming")
 internal fun AppearanceDetailPage(
     settings: AppSettings,
     onSave: (AppSettings) -> Unit,
-    onSaveLanguage: (AppSettings, String) -> Unit,
     onBack: () -> Unit,
 ) {
     var showCustomThemePage by rememberSaveable { mutableStateOf(false) }
     if (showCustomThemePage) {
         CustomThemeColorPage(
             settings = settings,
-            onApply = { updated -> onSave(updated); showCustomThemePage = false },
+            onApply = { updated ->
+                onSave(updated)
+                showCustomThemePage = false
+            },
             onBack = { showCustomThemePage = false },
         )
         return
-    }
-    fun selectLanguage(language: AppLanguage) {
-        if (language.settingValue == settings.appLanguage) return
-        onSaveLanguage(settings, language.settingValue)
     }
 
     GalaxyBackground {
@@ -125,23 +130,6 @@ internal fun AppearanceDetailPage(
                     SettingsCard {
                         var expanded by rememberSaveable { mutableStateOf(false) }
                         var customHex by remember(settings.customThemeColor) { mutableStateOf(settings.customThemeColor) }
-                        val presets = remember(settings.customThemePresets, settings.customThemeColor, settings.customThemeName) {
-                            val saved = settings.customThemePresets.map { preset ->
-                                ThemePreset(preset.name, preset.primary, preset.secondary, preset.tertiary, isCustom = true)
-                            }
-                            val current = ThemePreset(
-                                settings.customThemeName.ifBlank { "自定义" },
-                                settings.customThemeColor,
-                                settings.customThemeSecondaryColor.ifBlank { settings.customThemeColor },
-                                settings.customThemeTertiaryColor.ifBlank { settings.customThemeColor },
-                                isCustom = false,
-                            )
-                            buildThemePresets() + saved + listOfNotNull(
-                                current.takeIf { it.primary.isNotBlank() && saved.none { preset ->
-                                    preset.primary.equals(it.primary, true) && preset.secondary.equals(it.secondary, true) && preset.tertiary.equals(it.tertiary, true)
-                                } },
-                            )
-                        }
                         val customEnabled = !settings.dynamicColorEnabled
                         val customTextColor = if (customEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                         Row(
@@ -159,95 +147,137 @@ internal fun AppearanceDetailPage(
                                 modifier = Modifier.size(24.dp),
                             )
                         }
-                        if (expanded) {
-                            Spacer(Modifier.height(8.dp))
-                            Text("动态配色开启时暂时停用，关闭后自动恢复已保存的自定义颜色。", fontSize = 12.sp, color = if (customEnabled) TextSecondary else TextSecondary.copy(alpha = 0.55f))
-                            Spacer(Modifier.height(12.dp))
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .consumeHorizontalScrollOverflow()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                            ) {
-                                presets.forEach { preset ->
-                                    ThemePresetOption(
-                                        preset = preset,
-                                        selected = settings.customThemeColor.equals(preset.primary, true) &&
-                                            settings.customThemeSecondaryColor.equals(preset.secondary, true) &&
-                                            settings.customThemeTertiaryColor.equals(preset.tertiary, true),
-                                        enabled = customEnabled,
-                                        onSelect = {
-                                            onSave(
-                                                settings.copy(
-                                                    customThemeColor = preset.primary,
-                                                    customThemeSecondaryColor = preset.secondary,
-                                                    customThemeTertiaryColor = preset.tertiary,
-                                                    customThemeName = preset.name,
-                                                ),
+                        AnimatedVisibility(
+                            visible = expanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            // 把内容放入 Column，确保展开动画同时驱动卡片高度和内部间距。
+                            Column {
+                                val presets =
+                                    remember(
+                                        settings.customThemePresets,
+                                        settings.customThemeColor,
+                                        settings.customThemeSecondaryColor,
+                                        settings.customThemeTertiaryColor,
+                                        settings.customThemeName,
+                                    ) {
+                                        val builtIn = buildThemePresets()
+                                        val saved =
+                                            settings.customThemePresets.map { preset ->
+                                                ThemePreset(preset.name, preset.primary, preset.secondary, preset.tertiary, isCustom = true)
+                                            }
+                                        val current =
+                                            ThemePreset(
+                                                settings.customThemeName.ifBlank { "自定义" },
+                                                settings.customThemeColor,
+                                                settings.customThemeSecondaryColor.ifBlank {
+                                                    settings.customThemeColor
+                                                },
+                                                settings.customThemeTertiaryColor.ifBlank {
+                                                    settings.customThemeColor
+                                                },
+                                                isCustom = false,
                                             )
-                                        },
-                                        onDelete = if (preset.isCustom) {
-                                            {
-                                                val remaining = settings.customThemePresets.filterNot {
-                                                    it.name.equals(preset.name, true) &&
-                                                        it.primary.equals(preset.primary, true) &&
-                                                        it.secondary.equals(preset.secondary, true) &&
-                                                        it.tertiary.equals(preset.tertiary, true)
-                                                }
-                                                val deletingCurrent = settings.customThemeName.equals(preset.name, true) &&
-                                                    settings.customThemeColor.equals(preset.primary, true) &&
+                                        val existing = builtIn + saved
+                                        existing +
+                                            listOfNotNull(
+                                                current.takeIf {
+                                                    it.primary.isNotBlank() &&
+                                                        existing.none { preset ->
+                                                            preset.primary.equals(it.primary, true) &&
+                                                                preset.secondary.equals(it.secondary, true) &&
+                                                                preset.tertiary.equals(it.tertiary, true)
+                                                        }
+                                                },
+                                            )
+                                    }
+                                Spacer(Modifier.height(8.dp))
+                                Text("动态配色开启时暂时停用，关闭后自动恢复已保存的自定义颜色。", fontSize = 12.sp, color = if (customEnabled) TextSecondary else TextSecondary.copy(alpha = 0.55f))
+                                Spacer(Modifier.height(12.dp))
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .consumeHorizontalScrollOverflow()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                ) {
+                                    presets.forEach { preset ->
+                                        ThemePresetOption(
+                                            preset = preset,
+                                            selected =
+                                                settings.customThemeColor.equals(preset.primary, true) &&
                                                     settings.customThemeSecondaryColor.equals(preset.secondary, true) &&
-                                                    settings.customThemeTertiaryColor.equals(preset.tertiary, true)
+                                                    settings.customThemeTertiaryColor.equals(preset.tertiary, true),
+                                            enabled = customEnabled,
+                                            onSelect = {
                                                 onSave(
                                                     settings.copy(
-                                                        customThemePresets = remaining,
-                                                        customThemeName = if (deletingCurrent) "" else settings.customThemeName,
-                                                        customThemeColor = if (deletingCurrent) "" else settings.customThemeColor,
-                                                        customThemeSecondaryColor = if (deletingCurrent) "" else settings.customThemeSecondaryColor,
-                                                        customThemeTertiaryColor = if (deletingCurrent) "" else settings.customThemeTertiaryColor,
+                                                        customThemeColor = preset.primary,
+                                                        customThemeSecondaryColor = preset.secondary,
+                                                        customThemeTertiaryColor = preset.tertiary,
+                                                        customThemeName = preset.name,
                                                     ),
                                                 )
-                                            }
-                                        } else null,
-                                    )
+                                            },
+                                            onDelete =
+                                                if (preset.isCustom) {
+                                                    {
+                                                        val remaining =
+                                                            settings.customThemePresets.filterNot {
+                                                                it.name.equals(preset.name, true) &&
+                                                                    it.primary.equals(preset.primary, true) &&
+                                                                    it.secondary.equals(preset.secondary, true) &&
+                                                                    it.tertiary.equals(preset.tertiary, true)
+                                                            }
+                                                        val deletingCurrent =
+                                                            settings.customThemeName.equals(preset.name, true) &&
+                                                                settings.customThemeColor.equals(
+                                                                    preset.primary,
+                                                                    true,
+                                                                ) &&
+                                                                settings.customThemeSecondaryColor.equals(preset.secondary, true) &&
+                                                                settings.customThemeTertiaryColor.equals(preset.tertiary, true)
+                                                        onSave(
+                                                            settings.copy(
+                                                                customThemePresets = remaining,
+                                                                customThemeName = if (deletingCurrent) "" else settings.customThemeName,
+                                                                customThemeColor = if (deletingCurrent) "" else settings.customThemeColor,
+                                                                customThemeSecondaryColor = if (deletingCurrent) "" else settings.customThemeSecondaryColor,
+                                                                customThemeTertiaryColor = if (deletingCurrent) "" else settings.customThemeTertiaryColor,
+                                                            ),
+                                                        )
+                                                    }
+                                                } else {
+                                                    null
+                                                },
+                                        )
+                                    }
                                 }
-                            }
-                            TextButton(
-                                enabled = customEnabled,
-                                onClick = { showCustomThemePage = true },
-                                modifier = Modifier.align(Alignment.End),
-                            ) { Text("调色板", color = customTextColor) }
-                            Spacer(Modifier.height(10.dp))
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                OutlinedTextField(
-                                    value = customHex,
-                                    onValueChange = { customHex = it.take(7) },
-                                    modifier = Modifier.weight(1f),
-                                    enabled = customEnabled,
-                                    singleLine = true,
-                                    label = { Text("HEX 颜色") },
-                                    placeholder = { Text("#RRGGBB") },
-                                )
                                 TextButton(
                                     enabled = customEnabled,
-                                    onClick = {
-                                        val normalized = customHex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }
-                                        if (normalized.matches(Regex("#[0-9A-F]{6}"))) onSave(settings.copy(customThemeColor = normalized))
-                                    },
-                                ) { Text("应用", color = customTextColor) }
-                            }
-                        }
-                    }
-                }
-                if (BuildConfig.DEBUG) {
-                    item(key = "interface_language") {
-                        SettingsCard {
-                            SettingsSectionTitle("界面语言")
-                            Spacer(Modifier.height(12.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                LanguageOptionRow(listOf(AppLanguage.SYSTEM to "跟随系统", AppLanguage.SIMPLIFIED_CHINESE to "简体中文", AppLanguage.TRADITIONAL_CHINESE to "繁體中文"), settings.appLanguage, ::selectLanguage)
-                                LanguageOptionRow(listOf(AppLanguage.ENGLISH to "English", AppLanguage.JAPANESE to "日本語", AppLanguage.KOREAN to "한국어"), settings.appLanguage, ::selectLanguage)
+                                    onClick = { showCustomThemePage = true },
+                                    modifier = Modifier.align(Alignment.End),
+                                ) { Text("调色板", color = customTextColor) }
+                                Spacer(Modifier.height(10.dp))
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedTextField(
+                                        value = customHex,
+                                        onValueChange = { customHex = it.take(7) },
+                                        modifier = Modifier.weight(1f),
+                                        enabled = customEnabled,
+                                        singleLine = true,
+                                        label = { Text("HEX 颜色") },
+                                        placeholder = { Text("#RRGGBB") },
+                                    )
+                                    TextButton(
+                                        enabled = customEnabled,
+                                        onClick = {
+                                            val normalized = customHex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }
+                                            if (normalized.matches(Regex("#[0-9A-F]{6}"))) onSave(settings.copy(customThemeColor = normalized))
+                                        },
+                                    ) { Text("应用", color = customTextColor) }
+                                }
                             }
                         }
                     }
@@ -258,13 +288,96 @@ internal fun AppearanceDetailPage(
     }
 }
 
+/** 独立的语言设置页；语言卡片默认折叠，避免占用设置主页空间。 */
 @Composable
-private fun CustomColorOption(colorHex: String, selected: String, enabled: Boolean, onSelect: (String) -> Unit, compact: Boolean = false) {
+@Suppress("detekt:LongMethod", "detekt:FunctionNaming")
+internal fun LanguageDetailPage(
+    settings: AppSettings,
+    onSaveLanguage: (AppSettings, String) -> Unit,
+    onBack: () -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    fun selectLanguage(language: AppLanguage) {
+        if (language.settingValue == settings.appLanguage) return
+        onSaveLanguage(settings, language.settingValue)
+    }
+
+    GalaxyBackground {
+        Column(
+            Modifier.fillMaxSize().windowInsetsPadding(
+                WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)),
+            ),
+        ) {
+            DetailTopBar("界面语言", onBack)
+            LazyColumn(
+                Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                item {
+                    SettingsCard {
+                        Row(
+                            Modifier.fillMaxWidth().clickableNoRipple { expanded = !expanded },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                SettingsSectionTitle("界面语言")
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    currentLanguageLabel(settings.appLanguage),
+                                    fontSize = 12.sp,
+                                    color = TextSecondary,
+                                )
+                            }
+                            Icon(
+                                imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                contentDescription = if (expanded) "收起语言选项" else "展开语言选项",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                        AnimatedVisibility(
+                            visible = expanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            // 语言选项保持折叠，切换后由 settings StateFlow 立即刷新当前语言。
+                            Column {
+                                Spacer(Modifier.height(12.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    languageOptions.forEach { (language, label) ->
+                                        ThemeModeOptionChip(
+                                            title = label,
+                                            mode = language.settingValue,
+                                            currentMode = settings.appLanguage,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onSelect = { selectLanguage(language) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomColorOption(
+    colorHex: String,
+    selected: String,
+    enabled: Boolean,
+    onSelect: (String) -> Unit,
+    compact: Boolean = false,
+) {
     val color = if (colorHex.isBlank()) MaterialTheme.colorScheme.outline else runCatching { Color(android.graphics.Color.parseColor(colorHex)) }.getOrDefault(MaterialTheme.colorScheme.outline)
     val isSelected = selected.equals(colorHex, ignoreCase = true)
     val displayColor = if (enabled) color else Color.Gray.copy(alpha = 0.45f)
     Box(
-        Modifier.size(if (compact) 24.dp else 34.dp)
+        Modifier
+            .size(if (compact) 24.dp else 34.dp)
             .clip(RoundedCornerShape(17.dp))
             .background(displayColor)
             .border(if (isSelected) 3.dp else 1.dp, if (enabled && isSelected) MaterialTheme.colorScheme.onSurface else Color.Gray, RoundedCornerShape(17.dp))
@@ -337,10 +450,11 @@ private fun CustomThemeColorPage(
                             onClick = onBack,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
                         ) { Text("取消", color = MaterialTheme.colorScheme.onPrimary) }
                         Button(
                             onClick = {
@@ -349,15 +463,18 @@ private fun CustomThemeColorPage(
                                 val secondaryHex = hslToHex(secondary)
                                 val tertiaryHex = hslToHex(tertiary)
                                 val savedPreset = com.questtick.data.SavedThemePreset(name, primaryHex, secondaryHex, tertiaryHex)
-                                onApply(settings.copy(
-                                    customThemeName = name,
-                                    customThemeColor = primaryHex,
-                                    customThemeSecondaryColor = secondaryHex,
-                                    customThemeTertiaryColor = tertiaryHex,
-                                    customThemePresets = settings.customThemePresets
-                                        .filterNot { it.name.equals(name, true) }
-                                        .plus(savedPreset),
-                                ))
+                                onApply(
+                                    settings.copy(
+                                        customThemeName = name,
+                                        customThemeColor = primaryHex,
+                                        customThemeSecondaryColor = secondaryHex,
+                                        customThemeTertiaryColor = tertiaryHex,
+                                        customThemePresets =
+                                            settings.customThemePresets
+                                                .filterNot { it.name.equals(name, true) }
+                                                .plus(savedPreset),
+                                    ),
+                                )
                             },
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
@@ -426,7 +543,9 @@ private fun ThemePresetOption(
                 drawRect(
                     tertiary.copy(alpha = alpha),
                     topLeft = Offset(size.width / 2f, size.height / 2f),
-                    size = androidx.compose.ui.geometry.Size(size.width / 2f, size.height / 2f),
+                    size =
+                        androidx.compose.ui.geometry
+                            .Size(size.width / 2f, size.height / 2f),
                 )
                 drawCircle(
                     primary.copy(alpha = alpha),
@@ -439,13 +558,14 @@ private fun ThemePresetOption(
                     imageVector = Icons.Filled.Close,
                     contentDescription = "删除${preset.name}",
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(16.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickableNoRipple(onClick = onDelete)
-                        .padding(2.dp),
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickableNoRipple(onClick = onDelete)
+                            .padding(2.dp),
                 )
             }
         }
@@ -453,10 +573,13 @@ private fun ThemePresetOption(
     }
 }
 
-private fun String.toComposeColor(): Color =
-    runCatching { Color(android.graphics.Color.parseColor(this)) }.getOrDefault(Color.Gray)
+private fun String.toComposeColor(): Color = runCatching { Color(android.graphics.Color.parseColor(this)) }.getOrDefault(Color.Gray)
 
-private data class HslColor(val hue: Float, val saturation: Float, val lightness: Float)
+private data class HslColor(
+    val hue: Float,
+    val saturation: Float,
+    val lightness: Float,
+)
 
 @Composable
 private fun HslEditor(
@@ -518,11 +641,12 @@ private fun hexToHsl(hex: String): HslColor {
     if (max == min) return HslColor(0f, 0f, lightness)
     val delta = max - min
     val saturation = delta / (1f - kotlin.math.abs(2f * lightness - 1f))
-    val hue = when (max) {
-        r -> 60f * (((g - b) / delta) % 6f)
-        g -> 60f * (((b - r) / delta) + 2f)
-        else -> 60f * (((r - g) / delta) + 4f)
-    }.let { if (it < 0f) it + 360f else it }
+    val hue =
+        when (max) {
+            r -> 60f * (((g - b) / delta) % 6f)
+            g -> 60f * (((b - r) / delta) + 2f)
+            else -> 60f * (((r - g) / delta) + 4f)
+        }.let { if (it < 0f) it + 360f else it }
     return HslColor(hue, saturation, lightness)
 }
 
@@ -532,6 +656,7 @@ private fun hslToHex(value: HslColor): String {
     val l = value.lightness.coerceIn(0f, 1f)
     val q = if (l < 0.5f) l * (1f + s) else l + s - l * s
     val p = 2f * l - q
+
     fun hueToRgb(t0: Float): Float {
         var t = t0
         if (t < 0f) t += 1f
@@ -547,36 +672,68 @@ private fun hslToHex(value: HslColor): String {
     return "#%02X%02X%02X".format((r * 255f).roundToInt(), (g * 255f).roundToInt(), (b * 255f).roundToInt())
 }
 
-private fun hslToComposeColor(value: HslColor): Color =
-    Color(android.graphics.Color.parseColor(hslToHex(value)))
+private fun hslToComposeColor(value: HslColor): Color = Color(android.graphics.Color.parseColor(hslToHex(value)))
 
-@Composable
-private fun LanguageOptionRow(options: List<Pair<AppLanguage, String>>, selected: String, onSelect: (AppLanguage) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEach { (language, label) ->
-            ThemeModeOptionChip(label, language.settingValue, selected, Modifier.weight(1f)) { onSelect(language) }
-        }
+private val languageOptions =
+    listOf(
+        AppLanguage.SYSTEM to "跟随系统",
+        AppLanguage.SIMPLIFIED_CHINESE to "简体中文",
+        AppLanguage.TRADITIONAL_CHINESE to "繁体中文",
+        AppLanguage.ENGLISH to "English",
+        AppLanguage.JAPANESE to "日本語",
+        AppLanguage.KOREAN to "한국어",
+    )
+
+internal fun currentLanguageLabel(setting: String): String =
+    when (AppLanguage.fromSetting(setting)) {
+        AppLanguage.SYSTEM -> "跟随系统"
+        AppLanguage.SIMPLIFIED_CHINESE -> "简体中文"
+        AppLanguage.TRADITIONAL_CHINESE -> "繁体中文"
+        AppLanguage.ENGLISH -> "English"
+        AppLanguage.JAPANESE -> "日本語"
+        AppLanguage.KOREAN -> "한국어"
     }
-}
-
 
 @Composable
-private fun ThemeModeOptionChip(title: String, mode: String, currentMode: String, modifier: Modifier = Modifier, onSelect: (String) -> Unit) {
+private fun ThemeModeOptionChip(
+    title: String,
+    mode: String,
+    currentMode: String,
+    modifier: Modifier = Modifier,
+    onSelect: (String) -> Unit,
+) {
     val selected = currentMode.equals(mode, ignoreCase = true)
     val shape = RoundedCornerShape(12.dp)
     val background = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurface
     val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     Box(
-        modifier.height(44.dp).clip(shape).background(background).border(1.dp, borderColor, shape).clickableNoRipple { onSelect(mode) },
+        modifier
+            .height(44.dp)
+            .clip(shape)
+            .background(background)
+            .border(1.dp, borderColor, shape)
+            .clickableNoRipple { onSelect(mode) },
         contentAlignment = Alignment.Center,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold, color = contentColor, maxLines = 1)
-            if (selected) {
-                Spacer(Modifier.width(4.dp))
-                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = contentColor, modifier = Modifier.size(15.dp))
-            }
+        // 文字区域独立居中，勾选图标固定在右侧，避免英文长标题被图标推偏。
+        Text(
+            title,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp),
+            textAlign = TextAlign.Center,
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+            color = contentColor,
+            maxLines = 2,
+            softWrap = true,
+        )
+        if (selected) {
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = localizedText("已选中"),
+                tint = contentColor,
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 7.dp).size(15.dp),
+            )
         }
     }
 }

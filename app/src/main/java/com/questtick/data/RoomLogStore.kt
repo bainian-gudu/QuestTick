@@ -85,8 +85,7 @@ internal class RoomLogStore(
                     message = Mask.sensitive(it.message),
                     detail = Mask.sensitive(it.detail),
                 )
-            }
-            .toList()
+            }.toList()
     }
 
     companion object {

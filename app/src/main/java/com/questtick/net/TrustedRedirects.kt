@@ -54,44 +54,55 @@ internal object TrustedRedirects {
             else -> null
         }
 
-    val activityResource = RedirectTrustPolicy { _, candidate ->
-        TrustedUrlPolicy.isActivityResourceUrl(candidate.toString())
-    }
+    val activityResource =
+        RedirectTrustPolicy { _, candidate ->
+            TrustedUrlPolicy.isActivityResourceUrl(candidate.toString())
+        }
 
-    val rewardIcon = RedirectTrustPolicy { _, candidate ->
-        TrustedUrlPolicy.isRewardIconUrl(candidate.toString())
-    }
+    val rewardIcon =
+        RedirectTrustPolicy { _, candidate ->
+            TrustedUrlPolicy.isRewardIconUrl(candidate.toString())
+        }
 
-    val updateMetadata = RedirectTrustPolicy { initial, candidate ->
-        TrustedUrlPolicy.isUpdateMetadataRedirect(initial.toString(), candidate.toString())
-    }
+    val updateMetadata =
+        RedirectTrustPolicy { initial, candidate ->
+            TrustedUrlPolicy.isUpdateMetadataRedirect(initial.toString(), candidate.toString())
+        }
 
-    val updateAsset = RedirectTrustPolicy { initial, candidate ->
-        TrustedUrlPolicy.isUpdateAssetRedirect(initial.toString(), candidate.toString())
-    }
+    val updateAsset =
+        RedirectTrustPolicy { initial, candidate ->
+            TrustedUrlPolicy.isUpdateAssetRedirect(initial.toString(), candidate.toString())
+        }
 
-    val sameOriginHttps = RedirectTrustPolicy { initial, candidate ->
-        TrustedUrlPolicy.isBusinessRequestUrl(initial.toString()) &&
-            TrustedUrlPolicy.isBusinessRequestUrl(candidate.toString()) &&
-            TrustedUrlPolicy.isSameOriginHttps(initial.toString(), candidate.toString())
-    }
+    val sameOriginHttps =
+        RedirectTrustPolicy { initial, candidate ->
+            TrustedUrlPolicy.isBusinessRequestUrl(initial.toString()) &&
+                TrustedUrlPolicy.isBusinessRequestUrl(candidate.toString()) &&
+                TrustedUrlPolicy.isSameOriginHttps(initial.toString(), candidate.toString())
+        }
 
-    val timeSource = RedirectTrustPolicy { initial, candidate ->
-        TrustedUrlPolicy.isTimeSourceUrl(initial.toString()) &&
-            TrustedUrlPolicy.isTimeSourceUrl(candidate.toString()) &&
-            TrustedUrlPolicy.isSameOriginHttps(initial.toString(), candidate.toString())
-    }
+    val timeSource =
+        RedirectTrustPolicy { initial, candidate ->
+            TrustedUrlPolicy.isTimeSourceUrl(initial.toString()) &&
+                TrustedUrlPolicy.isTimeSourceUrl(candidate.toString()) &&
+                TrustedUrlPolicy.isSameOriginHttps(initial.toString(), candidate.toString())
+        }
 
     /** 只供 JVM MockWebServer 测试使用；仍限制为完全相同的 Scheme、主机和端口。 */
-    internal val sameOriginForTest = RedirectTrustPolicy { initial, candidate ->
-        initial.host.isLoopbackHost() && candidate.host.isLoopbackHost() &&
-            initial.scheme == candidate.scheme &&
-            initial.host == candidate.host &&
-            initial.port == candidate.port &&
-            initial.username.isEmpty() && initial.password.isEmpty() &&
-            candidate.username.isEmpty() && candidate.password.isEmpty() &&
-            initial.fragment == null && candidate.fragment == null
-    }
+    internal val sameOriginForTest =
+        RedirectTrustPolicy { initial, candidate ->
+            initial.host.isLoopbackHost() &&
+                candidate.host.isLoopbackHost() &&
+                initial.scheme == candidate.scheme &&
+                initial.host == candidate.host &&
+                initial.port == candidate.port &&
+                initial.username.isEmpty() &&
+                initial.password.isEmpty() &&
+                candidate.username.isEmpty() &&
+                candidate.password.isEmpty() &&
+                initial.fragment == null &&
+                candidate.fragment == null
+        }
 
     fun execute(
         client: OkHttpClient,
@@ -242,7 +253,8 @@ internal object TrustedRedirects {
     ): Pair<OkHttpClient, Request> {
         val tracker = RequestTransmissionTracker()
         val attemptRequest =
-            request.newBuilder()
+            request
+                .newBuilder()
                 .tag(RequestTransmissionTracker::class.java, tracker)
                 .build()
         val attemptClient = client.newBuilder().eventListener(tracker).build()
@@ -289,7 +301,9 @@ internal object TrustedRedirects {
         }
         val location = locations.single()
         if (
-            location.isBlank() || location != location.trim() || '\\' in location ||
+            location.isBlank() ||
+            location != location.trim() ||
+            '\\' in location ||
             location.any { it.isISOControl() || it.isWhitespace() }
         ) {
             throw UntrustedRedirectException("invalid redirect Location")
@@ -304,7 +318,8 @@ internal object TrustedRedirects {
     ): Request {
         val builder = request.newBuilder().url(nextUrl)
         if (!request.url.sameOrigin(nextUrl)) {
-            request.headers.names()
+            request.headers
+                .names()
                 .filterNot { name -> crossOriginSafeHeaders.any { safe -> name.equals(safe, ignoreCase = true) } }
                 .forEach(builder::removeHeader)
         }
@@ -322,8 +337,7 @@ internal object TrustedRedirects {
         }
     }
 
-    private fun HttpUrl.sameOrigin(other: HttpUrl): Boolean =
-        scheme == other.scheme && host == other.host && port == other.port
+    private fun HttpUrl.sameOrigin(other: HttpUrl): Boolean = scheme == other.scheme && host == other.host && port == other.port
 
     private fun Response.withClassifiedResponseBody(): Response {
         val originalBody = body
@@ -344,8 +358,7 @@ internal object TrustedRedirects {
             .build()
     }
 
-    private fun String.isLoopbackHost(): Boolean =
-        this == "localhost" || this == "127.0.0.1" || this == "::1"
+    private fun String.isLoopbackHost(): Boolean = this == "localhost" || this == "127.0.0.1" || this == "::1"
 
     private fun OkHttpClient.withAutomaticRedirectsAndRetriesDisabled(): OkHttpClient =
         if (!followRedirects && !followSslRedirects && !retryOnConnectionFailure) {

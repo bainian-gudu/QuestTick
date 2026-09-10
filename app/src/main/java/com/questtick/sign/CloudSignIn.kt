@@ -1,6 +1,6 @@
 package com.questtick.sign
 
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.data.FailureCategory
 import com.questtick.net.HttpTransport
@@ -78,13 +78,12 @@ class CloudSignIn(
             )
     }
 
-    private fun effectiveVersion(game: GameConfig): String {
-        return when (game.key) {
+    private fun effectiveVersion(game: GameConfig): String =
+        when (game.key) {
             "CloudYS" -> CloudVersionRepository.effectiveYs().ifBlank { game.gameHeaders["x-rpc-app_version"] ?: "6.7.0" }
             "CloudSR" -> CloudVersionRepository.effectiveSr().ifBlank { game.gameHeaders["x-rpc-app_version"] ?: "4.3.0" }
             else -> game.gameHeaders["x-rpc-app_version"] ?: "1.0.0"
         }
-    }
 
     private fun buildHeaders(
         game: GameConfig,
@@ -222,7 +221,11 @@ class CloudSignIn(
         val failure: TaskFailureDescriptor = TaskFailureDescriptor(FailureCategory.NONE),
     )
 
-    private data class Notifications(val ok: Boolean, val ids: List<String>, val detail: String = "")
+    private data class Notifications(
+        val ok: Boolean,
+        val ids: List<String>,
+        val detail: String = "",
+    )
 
     private data class AckResult(
         val ok: Boolean,
@@ -268,19 +271,20 @@ class CloudSignIn(
                     playCard = playCard,
                     coin = coin,
                     clientType = clientType,
-                    detail = buildWalletDetail(
-                        res.code,
-                        retcode,
-                        message,
-                        version,
-                        clientType,
-                        freeTimeData != null,
-                        free,
-                        sentFree,
-                        totalTime,
-                        playCard,
-                        coin,
-                    ),
+                    detail =
+                        buildWalletDetail(
+                            res.code,
+                            retcode,
+                            message,
+                            version,
+                            clientType,
+                            freeTimeData != null,
+                            free,
+                            sentFree,
+                            totalTime,
+                            playCard,
+                            coin,
+                        ),
                 )
             } else {
                 Wallet(
@@ -293,7 +297,7 @@ class CloudSignIn(
             }
         } catch (e: Exception) {
             e.throwIfCancellation()
-            Log.w(TAG, "getWallet failed: ${game.key}, version=$version, clientType=$clientType", e)
+            AppLog.w(TAG, "getWallet failed: ${game.key}, version=$version, clientType=$clientType", e)
             Wallet(
                 ok = false,
                 freeTime = 0,
@@ -321,7 +325,11 @@ class CloudSignIn(
                 val ids = ArrayList<String>()
                 if (arr != null) {
                     for (i in 0 until arr.length()) {
-                        arr.optJSONObject(i)?.optString("id")?.takeIf { it.isNotEmpty() }?.let { ids.add(it) }
+                        arr
+                            .optJSONObject(i)
+                            ?.optString("id")
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.let { ids.add(it) }
                     }
                 }
                 val detail =
@@ -336,7 +344,7 @@ class CloudSignIn(
             }
         } catch (e: Exception) {
             e.throwIfCancellation()
-            Log.w(TAG, "listNotifications failed: ${game.key}, version=$version", e)
+            AppLog.w(TAG, "listNotifications failed: ${game.key}, version=$version", e)
             Notifications(false, emptyList(), e.message ?: "notifications exception")
         }
 
@@ -370,12 +378,11 @@ class CloudSignIn(
         } catch (e: Exception) {
             e.throwIfCancellation()
             runCatching {
-                Log.w(TAG, "ack failed: ${game.key}, id=${maskNotificationId(id)}, version=$version", e)
+                AppLog.w(TAG, "ack failed: ${game.key}, id=${maskNotificationId(id)}, version=$version", e)
             }
             val failure = TaskFailureClassifier.fromException(e)
             AckResult(false, ErrorText.detailOf(e), failure)
         }
-
 
     private fun classifyApiFailure(
         httpCode: Int,

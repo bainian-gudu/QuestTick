@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SignInCredentialCoordinatorDecisionTest {
-
     @Test
     fun `mys cookie refresh requires keep login expired failure and not already refreshed`() {
         val failed = MysSignIn.Outcome(success = false, skipped = false, message = "登录状态已失效")

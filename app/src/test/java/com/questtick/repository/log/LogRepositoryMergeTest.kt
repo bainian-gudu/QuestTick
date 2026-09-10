@@ -11,10 +11,11 @@ class LogRepositoryMergeTest {
         val start = entry(2000, "开始执行签到")
         val live = entry(3000, "运行中日志")
 
-        val merged = mergeLogSnapshots(
-            persisted = listOf(old),
-            current = listOf(old, start, live),
-        )
+        val merged =
+            mergeLogSnapshots(
+                persisted = listOf(old),
+                current = listOf(old, start, live),
+            )
 
         assertEquals(listOf(old, start, live), merged)
     }
@@ -24,10 +25,11 @@ class LogRepositoryMergeTest {
         val start = entry(1000, "开始执行签到")
         val end = entry(2000, "签到结束")
 
-        val merged = mergeLogSnapshots(
-            persisted = listOf(start, end),
-            current = listOf(start, end),
-        )
+        val merged =
+            mergeLogSnapshots(
+                persisted = listOf(start, end),
+                current = listOf(start, end),
+            )
 
         assertEquals(listOf(start, end), merged)
     }
@@ -38,13 +40,29 @@ class LogRepositoryMergeTest {
         val second = entry(2000, "开始执行签到")
         val third = entry(3000, "签到结束")
 
-        val merged = mergeLogSnapshots(
-            persisted = listOf(first, second),
-            current = listOf(third),
-            maxKeep = 2,
-        )
+        val merged =
+            mergeLogSnapshots(
+                persisted = listOf(first, second),
+                current = listOf(third),
+                maxKeep = 2,
+            )
 
         assertEquals(listOf(second, third), merged)
+    }
+
+    @Test
+    fun mergeLogSnapshotsSortsOutOfOrderEntriesByTimestamp() {
+        val older = entry(1000, "较早")
+        val newer = entry(3000, "较晚")
+        val middle = entry(2000, "中间")
+
+        val merged =
+            mergeLogSnapshots(
+                persisted = listOf(newer),
+                current = listOf(older, middle),
+            )
+
+        assertEquals(listOf(older, middle, newer), merged)
     }
 
     private fun entry(

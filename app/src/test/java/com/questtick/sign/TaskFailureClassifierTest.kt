@@ -185,4 +185,18 @@ class TaskFailureClassifierTest {
         assertEquals(FailureCategory.NO_ROLE, noRole.category)
         assertEquals(FailureCategory.NO_ROLE, unregistered.category)
     }
+
+    @Test
+    fun `credential composition failures are classified as authentication errors`() {
+        val result =
+            TaskFailureClassifier.classify(
+                success = false,
+                skipped = false,
+                message = "米游币打卡凭证不完整",
+                detail = "V2 Cookie 不完整：missing=[ltoken_v2]；身份冲突",
+            )
+
+        assertEquals(FailureCategory.AUTH_EXPIRED, result.category)
+        assertEquals("credential_incomplete", result.errorCode)
+    }
 }

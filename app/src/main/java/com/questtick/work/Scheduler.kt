@@ -98,7 +98,8 @@ class Scheduler
                 }
             val hasActiveWork =
                 runCatching {
-                    WorkManager.getInstance(context)
+                    WorkManager
+                        .getInstance(context)
                         .getWorkInfosByTag(generationTag(currentGeneration()))
                         .get(10, TimeUnit.SECONDS)
                         .any { info ->
@@ -129,7 +130,8 @@ class Scheduler
             generation: Long,
         ): Boolean =
             generation == currentGeneration() &&
-                hour in 0..23 && minute in 0..59 &&
+                hour in 0..23 &&
+                minute in 0..59 &&
                 timeZoneId == TimeZone.getDefault().id
 
         private suspend fun enqueueNext(
@@ -146,13 +148,15 @@ class Scheduler
             val delay = (targetAt - now).coerceAtLeast(MINIMUM_SCHEDULE_DELAY_MS)
             val workName = "${WORK_NAME_PREFIX}${generation}_$targetAt"
             val constraints =
-                Constraints.Builder()
+                Constraints
+                    .Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
                     .setRequiresBatteryNotLow(true)
                     .setRequiresStorageNotLow(true)
                     .build()
             val input =
-                Data.Builder()
+                Data
+                    .Builder()
                     .putInt(INPUT_HOUR, safeHour)
                     .putInt(INPUT_MINUTE, safeMinute)
                     .putString(INPUT_TIME_ZONE, zone.id)
@@ -175,7 +179,8 @@ class Scheduler
                 request,
             )
             check(
-                context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE)
+                context
+                    .getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE)
                     .edit()
                     .putInt(KEY_HOUR, safeHour)
                     .putInt(KEY_MINUTE, safeMinute)
@@ -192,14 +197,15 @@ class Scheduler
             previousTargetAt: Long?,
         ): Long {
             if (previousTargetAt == null) return computeScheduleTargetMillis(hour, minute, nowMillis, timeZone)
-            val next = Calendar.getInstance(timeZone).apply {
-                timeInMillis = previousTargetAt
-                add(Calendar.DAY_OF_MONTH, 1)
-                set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
-                set(Calendar.MINUTE, minute.coerceIn(0, 59))
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
+            val next =
+                Calendar.getInstance(timeZone).apply {
+                    timeInMillis = previousTargetAt
+                    add(Calendar.DAY_OF_MONTH, 1)
+                    set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
+                    set(Calendar.MINUTE, minute.coerceIn(0, 59))
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
             while (next.timeInMillis <= nowMillis) next.add(Calendar.DAY_OF_MONTH, 1)
             return next.timeInMillis
         }
@@ -225,7 +231,8 @@ class Scheduler
         }
 
         private fun currentGeneration(): Long =
-            context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE)
+            context
+                .getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE)
                 .getLong(KEY_GENERATION, 0L)
 
         companion object {

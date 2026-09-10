@@ -103,10 +103,10 @@ object RewardIconCache {
                         headers = mapOf("User-Agent" to "Mozilla/5.0"),
                         config = HttpRequestConfig(maxResponseBytes = MAX_ICON_BYTES),
                     )
-            }.getOrElse { error ->
-                onFailure?.invoke("奖励图片请求异常 candidate=$candidate: ${ErrorText.detailOf(error)}")
-                continue
-            }
+                }.getOrElse { error ->
+                    onFailure?.invoke("奖励图片请求异常 candidate=$candidate: ${ErrorText.detailOf(error)}")
+                    continue
+                }
             if (response.code !in 200..299) {
                 onFailure?.invoke("奖励图片请求失败 candidate=$candidate http=${response.code}")
                 continue
@@ -137,11 +137,15 @@ object RewardIconCache {
     private fun highResolutionCandidates(url: String): List<String> {
         val parsed = url.toHttpUrlOrNull() ?: return listOf(url)
         val processingParameters = setOf("x-oss-process", "imageMogr2/thumbnail", "thumbnail", "resize", "format", "quality")
-        val original = parsed.newBuilder().apply {
-            parsed.queryParameterNames
-                .filter { it in processingParameters }
-                .forEach { removeAllQueryParameters(it) }
-        }.build().toString()
+        val original =
+            parsed
+                .newBuilder()
+                .apply {
+                    parsed.queryParameterNames
+                        .filter { it in processingParameters }
+                        .forEach { removeAllQueryParameters(it) }
+                }.build()
+                .toString()
         return listOf(original, url).distinct().filter(TrustedUrlPolicy::isRewardIconUrl)
     }
 

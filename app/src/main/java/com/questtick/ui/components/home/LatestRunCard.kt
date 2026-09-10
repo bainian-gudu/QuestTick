@@ -29,7 +29,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,7 +42,6 @@ import com.questtick.ui.theme.DangerRed
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
-
 
 private fun formatTime(ts: Long) = formatLocalizedShortDateTime(ts)
 
@@ -59,14 +57,13 @@ fun LatestRunCard(
     modifier: Modifier = Modifier,
 ) {
     val formattedTime = remember(record.timestamp) { formatTime(record.timestamp) }
-    val summary = remember(record) { buildLatestRunSummary(record) }
 
     // 最近签到详情默认折叠。
     var expanded by rememberSaveable(record.timestamp) { mutableStateOf(false) }
     // 展开箭头旋转动画。
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(AppMotion.ArrowDurationMillis),
+        animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
         label = "arrowRotation",
     )
 
@@ -95,13 +92,13 @@ fun LatestRunCard(
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
-                            if (summary.succeeded > 0) MiniStatChip("✓${summary.succeeded}", SuccessGreen)
-                            if (summary.alreadySigned > 0) MiniStatChip("已签${summary.alreadySigned}", WarnAmber)
-                            if (summary.failed > 0) MiniStatChip("✗${summary.failed}", DangerRed)
-                            if (summary.resultUnknown > 0) MiniStatChip("待确认${summary.resultUnknown}", WarnAmber)
+                            if (record.succeeded > 0) MiniStatChip("✓${record.succeeded}", SuccessGreen)
+                            if (record.alreadySigned > 0) MiniStatChip("已签${record.alreadySigned}", WarnAmber)
+                            if (record.failed > 0) MiniStatChip("✗${record.failed}", DangerRed)
+                            if (record.resultUnknown > 0) MiniStatChip("待确认${record.resultUnknown}", WarnAmber)
                         }
                         Spacer(Modifier.size(8.dp))
-                        Text("${summary.totalCount} 项任务", fontSize = 12.sp, color = TextSecondary)
+                        Text("${record.results.size} 项任务", fontSize = 12.sp, color = TextSecondary)
                     }
                 }
                 Spacer(Modifier.size(8.dp))
@@ -123,6 +120,7 @@ fun LatestRunCard(
                 enter = AppMotion.expandEnter(),
                 exit = AppMotion.expandExit(),
             ) {
+                val summary = remember(record) { buildLatestRunSummary(record) }
                 Column {
                     Spacer(Modifier.height(10.dp))
                     // 分隔线。
@@ -133,8 +131,10 @@ fun LatestRunCard(
                         ResultRow(result, loadRewardImage = expanded)
                         if (index < summary.topResults.lastIndex) {
                             Box(
-                                Modifier.padding(start = 40.dp, top = 2.dp, bottom = 2.dp)
-                                    .fillMaxWidth().height(0.5.dp)
+                                Modifier
+                                    .padding(start = 40.dp, top = 2.dp, bottom = 2.dp)
+                                    .fillMaxWidth()
+                                    .height(0.5.dp)
                                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
                             )
                         }

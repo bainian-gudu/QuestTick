@@ -1,10 +1,7 @@
 package com.questtick.ui.screens
 
-import com.questtick.i18n.localizedText
 import android.Manifest
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -13,9 +10,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
@@ -36,17 +32,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
@@ -56,12 +50,11 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TextButton
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,7 +64,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -79,34 +71,31 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.questtick.BuildConfig
-import com.questtick.R
 import com.questtick.data.AppSettings
-import com.questtick.data.MailSettings
-import com.questtick.i18n.AppLanguage
 import com.questtick.notify.Notifier
 import com.questtick.sign.AppUpdateChecker.AppUpdateInfo
 import com.questtick.sign.CloudVersionRepository
 import com.questtick.ui.components.GalaxyBackground
 import com.questtick.ui.components.PageTitle
 import com.questtick.ui.components.PanelCard
-import com.questtick.ui.components.SkeletonBlock
 import com.questtick.ui.components.clickableNoRipple
-import com.questtick.ui.components.consumeHorizontalPageSwipe
 import com.questtick.ui.theme.AppMotion
 import com.questtick.ui.theme.InfoBlue
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.SettingsViewModel
-import com.questtick.ui.vm.CacheCategory
-import com.questtick.ui.vm.CacheStorageState
+import kotlinx.coroutines.flow.StateFlow
 
-// 设置子页面枚举。
+private enum class SettingsPage { None, Schedule, Mail, Device, ActId, Experiment, MysVersion, CloudVersion, Security, Appearance, Language, Cache, About }
 
-private enum class SettingsPage { None, Schedule, Mail, Device, ActId, Experiment, MysVersion, CloudVersion, Security, Appearance, Cache, About }
-
-// 设置主页面。
+@Composable
+private fun <T> StateFlow<T>.collectAsStateWhenVisible(isVisible: Boolean): State<T> =
+    if (isVisible) {
+        collectAsStateWithLifecycle()
+    } else {
+        remember(this) { mutableStateOf(value) }
+    }
 
 @Composable
 fun SettingsScreen(
@@ -114,10 +103,11 @@ fun SettingsScreen(
     isVisible: Boolean = true,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val settings by viewModel.settings.collectAsStateWithLifecycle()
-    val mail by viewModel.mail.collectAsStateWithLifecycle()
-    val mailLoaded by viewModel.mailLoaded.collectAsStateWithLifecycle()
-    val cacheStorageState by viewModel.cacheStorageState.collectAsStateWithLifecycle()
+    // 相邻 Pager 页面会被预组合；隐藏时保留 UI 快照，但不持续订阅状态流触发重组。
+    val settings by viewModel.settings.collectAsStateWhenVisible(isVisible)
+    val mail by viewModel.mail.collectAsStateWhenVisible(isVisible)
+    val mailLoaded by viewModel.mailLoaded.collectAsStateWhenVisible(isVisible)
+    val cacheStorageState by viewModel.cacheStorageState.collectAsStateWhenVisible(isVisible)
 
     val onSaveSchedule = viewModel::saveSchedule
     val onSaveLanguage = viewModel::saveLanguage
@@ -129,7 +119,10 @@ fun SettingsScreen(
 
     // 签到后台可能刚生成设备 ID 或刷新版本，切回设置页时重新读取持久化快照。
     LaunchedEffect(visibleKey) {
-        viewModel.reloadSettings()
+        if (isVisible) {
+            viewModel.reloadSettings()
+            viewModel.ensureCacheStorageLoaded()
+        }
     }
 
     var currentPage by remember { mutableStateOf(SettingsPage.None) }
@@ -169,7 +162,6 @@ fun SettingsScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        // 主设置列表概览。
         GalaxyBackground {
             LazyColumn(
                 state = listState,
@@ -181,7 +173,6 @@ fun SettingsScreen(
                 item(key = "spacer_top") { Spacer(Modifier.height(8.dp)) }
                 item(key = "page_title") { PageTitle("设置", "应用配置") }
                 item(key = "spacer_after_title") { Spacer(Modifier.height(4.dp)) }
-                // 定时任务入口。
                 item(key = "row_schedule") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Schedule,
@@ -199,7 +190,6 @@ fun SettingsScreen(
                     ) { openSettingsPage(SettingsPage.Schedule) }
                 }
 
-                // 外观入口。
                 item(key = "row_appearance") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Palette,
@@ -209,18 +199,32 @@ fun SettingsScreen(
                     ) { openSettingsPage(SettingsPage.Appearance) }
                 }
 
+                // 语言是正式版可用的独立功能，不与外观主题设置混在同一页。
+                item(key = "row_language") {
+                    SettingsEntryCard(
+                        icon = Icons.Filled.Language,
+                        iconColor = InfoBlue,
+                        title = "界面语言",
+                        subtitle = currentLanguageLabel(settings.appLanguage),
+                    ) { openSettingsPage(SettingsPage.Language) }
+                }
+
                 item(key = "row_mail") {
-                    val complete = mail.smtpServer.isNotBlank() && mail.username.isNotBlank() &&
-                        mail.password.isNotBlank() && mail.mailTo.isNotBlank()
+                    val complete =
+                        mail.smtpServer.isNotBlank() &&
+                            mail.username.isNotBlank() &&
+                            mail.password.isNotBlank() &&
+                            mail.mailTo.isNotBlank()
                     SettingsEntryCard(
                         icon = Icons.Outlined.Email,
                         iconColor = Color(0xFF5BA8DF),
                         title = "邮件推送",
-                        subtitle = when {
-                            !mailLoaded || !mail.enabled -> "关闭"
-                            complete -> "已配置"
-                            else -> "配置不完整"
-                        },
+                        subtitle =
+                            when {
+                                !mailLoaded || !mail.enabled -> "关闭"
+                                complete -> "已配置"
+                                else -> "配置不完整"
+                            },
                     ) { openSettingsPage(SettingsPage.Mail) }
                 }
 
@@ -265,7 +269,6 @@ fun SettingsScreen(
                     ) { openSettingsPage(SettingsPage.Security) }
                 }
 
-                // 设备 ID 入口。
                 item(key = "row_device") {
                     val customDeviceIdLabels =
                         buildList {
@@ -287,7 +290,6 @@ fun SettingsScreen(
                     ) { openSettingsPage(SettingsPage.Device) }
                 }
 
-                // 聚合展示较高级的可选开关，减少首页设置项噪音。
                 item(key = "row_experiment") {
                     val enabledExperiments =
                         buildList {
@@ -325,7 +327,6 @@ fun SettingsScreen(
                     ) { openSettingsPage(SettingsPage.Cache) }
                 }
 
-                // 关于入口。
                 item(key = "row_about") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Info,
@@ -349,16 +350,15 @@ fun SettingsScreen(
             )
         }
 
-        // 子页面浮层。
         SettingsPageOverlay(
             visible = currentPage != SettingsPage.None,
-            consumeHorizontalGestures = displayedPage != SettingsPage.Appearance,
+            consumeHorizontalGestures =
+                displayedPage != SettingsPage.Appearance && displayedPage != SettingsPage.Language,
             onExitFinished = {
                 overlayActive = false
                 displayedPage = SettingsPage.None
             },
         ) {
-            // 子页面内容直接按 displayedPage 渲染…
             Box(modifier = Modifier.fillMaxSize()) {
                 when (displayedPage) {
                     SettingsPage.Schedule ->
@@ -386,7 +386,9 @@ fun SettingsScreen(
                     SettingsPage.Security ->
                         SecurityDetailPage { closeSettingsPage() }
                     SettingsPage.Appearance ->
-                        AppearanceDetailPage(settings, onSaveSchedule, onSaveLanguage) { closeSettingsPage() }
+                        AppearanceDetailPage(settings, onSaveSchedule) { closeSettingsPage() }
+                    SettingsPage.Language ->
+                        LanguageDetailPage(settings, onSaveLanguage) { closeSettingsPage() }
                     SettingsPage.Cache ->
                         CacheDetailPage(
                             state = cacheStorageState,
@@ -527,7 +529,11 @@ private fun ScheduleDetailPage(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    FieldBox(hour, { hour = it.filter { c -> c.isDigit() }.take(2) }, "时", Modifier.width(90.dp))
+                                    ScheduleTimeField(
+                                        value = hour,
+                                        placeholder = "时",
+                                        onValueChange = { hour = it },
+                                    )
                                     Text(
                                         ":",
                                         modifier = Modifier.width(12.dp),
@@ -536,12 +542,19 @@ private fun ScheduleDetailPage(
                                         textAlign = TextAlign.Center,
                                         color = MaterialTheme.colorScheme.onSurface,
                                     )
-                                    FieldBox(minute, { minute = it.filter { c -> c.isDigit() }.take(2) }, "分", Modifier.width(90.dp))
-                                    Spacer(Modifier.width(12.dp))
+                                    ScheduleTimeField(
+                                        value = minute,
+                                        placeholder = "分",
+                                        onValueChange = { minute = it },
+                                    )
+                                    Spacer(Modifier.width(8.dp))
                                     Text("24小时制", fontSize = 12.sp, color = TextSecondary)
                                     Spacer(Modifier.weight(1f))
                                     Box(Modifier.width(80.dp)) {
-                                        PrimaryButton("保存") {
+                                        PrimaryButton(
+                                            text = "保存",
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                                        ) {
                                             onSave(
                                                 settings.copy(
                                                     scheduleEnabled = true,
@@ -582,8 +595,6 @@ private fun ScheduleDetailPage(
         }
     }
 }
-
-// 子页面：设备 ID。
 
 @Composable
 private fun DeviceDetailPage(
@@ -722,9 +733,6 @@ private fun ActIdDetailPage(
     }
 }
 
-
-// 内联小卡片。
-
 // 后台保活状态检测共享逻辑。
 
 /** 统一检测后台保活状态的 Compose Hook。 */
@@ -810,12 +818,13 @@ private fun KeepAliveRow(visibleKey: Int) {
         trailing = {
             if (!exempted) {
                 Box(
-                    Modifier.clip(RoundedCornerShape(10.dp)).background(WarnAmber.copy(alpha = 0.15f))
+                    Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(WarnAmber.copy(alpha = 0.15f))
                         .clickableNoRipple {
                             requestBatteryExemption(context)
                             refreshTrigger++
-                        }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        }.padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     Text("开启", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = WarnAmber)
                 }
@@ -830,7 +839,11 @@ private fun KeepAliveCard(visibleKey: Int) {
     val context = LocalContext.current
     var refreshTrigger by remember { mutableStateOf(0) }
     val exempted = rememberBatteryExempted(visibleKey, refreshTrigger)
-    val manufacturer = remember { android.os.Build.MANUFACTURER.lowercase() }
+    val manufacturer =
+        remember {
+            android.os.Build.MANUFACTURER
+                .lowercase()
+        }
     val romHint =
         remember(manufacturer) {
             when {
@@ -892,9 +905,13 @@ private fun KeepAliveCard(visibleKey: Int) {
             // ROM 自启动指引。
             if (romHint != null) {
                 Spacer(Modifier.height(14.dp))
+                val romHintText =
+                    "📱 检测到 ${android.os.Build.MANUFACTURER} 设备，建议同时开启自启动权限：\n" +
+                        com.questtick.i18n.localizedText(romHint)
                 HintBox(
                     InfoBlue,
-                    "📱 检测到 ${android.os.Build.MANUFACTURER} 设备，建议同时开启自启动权限：\n$romHint",
+                    // 外层模板和 ROM 指引分别解析，避免已知厂商指引在非中文界面残留中文。
+                    romHintText,
                 )
             } else {
                 Spacer(Modifier.height(10.dp))

@@ -1,7 +1,7 @@
 package com.questtick.security
 
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -22,7 +22,7 @@ object RootCheckCache {
         return try {
             parseFromJson(jsonStr)
         } catch (e: Exception) {
-            Log.w(TAG, "Root 检测结果缓存解析失败，将重新检测", e)
+            AppLog.w(TAG, "Root 检测结果缓存解析失败，将重新检测", e)
             null
         }
     }
@@ -31,7 +31,8 @@ object RootCheckCache {
         context: Context,
         result: RootDetectorV2.RootCheckResult,
     ) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_RESULT, toJson(result))
             .putLong(KEY_TIME, System.currentTimeMillis())
@@ -43,27 +44,28 @@ object RootCheckCache {
         return RootDetectorV2.check(context).also { save(context, it) }
     }
 
-    fun forceCheck(context: Context): RootDetectorV2.RootCheckResult =
-        RootDetectorV2.check(context).also { save(context, it) }
+    fun forceCheck(context: Context): RootDetectorV2.RootCheckResult = RootDetectorV2.check(context).also { save(context, it) }
 
     private fun toJson(result: RootDetectorV2.RootCheckResult): String =
-        JSONObject().apply {
-            put("isRooted", result.isRooted)
-            put("score", result.score)
-            put("level", result.level.name)
-            put("isEmulator", result.isEmulator)
-            put("completeness", result.completeness.name)
-            put("checkedProbeCount", result.checkedProbeCount)
-            put("unavailableProbes", JSONArray().apply { result.unavailableProbes.forEach(::put) })
-            put("rootEvidenceTriggers", JSONArray().apply { result.rootEvidenceTriggers.forEach(::put) })
-            put("triggers", JSONArray().apply { result.triggers.forEach(::put) })
-        }.toString()
+        JSONObject()
+            .apply {
+                put("isRooted", result.isRooted)
+                put("score", result.score)
+                put("level", result.level.name)
+                put("isEmulator", result.isEmulator)
+                put("completeness", result.completeness.name)
+                put("checkedProbeCount", result.checkedProbeCount)
+                put("unavailableProbes", JSONArray().apply { result.unavailableProbes.forEach(::put) })
+                put("rootEvidenceTriggers", JSONArray().apply { result.rootEvidenceTriggers.forEach(::put) })
+                put("triggers", JSONArray().apply { result.triggers.forEach(::put) })
+            }.toString()
 
     private fun parseFromJson(jsonStr: String): RootDetectorV2.RootCheckResult {
         val json = JSONObject(jsonStr)
         val triggers = json.getJSONArray("triggers").toStringList()
         val rootEvidenceTriggers =
-            json.getJSONArray("rootEvidenceTriggers")
+            json
+                .getJSONArray("rootEvidenceTriggers")
                 .toStringList()
                 .filter(RootDetectorV2::isRootEvidenceTrigger)
                 .distinct()
@@ -80,6 +82,5 @@ object RootCheckCache {
         )
     }
 
-    private fun JSONArray.toStringList(): List<String> =
-        List(length()) { index -> getString(index) }
+    private fun JSONArray.toStringList(): List<String> = List(length()) { index -> getString(index) }
 }

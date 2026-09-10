@@ -32,7 +32,6 @@ import com.questtick.net.HttpTransport
 import com.questtick.ui.LocalHttpTransport
 import com.questtick.ui.LocalAppErrorReporter
 import com.questtick.i18n.LocalAppLanguageSetting
-import com.questtick.i18n.AppLanguage
 import com.questtick.ui.theme.LocalAppUiTheme
 import com.questtick.ui.theme.QuestTickTheme
 import com.questtick.ui.vm.AccountsViewModel
@@ -41,7 +40,6 @@ import com.questtick.ui.vm.LogsViewModel
 import com.questtick.ui.vm.MainViewModel
 import com.questtick.ui.vm.RecordsViewModel
 import com.questtick.ui.vm.SettingsViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -55,7 +53,7 @@ internal fun ThemedAppRoot(
 ) {
     val appSettings by vm.settings.collectAsStateWithLifecycle()
     CompositionLocalProvider(
-        LocalAppLanguageSetting provides if (BuildConfig.DEBUG) appSettings.appLanguage else AppLanguage.SYSTEM.settingValue,
+        LocalAppLanguageSetting provides appSettings.appLanguage,
         LocalHttpTransport provides httpTransport,
         LocalAppErrorReporter provides { feature, detail -> vm.recordApplicationError(feature, detail) },
     ) {
@@ -126,20 +124,8 @@ private fun AppRoot(
         if (Tab.Accounts.ordinal !in warmedTabs) {
             warmedTabs = warmedTabs + Tab.Accounts.ordinal
         }
-        delay(90)
         if (Tab.Settings.ordinal !in warmedTabs) {
             warmedTabs = warmedTabs + Tab.Settings.ordinal
-        }
-    }
-
-    LaunchedEffect(ready) {
-        if (ready) {
-            for (index in listOf(Tab.Records.ordinal, Tab.Logs.ordinal)) {
-                if (index !in warmedTabs) {
-                    withFrameNanos { }
-                    warmedTabs = warmedTabs + index
-                }
-            }
         }
     }
 

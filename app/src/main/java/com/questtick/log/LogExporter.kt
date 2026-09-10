@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.questtick.data.LogEntry
+import com.questtick.i18n.AppLanguage
+import com.questtick.i18n.localizeText
 import com.questtick.sign.Mask
 import org.json.JSONArray
 import org.json.JSONObject
@@ -39,23 +41,26 @@ object LogExporter {
     fun buildText(
         logs: List<LogEntry>,
         verbose: Boolean,
+        language: AppLanguage = AppLanguage.SIMPLIFIED_CHINESE,
     ): String {
         val sb = StringBuilder()
-        sb.appendLine("==== QuestTick 运行日志 ====")
-        sb.appendLine("导出时间：${lineTimeFmt.format(Date())}")
-        sb.appendLine("日志条数：${logs.size}")
-        sb.appendLine("模式：${if (verbose) "详细（含技术细节）" else "简洁"}")
-        sb.appendLine("说明：所有 Cookie / Token / 账号 ID 等敏感信息均已自动打码。")
+        sb.appendLine(localizeText("==== QuestTick 运行日志 ====", language))
+        sb.appendLine(localizeText("导出时间：%s", language).format(lineTimeFmt.format(Date())))
+        sb.appendLine(localizeText("日志条数：%s", language).format(logs.size))
+        val mode = if (verbose) "详细（含技术细节）" else "简洁"
+        sb.appendLine(localizeText("模式：%s", language).format(localizeText(mode, language)))
+        sb.appendLine(localizeText("说明：所有 Cookie / Token / 账号 ID 等敏感信息均已自动打码。", language))
         sb.appendLine("--------------------------------")
         for (entry in logs) {
             val time = lineTimeFmt.format(Date(entry.timestamp))
-            sb.appendLine("[$time][${entry.level}] ${Mask.sensitive(entry.message)}")
+            sb.appendLine("[$time][${entry.level}] ${localizeText(Mask.sensitive(entry.message), language)}")
             if (verbose && entry.detail.isNotBlank()) {
-                sb.appendLine("    └ 详情: ${Mask.sensitive(entry.detail)}")
+                val detail = localizeText(Mask.sensitive(entry.detail), language)
+                sb.appendLine(localizeText("    └ 详情: %s", language).format(detail))
             }
         }
         sb.appendLine("--------------------------------")
-        sb.appendLine("由「QuestTick」导出")
+        sb.appendLine(localizeText("由「QuestTick」导出", language))
         return sb.toString()
     }
 
@@ -63,6 +68,7 @@ object LogExporter {
     fun buildJson(
         logs: List<LogEntry>,
         verbose: Boolean,
+        language: AppLanguage = AppLanguage.SIMPLIFIED_CHINESE,
     ): String {
         val root = JSONObject()
         root.put("app", "QuestTick")
@@ -78,8 +84,8 @@ object LogExporter {
                             put("timestamp", entry.timestamp)
                             put("time", lineTimeFmt.format(Date(entry.timestamp)))
                             put("level", entry.level)
-                            put("message", Mask.sensitive(entry.message))
-                            if (verbose) put("detail", Mask.sensitive(entry.detail))
+                            put("message", localizeText(Mask.sensitive(entry.message), language))
+                            if (verbose) put("detail", localizeText(Mask.sensitive(entry.detail), language))
                         },
                     )
                 }
@@ -92,11 +98,12 @@ object LogExporter {
         logs: List<LogEntry>,
         verbose: Boolean,
         format: ExportFormat,
+        language: AppLanguage = AppLanguage.SIMPLIFIED_CHINESE,
     ): ByteArray =
         when (format) {
-            ExportFormat.TXT -> buildText(logs, verbose).toByteArray(Charsets.UTF_8)
-            ExportFormat.JSON -> buildJson(logs, verbose).toByteArray(Charsets.UTF_8)
-            ExportFormat.ZIP -> buildZip(logs, verbose, emptyList())
+            ExportFormat.TXT -> buildText(logs, verbose, language).toByteArray(Charsets.UTF_8)
+            ExportFormat.JSON -> buildJson(logs, verbose, language).toByteArray(Charsets.UTF_8)
+            ExportFormat.ZIP -> buildZip(logs, verbose, emptyList(), language)
         }
 
     fun buildBytesWithDiagnostics(
@@ -104,25 +111,27 @@ object LogExporter {
         logs: List<LogEntry>,
         verbose: Boolean,
         format: ExportFormat,
+        language: AppLanguage = AppLanguage.SIMPLIFIED_CHINESE,
     ): ByteArray =
         when (format) {
-            ExportFormat.ZIP -> buildZip(logs, verbose, readCrashReports(context))
-            else -> buildBytes(logs, verbose, format)
+            ExportFormat.ZIP -> buildZip(logs, verbose, readCrashReports(context), language)
+            else -> buildBytes(logs, verbose, format, language)
         }
 
     private fun buildZip(
         logs: List<LogEntry>,
         verbose: Boolean,
         crashReports: List<File>,
+        language: AppLanguage,
     ): ByteArray {
         val out = java.io.ByteArrayOutputStream()
         ZipOutputStream(out).use { zip ->
             zip.putNextEntry(ZipEntry("signin_logs.txt"))
-            zip.write(buildText(logs, verbose).toByteArray(Charsets.UTF_8))
+            zip.write(buildText(logs, verbose, language).toByteArray(Charsets.UTF_8))
             zip.closeEntry()
 
             zip.putNextEntry(ZipEntry("signin_logs.json"))
-            zip.write(buildJson(logs, verbose).toByteArray(Charsets.UTF_8))
+            zip.write(buildJson(logs, verbose, language).toByteArray(Charsets.UTF_8))
             zip.closeEntry()
 
             crashReports.forEach { file ->
@@ -134,8 +143,8 @@ object LogExporter {
             zip.putNextEntry(ZipEntry("README.txt"))
             zip.write(
                 (
-                    "本压缩包由QuestTick生成。" +
-                        "日志与崩溃诊断均已进行二次脱敏处理。\n"
+                    localizeText("本压缩包由QuestTick生成。", language) +
+                        localizeText("日志与崩溃诊断均已进行二次脱敏处理。\n", language)
                 ).toByteArray(Charsets.UTF_8),
             )
             zip.closeEntry()
@@ -162,8 +171,9 @@ object LogExporter {
         logs: List<LogEntry>,
         verbose: Boolean,
         format: ExportFormat = ExportFormat.TXT,
+        language: AppLanguage = AppLanguage.SIMPLIFIED_CHINESE,
     ): Result<Unit> {
-        if (logs.isEmpty()) return Result.failure(IllegalStateException("暂无日志可导出"))
+        if (logs.isEmpty()) return Result.failure(IllegalStateException(localizeText("暂无日志可导出", language)))
         return try {
             val dir = File(context.cacheDir, "exports").apply { mkdirs() }
             // 清理 7 天前的导出缓存，避免 cacheDir 膨胀。
@@ -171,7 +181,7 @@ object LogExporter {
             dir.listFiles()?.forEach { if (it.lastModified() < weekAgo) it.delete() }
 
             val file = File(dir, suggestFileName(format = format))
-            file.writeBytes(buildBytesWithDiagnostics(context, logs, verbose, format))
+            file.writeBytes(buildBytesWithDiagnostics(context, logs, verbose, format, language))
 
             val uri =
                 FileProvider.getUriForFile(
@@ -183,17 +193,17 @@ object LogExporter {
                 Intent(Intent.ACTION_SEND).apply {
                     type = format.mimeType
                     putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, "QuestTick日志")
+                    putExtra(Intent.EXTRA_SUBJECT, localizeText("QuestTick日志", language))
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
             val chooser =
-                Intent.createChooser(send, "导出日志").apply {
+                Intent.createChooser(send, localizeText("导出日志", language)).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             context.startActivity(chooser)
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(IllegalStateException("日志导出失败：${e.javaClass.simpleName}"))
+            Result.failure(IllegalStateException("${localizeText("日志导出失败", language)}：${e.javaClass.simpleName}"))
         }
     }
 }

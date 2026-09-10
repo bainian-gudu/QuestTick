@@ -78,7 +78,10 @@ object Passport {
         return digest.joinToString("") { "%02x".format(it) }.take(16)
     }
 
-    data class SafeInfo(val passportHash: String, val passportMasked: String)
+    data class SafeInfo(
+        val passportHash: String,
+        val passportMasked: String,
+    )
 
     fun getSafePassportInfo(value: String?): SafeInfo {
         val id = extractPassportId(value)

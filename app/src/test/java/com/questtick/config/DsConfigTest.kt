@@ -59,5 +59,4 @@ class DsConfigTest {
         assertFalse(config.isUsable(currentAppVersion = "1.0.0"))
         assertTrue(ConfigVerifier.isVersionAtLeast("1.2.3", "1.2.0"))
     }
-
 }

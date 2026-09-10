@@ -123,22 +123,23 @@ class QrConfirmedCookieParsingTest {
 
     @Test
     fun parseMysUserNicknameReadsBbsNickname() {
-        val nickname = QRLoginManager.parseMysUserNickname(
-            org.json.JSONObject(
-                """
-                {
-                  "retcode": 0,
-                  "data": {
-                    "user_info": {
-                      "uid": "10001",
-                      "nickname": "米游社昵称",
-                      "introduce": ""
+        val nickname =
+            QRLoginManager.parseMysUserNickname(
+                org.json.JSONObject(
+                    """
+                    {
+                      "retcode": 0,
+                      "data": {
+                        "user_info": {
+                          "uid": "10001",
+                          "nickname": "米游社昵称",
+                          "introduce": ""
+                        }
+                      }
                     }
-                  }
-                }
-                """.trimIndent(),
-            ),
-        )
+                    """.trimIndent(),
+                ),
+            )
 
         assertEquals("米游社昵称", nickname)
     }
@@ -245,21 +246,22 @@ class QrConfirmedCookieParsingTest {
 
     @Test
     fun parseMultiTokenResponseExtractsStokenAndLtoken() {
-        val token = QRLoginManager.parseMultiTokenResponse(
-            org.json.JSONObject(
-                """
-                {
-                  "retcode": 0,
-                  "data": {
-                    "list": [
-                      {"name":"ltoken","token":"ltoken_value"},
-                      {"name":"stoken","token":"stoken_value"}
-                    ]
-                  }
-                }
-                """.trimIndent(),
-            ),
-        )
+        val token =
+            QRLoginManager.parseMultiTokenResponse(
+                org.json.JSONObject(
+                    """
+                    {
+                      "retcode": 0,
+                      "data": {
+                        "list": [
+                          {"name":"ltoken","token":"ltoken_value"},
+                          {"name":"stoken","token":"stoken_value"}
+                        ]
+                      }
+                    }
+                    """.trimIndent(),
+                ),
+            )
 
         assertEquals("stoken_value", token.stoken)
         assertEquals("ltoken_value", token.ltoken)
@@ -267,21 +269,22 @@ class QrConfirmedCookieParsingTest {
 
     @Test
     fun parseMultiTokenResponseSupportsStokenV2Name() {
-        val token = QRLoginManager.parseMultiTokenResponse(
-            org.json.JSONObject(
-                """
-                {
-                  "retcode": 0,
-                  "data": {
-                    "list": [
-                      {"name":"stoken_v2","token":"stoken_v2_value"},
-                      {"name":"ltoken_v2","token":"ltoken_v2_value"}
-                    ]
-                  }
-                }
-                """.trimIndent(),
-            ),
-        )
+        val token =
+            QRLoginManager.parseMultiTokenResponse(
+                org.json.JSONObject(
+                    """
+                    {
+                      "retcode": 0,
+                      "data": {
+                        "list": [
+                          {"name":"stoken_v2","token":"stoken_v2_value"},
+                          {"name":"ltoken_v2","token":"ltoken_v2_value"}
+                        ]
+                      }
+                    }
+                    """.trimIndent(),
+                ),
+            )
 
         assertEquals("stoken_v2_value", token.stoken)
         assertEquals("ltoken_v2_value", token.ltoken)
@@ -289,21 +292,22 @@ class QrConfirmedCookieParsingTest {
 
     @Test
     fun parseMultiTokenResponsePrefersTokenTypeOneForStoken() {
-        val token = QRLoginManager.parseMultiTokenResponse(
-            org.json.JSONObject(
-                """
-                {
-                  "retcode": 0,
-                  "data": {
-                    "list": [
-                      {"name":"stoken","token":"stoken_from_name"},
-                      {"token_type":1,"token":"stoken_from_type_one"}
-                    ]
-                  }
-                }
-                """.trimIndent(),
-            ),
-        )
+        val token =
+            QRLoginManager.parseMultiTokenResponse(
+                org.json.JSONObject(
+                    """
+                    {
+                      "retcode": 0,
+                      "data": {
+                        "list": [
+                          {"name":"stoken","token":"stoken_from_name"},
+                          {"token_type":1,"token":"stoken_from_type_one"}
+                        ]
+                      }
+                    }
+                    """.trimIndent(),
+                ),
+            )
 
         assertEquals("stoken_from_type_one", token.stoken)
     }

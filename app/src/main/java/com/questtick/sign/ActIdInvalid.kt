@@ -66,8 +66,7 @@ object ActIdInvalid {
         return retcode in INVALID_RETCODES
     }
 
-    private fun isClearlyNotActIdMessage(message: String): Boolean =
-        message.isNotBlank() && CLEARLY_NOT_PATTERNS.any { it.containsMatchIn(message) }
+    private fun isClearlyNotActIdMessage(message: String): Boolean = message.isNotBlank() && CLEARLY_NOT_PATTERNS.any { it.containsMatchIn(message) }
 
     private fun isInvalidMessage(message: String): Boolean {
         val text = message.trim()

@@ -1,26 +1,4 @@
-# ================================================================
-# QuestTick Startup Profile v2
-# ================================================================
-#
-# 比 baseline-prof.txt 更精简：只包含「应用从冷启动到首屏可见」
-# 这条关键路径上必须经过的类。安装时预编译这些能让冷启动时间下降
-# 30% - 50%（Android 官方文档建议范围）。
-#
-# v2 更新（2026-06-27 UI重组 + 启动预热裁剪）：
-# - 移除 Notifier.ensureChannel（已延后到首帧后）
-# - 新增 Coil ImageLoader（首屏奖励图标）
-# - 新增 Room WAL 初始化路径
-# - 新增 ThreadLocal DateFormatter
-# - 新增 Compose Animation 运行时
-#
-# 与源码对应：
-#   - MainActivity / QuestTickApp：进程入口
-#   - ui/theme / ui/components：Compose 主题、通用组件
-#   - ui/screens/HomeScreen：首屏
-#   - ui/screens/AccountsScreen：第二个高频入口
-#   - ui/vm/MainViewModel / HomeViewModel / AccountsViewModel：构造时就预热
-#   - data/SecureStore / Repository：启动期解密 + 预加载
-# ================================================================
+# 启动阶段需要预编译的入口、首屏组件和本地数据路径。
 
 # === 入口 ===
 HSPLcom/questtick/MainActivity*->**(**)**
@@ -77,7 +55,3 @@ HSPLandroidx/compose/runtime/**->**(**)**
 # === Hilt DI 启动路径 ===
 HSPLdagger/hilt/**->**(**)**
 HSPLandroidx/hilt/**->**(**)**
-
-# === 通知渠道（已延后到首帧后，不再列入 startup profile） ===
-# HSPLcom/questtick/notify/Notifier->ensureChannel(**)**
-# Lcom/questtick/notify/Notifier;

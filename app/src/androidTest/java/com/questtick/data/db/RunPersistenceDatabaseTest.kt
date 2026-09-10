@@ -32,10 +32,12 @@ class RunPersistenceDatabaseTest {
     @Before
     fun setUp() {
         database =
-            Room.inMemoryDatabaseBuilder(
-                ApplicationProvider.getApplicationContext(),
-                AppDatabase::class.java,
-            ).allowMainThreadQueries().build()
+            Room
+                .inMemoryDatabaseBuilder(
+                    ApplicationProvider.getApplicationContext(),
+                    AppDatabase::class.java,
+                ).allowMainThreadQueries()
+                .build()
         repository = RunPersistenceRepository(database)
     }
 
@@ -114,6 +116,28 @@ class RunPersistenceDatabaseTest {
     }
 
     @Test
+    fun signedTaskIdsForDayDoesNotReuseTheSameTaskFromAnotherCalendarDate() {
+        val firstDay = 1_752_710_400_000L // 2025-07-15T00:00:00Z
+        val secondDay = firstDay + 24L * 60 * 60 * 1000
+        val task = taskPlan().first()
+        repository.startRun("run-day-one", RunTrigger.MANUAL, firstDay, listOf(task))
+        repository.finishRun(
+            record =
+                RunRecord(
+                    timestamp = firstDay + 1,
+                    runId = "run-day-one",
+                    trigger = RunTrigger.MANUAL,
+                    results = listOf(result(task, success = true, message = "签到成功")),
+                ),
+            logs = emptyList(),
+            postRunActions = emptyList(),
+        )
+
+        assertEquals(setOf(task.id), repository.signedTaskIdsForDay(firstDay))
+        assertEquals(emptySet<String>(), repository.signedTaskIdsForDay(secondDay))
+    }
+
+    @Test
     fun invalidFinalTaskSetRollsBackHistoryCalendarAndLogs() {
         val startedAt = System.currentTimeMillis() - 1_000L
         val tasks = taskPlan()
@@ -185,13 +209,14 @@ class RunPersistenceDatabaseTest {
     @Test
     fun cancellationKeepsConfirmedResultAndSeparatesUnknownFromNeverStarted() {
         val startedAt = System.currentTimeMillis() - 1_000L
-        val tasks = taskPlan() +
-            RunTaskProgress(
-                id = "account-a|MYS|ZZZ",
-                accountLabel = "账号A",
-                targetName = "绝区零",
-                type = RunTaskType.MYS,
-            )
+        val tasks =
+            taskPlan() +
+                RunTaskProgress(
+                    id = "account-a|MYS|ZZZ",
+                    accountLabel = "账号A",
+                    targetName = "绝区零",
+                    type = RunTaskType.MYS,
+                )
         repository.startRun("run-cancelled", RunTrigger.MANUAL, startedAt, tasks)
         assertTrue(
             repository.persistTaskResult(

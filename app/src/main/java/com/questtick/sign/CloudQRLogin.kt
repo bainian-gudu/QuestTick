@@ -1,6 +1,6 @@
 package com.questtick.sign
 
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
 import com.questtick.net.HttpTransport
@@ -82,7 +82,10 @@ object CloudQRLogin {
 
     // 数据结构。
 
-    data class QRCode(val ticket: String, val url: String)
+    data class QRCode(
+        val ticket: String,
+        val url: String,
+    )
 
     sealed class ScanStatus {
         object Created : ScanStatus()
@@ -100,9 +103,13 @@ object CloudQRLogin {
 
         object Cancelled : ScanStatus()
 
-        data class TransientError(val msg: String) : ScanStatus()
+        data class TransientError(
+            val msg: String,
+        ) : ScanStatus()
 
-        data class Error(val msg: String) : ScanStatus()
+        data class Error(
+            val msg: String,
+        ) : ScanStatus()
     }
 
     // 对外 API。
@@ -126,7 +133,7 @@ object CloudQRLogin {
             val retcode = json.optInt("retcode", -999)
             if (retcode != 0) {
                 recordError?.invoke("$gameKey createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
-                Log.w(TAG, "createQRLogin failed: retcode=$retcode")
+                AppLog.w(TAG, "createQRLogin failed: retcode=$retcode")
                 return Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
             }
             val data =
@@ -141,7 +148,7 @@ object CloudQRLogin {
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("$gameKey createQRLogin exception: ${ErrorText.detailOf(e)}")
-            Log.w(TAG, "createQRCode failed", e)
+            AppLog.w(TAG, "createQRCode failed", e)
             Result.failure(e)
         }
     }
@@ -153,8 +160,8 @@ object CloudQRLogin {
         deviceId: String,
         httpTransport: HttpTransport,
         recordError: ((String) -> Unit)? = null,
-    ): ScanStatus {
-        return try {
+    ): ScanStatus =
+        try {
             val config = configFor(gameKey)
             val body = JSONObject().put("ticket", ticket)
             val response =
@@ -169,7 +176,7 @@ object CloudQRLogin {
                     JSONObject(response.body)
                 } catch (e: Exception) {
                     e.throwIfCancellation()
-                    Log.w(
+                    AppLog.w(
                         TAG,
                         "queryStatus response parse failed: http=${response.code}, " +
                             "bodyLength=${response.body.length}, error=${e.javaClass.simpleName}",
@@ -202,10 +209,9 @@ object CloudQRLogin {
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("$gameKey queryQRLoginStatus exception: ${ErrorText.detailOf(e)}")
-            Log.w(TAG, "queryStatus transient failure", e)
+            AppLog.w(TAG, "queryStatus transient failure", e)
             ScanStatus.TransientError(Mask.sensitive(ErrorText.fromException(e)))
         }
-    }
 
     /** 持续轮询扫码状态，直到成功、过期或失败。 */
     fun pollStatus(
@@ -294,7 +300,7 @@ object CloudQRLogin {
             val retcode = json.optInt("retcode", -999)
             if (retcode != 0) {
                 recordError?.invoke("$gameKey webLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
-                Log.w(TAG, "combo webLogin failed: retcode=$retcode")
+                AppLog.w(TAG, "combo webLogin failed: retcode=$retcode")
                 return Result.failure(RuntimeException("combo webLogin retcode=$retcode: ${json.optString("message")}"))
             }
 
@@ -302,7 +308,7 @@ object CloudQRLogin {
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("$gameKey webLogin exception: ${ErrorText.detailOf(e)}")
-            Log.w(TAG, "exchangeComboToken failed", e)
+            AppLog.w(TAG, "exchangeComboToken failed", e)
             Result.failure(e)
         }
     }
@@ -318,18 +324,22 @@ object CloudQRLogin {
         val nested = jsonObjectFrom(data.opt("data"))
 
         val appId =
-            data.optString("app_id")
+            data
+                .optString("app_id")
                 .ifBlank { nested?.optString("app_id").orEmpty() }
                 .ifBlank { config.sdkAppId }
         val channelId =
-            data.optString("channel_id")
+            data
+                .optString("channel_id")
                 .ifBlank { nested?.optString("channel_id").orEmpty() }
                 .ifBlank { config.channelId }
         val openId =
-            data.optString("open_id")
+            data
+                .optString("open_id")
                 .ifBlank { nested?.optString("open_id").orEmpty() }
         val comboToken =
-            data.optString("combo_token")
+            data
+                .optString("combo_token")
                 .ifBlank { nested?.optString("combo_token").orEmpty() }
 
         if (openId.isBlank() || comboToken.isBlank()) {
@@ -444,13 +454,13 @@ object CloudQRLogin {
     private fun cookieValue(
         cookieHeader: String,
         name: String,
-    ): String {
-        return cookieHeader.split(';')
+    ): String =
+        cookieHeader
+            .split(';')
             .map { it.trim() }
             .firstOrNull { it.startsWith("$name=") }
             ?.substringAfter('=')
             .orEmpty()
-    }
 
     private fun jsonObjectFrom(value: Any?): JSONObject? =
         when (value) {
@@ -491,7 +501,8 @@ object CloudQRLogin {
     ): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(key.toByteArray(Charsets.UTF_8), "HmacSHA256"))
-        return mac.doFinal(payload.toByteArray(Charsets.UTF_8))
+        return mac
+            .doFinal(payload.toByteArray(Charsets.UTF_8))
             .joinToString("") { b -> (b.toInt() and 0xff).toString(16).padStart(2, '0') }
     }
 }

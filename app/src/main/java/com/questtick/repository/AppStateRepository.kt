@@ -1,6 +1,6 @@
 package com.questtick.repository
 
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.repository.account.AccountRepository
 import com.questtick.repository.history.HistoryRepository
 import com.questtick.repository.calendar.SignInCalendarRepository
@@ -55,7 +55,7 @@ class AppStateRepository
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.w(TAG, "Initial repository reload failed", e)
+                    AppLog.w(TAG, "Initial repository reload failed", e)
                 } finally {
                     _ready.value = true
                 }
@@ -81,7 +81,7 @@ class AppStateRepository
                     }
                 }
             }
-            lastError?.let { Log.w(TAG, "Initial $name reload failed after $attempts attempts", it) }
+            lastError?.let { AppLog.w(TAG, "Initial $name reload failed after $attempts attempts", it) }
         }
 
         fun triggerToast(message: String) {

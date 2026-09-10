@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class UiFormatTest {
-
     @Test
     fun `format readable bytes handles negative and small values`() {
         assertEquals("0 B", formatReadableBytes(-1))

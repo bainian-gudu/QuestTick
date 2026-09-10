@@ -21,12 +21,13 @@ class AddAccountUiStateTest {
         val state = AddAccountUiState.from(account)
 
         assertFalse(
-            state.copy(
-                tab = 2,
-                hydrated = true,
-                saveError = "无法保存",
-                cookieWarning = "Cookie 即将过期",
-            ).hasFormChangesFrom(account),
+            state
+                .copy(
+                    tab = 2,
+                    hydrated = true,
+                    saveError = "无法保存",
+                    cookieWarning = "Cookie 即将过期",
+                ).hasFormChangesFrom(account),
         )
     }
 

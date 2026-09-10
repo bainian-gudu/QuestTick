@@ -52,10 +52,11 @@ object AppUiThemeCatalog {
         )
 
     /** OLED/AMOLED 模式：仅将大面积背景归零，卡片仍保留层次以维持可读性。 */
-    val OledDark = Dark.copy(
-        backgroundTop = Color.Black,
-        backgroundBottom = Color.Black,
-    )
+    val OledDark =
+        Dark.copy(
+            backgroundTop = Color.Black,
+            backgroundBottom = Color.Black,
+        )
 
     val Default = Light
 }

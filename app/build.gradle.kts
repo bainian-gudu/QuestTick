@@ -9,6 +9,55 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlinx.kover")
+    id("io.gitlab.arturbosch.detekt")
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    baseline = rootProject.file("config/detekt/baseline.xml")
+}
+
+tasks.register("verifyCodeRedLines") {
+    group = "verification"
+    description = "扫描源码红线：裸 android.util.Log / println / printStackTrace"
+    val sourceDir = layout.projectDirectory.dir("src/main/java")
+    inputs.dir(sourceDir)
+    doLast {
+        val violations = mutableListOf<String>()
+        sourceDir.asFileTree.matching { include("**/*.kt") }.forEach { file ->
+            if (file.path.endsWith("log/AppLog.kt")) return@forEach
+            file.readLines().forEachIndexed { index, line ->
+                when {
+                    Regex("^\\s*import android\\.util\\.Log\b").containsMatchIn(line) ->
+                        violations.add("${file.path}:${index + 1} 禁止直接 import android.util.Log，请使用 com.questtick.log.AppLog")
+                    Regex("""\bprintln\s*\(""").containsMatchIn(line) ->
+                        violations.add("${file.path}:${index + 1} 禁止使用 println，请使用 AppLog 或 Room 日志")
+                    Regex("""\.printStackTrace\s*\(\s*\)""").containsMatchIn(line) ->
+                        violations.add("${file.path}:${index + 1} 禁止使用 printStackTrace，请将异常传递给 AppLog 或上层处理")
+                }
+            }
+        }
+        if (violations.isNotEmpty()) {
+            throw GradleException("代码红线检查失败：\n" + violations.joinToString("\n"))
+        }
+    }
+}
+
+tasks.named("check") { dependsOn("verifyCodeRedLines") }
+
+afterEvaluate {
+    // AGP 9 下 detekt 变体任务未自动注册，手动接通编译类路径以启用类型解析类规则。
+    tasks.matching { it.name == "detekt" }.configureEach {
+        val detektTask = this as io.gitlab.arturbosch.detekt.Detekt
+        configurations.findByName("debugCompileClasspath")?.let { detektTask.classpath.from(it) }
+        detektTask.jvmTarget = "17"
+    }
+    tasks.matching { it.name == "detektBaseline" }.configureEach {
+        val baselineTask = this as io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+        configurations.findByName("debugCompileClasspath")?.let { baselineTask.classpath.from(it) }
+        baselineTask.jvmTarget = "17"
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -16,29 +65,33 @@ plugins {
 // ---------------------------------------------------------------------------
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = Properties().apply {
-    if (keystorePropertiesFile.exists()) {
-        FileInputStream(keystorePropertiesFile).use { load(it) }
+val keystoreProperties =
+    Properties().apply {
+        if (keystorePropertiesFile.exists()) {
+            FileInputStream(keystorePropertiesFile).use { load(it) }
+        }
     }
-}
 
-val envStoreBase64   : String? = System.getenv("KEYSTORE_BASE64") ?: System.getenv("KEYSTORE_B64")
-val envStoreFile     : String? = System.getenv("KEYSTORE_FILE")
-val envStorePassword : String? = System.getenv("KEYSTORE_PASSWORD")
-val envKeyAlias      : String? = System.getenv("KEY_ALIAS")
-val envKeyPassword   : String? = System.getenv("KEY_PASSWORD")
+val envStoreBase64: String? = System.getenv("KEYSTORE_BASE64") ?: System.getenv("KEYSTORE_B64")
+val envStoreFile: String? = System.getenv("KEYSTORE_FILE")
+val envStorePassword: String? = System.getenv("KEYSTORE_PASSWORD")
+val envKeyAlias: String? = System.getenv("KEY_ALIAS")
+val envKeyPassword: String? = System.getenv("KEY_PASSWORD")
 
-val storeFilePath: String = envStoreFile
-    ?: keystoreProperties.getProperty("storeFile")
-    ?.takeIf { it.isNotBlank() }
-    ?: ""
+val storeFilePath: String =
+    envStoreFile
+        ?: keystoreProperties
+            .getProperty("storeFile")
+            ?.takeIf { it.isNotBlank() }
+        ?: ""
 
-val storeFileObj = if (storeFilePath.isNotBlank()) {
-    rootProject.file(storeFilePath)
-} else {
-    // 当没有 keystore 时，使用一个不存在的文件路径，避免 rootProject.file("") 报错
-    rootProject.file("NO_KEYSTORE")
-}
+val storeFileObj =
+    if (storeFilePath.isNotBlank()) {
+        rootProject.file(storeFilePath)
+    } else {
+        // 当没有 keystore 时，使用一个不存在的文件路径，避免 rootProject.file("") 报错
+        rootProject.file("NO_KEYSTORE")
+    }
 
 if (!envStoreBase64.isNullOrBlank() && !storeFileObj.exists()) {
     try {
@@ -51,29 +104,37 @@ if (!envStoreBase64.isNullOrBlank() && !storeFileObj.exists()) {
     }
 }
 
-val finalStorePassword = envStorePassword
-    ?: keystoreProperties.getProperty("storePassword")
+val finalStorePassword =
+    envStorePassword
+        ?: keystoreProperties.getProperty("storePassword")
 
-val finalKeyAlias = envKeyAlias
-    ?: keystoreProperties.getProperty("keyAlias")
+val finalKeyAlias =
+    envKeyAlias
+        ?: keystoreProperties.getProperty("keyAlias")
 
-val finalKeyPassword = envKeyPassword
-    ?: keystoreProperties.getProperty("keyPassword")
-    ?: finalStorePassword
+val finalKeyPassword =
+    envKeyPassword
+        ?: keystoreProperties.getProperty("keyPassword")
+        ?: finalStorePassword
 
-val hasReleaseKeystore = storeFileObj.exists()
-    && !finalStorePassword.isNullOrBlank()
-    && !finalKeyAlias.isNullOrBlank()
+val hasReleaseKeystore =
+    storeFileObj.exists() &&
+        !finalStorePassword.isNullOrBlank() &&
+        !finalKeyAlias.isNullOrBlank()
 
-fun optionalBuildValue(propertyName: String, envName: String): String? =
+fun optionalBuildValue(
+    propertyName: String,
+    envName: String,
+): String? =
     (findProperty(propertyName) as String?)?.trim()?.takeIf { it.isNotEmpty() }
         ?: System.getenv(envName)?.trim()?.takeIf { it.isNotEmpty() }
 
 val appVersionName = optionalBuildValue("appVersionName", "APP_VERSION_NAME") ?: "1.0.0"
-val appVersionCode = optionalBuildValue("appVersionCode", "APP_VERSION_CODE")
-    ?.toIntOrNull()
-    ?.takeIf { it > 0 }
-    ?: 2
+val appVersionCode =
+    optionalBuildValue("appVersionCode", "APP_VERSION_CODE")
+        ?.toIntOrNull()
+        ?.takeIf { it > 0 }
+        ?: 2
 
 android {
     namespace = "com.questtick"
@@ -106,10 +167,10 @@ android {
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {
-                storeFile     = storeFileObj
+                storeFile = storeFileObj
                 storePassword = finalStorePassword!!
-                keyAlias      = finalKeyAlias!!
-                keyPassword   = finalKeyPassword!!
+                keyAlias = finalKeyAlias!!
+                keyPassword = finalKeyPassword!!
 
                 enableV1Signing = false
                 enableV2Signing = true
@@ -126,15 +187,15 @@ android {
             // R8 full mode 由 gradle.properties 中的 android.enableR8.fullMode 控制。
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
 
-
-            signingConfig = if (hasReleaseKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                null
-            }
+            signingConfig =
+                if (hasReleaseKeystore) {
+                    signingConfigs.getByName("release")
+                } else {
+                    null
+                }
         }
         debug {
             applicationIdSuffix = ".debug"

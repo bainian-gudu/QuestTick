@@ -2,7 +2,7 @@ package com.questtick.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
+import com.questtick.log.AppLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -41,8 +41,7 @@ class SecureStore
         }
         private val signInGuardStore: SignInGuardStore by lazy { SignInGuardStore(plainPrefs) }
 
-        private fun createSecurePrefs(): SharedPreferences =
-            KeystoreEncryptedSharedPreferences(appContext, SECURE_FILE)
+        private fun createSecurePrefs(): SharedPreferences = KeystoreEncryptedSharedPreferences(appContext, SECURE_FILE)
 
         // 账号数据（加密存储）。
 
@@ -116,13 +115,14 @@ class SecureStore
             if (trimmed.isBlank()) return
             if (plainPrefs.getString(key, null).isNullOrBlank()) {
                 val success =
-                    plainPrefs.edit()
+                    plainPrefs
+                        .edit()
                         .putString(key, trimmed)
                         // 生成 ID 视为当前设置值，便于设置页和后续运行直接回显。
                         .putString("${key}User", trimmed)
                         .commitSafely(TAG, "persist device id")
                 if (!success) {
-                    Log.w(TAG, "Failed to persist device id for key=$key")
+                    AppLog.w(TAG, "Failed to persist device id for key=$key")
                 } else {
                     val current = settingsStore.get()
                     when (key) {

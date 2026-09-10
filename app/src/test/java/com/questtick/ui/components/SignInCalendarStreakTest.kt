@@ -21,10 +21,11 @@ class SignInCalendarStreakTest {
     fun `a gap resets the current streak`() {
         val zone = TimeZone.getTimeZone("Asia/Shanghai")
         val now = Instant.parse("2026-08-17T04:00:00Z").toEpochMilli()
-        val twoDaysAgo = Calendar.getInstance(zone).apply {
-            timeInMillis = now
-            add(Calendar.DAY_OF_MONTH, -2)
-        }
+        val twoDaysAgo =
+            Calendar.getInstance(zone).apply {
+                timeInMillis = now
+                add(Calendar.DAY_OF_MONTH, -2)
+            }
 
         assertEquals(
             0,
@@ -42,10 +43,11 @@ class SignInCalendarStreakTest {
         days: Int,
         includeToday: Boolean,
     ): Set<String> {
-        val calendar = Calendar.getInstance(zone).apply {
-            timeInMillis = now
-            if (!includeToday) add(Calendar.DAY_OF_MONTH, -1)
-        }
+        val calendar =
+            Calendar.getInstance(zone).apply {
+                timeInMillis = now
+                if (!includeToday) add(Calendar.DAY_OF_MONTH, -1)
+            }
         return buildSet {
             repeat(days) {
                 add(dayKey(calendar.timeInMillis, zone))

@@ -23,13 +23,12 @@ class AccountRepository
         private val _recoveryIssues = MutableStateFlow<List<AccountRecoveryIssue>>(emptyList())
         val recoveryIssues: StateFlow<List<AccountRecoveryIssue>> = _recoveryIssues.asStateFlow()
 
-        override suspend fun loadFromStore(): List<Account> {
-            return withContext(kotlinx.coroutines.Dispatchers.IO) {
+        override suspend fun loadFromStore(): List<Account> =
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
                 store.getAccounts().also {
                     _recoveryIssues.value = store.getAccountRecoveryIssues()
                 }
             }
-        }
 
         override suspend fun saveToStore(data: List<Account>) {
             // 账号更新通过 upsert/update 单独处理；StatefulRepository.updateAndPersist 不应被调用
@@ -69,7 +68,11 @@ class AccountRepository
 
         suspend fun cookieOf(accountId: String): String =
             withContext(kotlinx.coroutines.Dispatchers.IO) {
-                store.getAccounts().firstOrNull { it.id == accountId }?.mysCookie.orEmpty()
+                store
+                    .getAccounts()
+                    .firstOrNull { it.id == accountId }
+                    ?.mysCookie
+                    .orEmpty()
             }
 
         suspend fun updateUidCredentials(

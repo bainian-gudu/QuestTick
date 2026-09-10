@@ -1,0 +1,14 @@
+# 依赖与插件版本目录：构建脚本中不再硬编码版本号。
+[versions]
+ktlint = "1.5.0"
+
+[plugins]
+android-application = { id = "com.android.application", version = "9.2.1" }
+android-test = { id = "com.android.test", version = "9.2.1" }
+baselineprofile = { id = "androidx.baselineprofile", version = "1.5.0-alpha05" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version = "2.4.0" }
+ksp = { id = "com.google.devtools.ksp", version = "2.3.9" }
+hilt = { id = "com.google.dagger.hilt.android", version = "2.59.2" }
+kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.8" }
+spotless = { id = "com.diffplug.spotless", version = "7.0.4" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.8" }

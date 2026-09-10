@@ -25,10 +25,20 @@ import java.util.Properties
 /**
  * 可选 SMTP 邮件推送。
  *
- * 邮件模板按账号分组，区分米游社与云游戏，生成动态标题与状态徽章；配色保持当前 Android
- * 端一致的蓝白风格。正文不写入 Cookie / Token 等敏感值。
+ * 邮件模板按账号分组，区分米游社与云游戏，生成动态标题与状态徽章。模板固定使用应用默认
+ * 浅色调色板，不读取动态配色或用户自定义主题；正文不写入 Cookie / Token 等敏感值。
  */
 object Mailer {
+    private object DefaultMailPalette {
+        const val PAGE_BACKGROUND = "#F8FBFF"
+        const val SURFACE = "#FFFFFF"
+        const val TEXT = "#0F172A"
+        const val PRIMARY = "#2563EB"
+        const val PRIMARY_LIGHT = "#60A5FA"
+        const val PRIMARY_TINT = "#EFF6FF"
+        const val PRIMARY_BORDER = "#BFDBFE"
+    }
+
     private data class TitleInfo(
         val pageTitle: String,
         val mainTitle: String,
@@ -48,8 +58,10 @@ object Mailer {
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             if (!settings.enabled) return@withContext Result.success(Unit)
-            if (settings.mailTo.isBlank() || settings.smtpServer.isBlank() ||
-                settings.username.isBlank() || settings.password.isBlank()
+            if (settings.mailTo.isBlank() ||
+                settings.smtpServer.isBlank() ||
+                settings.username.isBlank() ||
+                settings.password.isBlank()
             ) {
                 return@withContext Result.failure(IllegalStateException("SMTP 配置不完整"))
             }
@@ -89,9 +101,12 @@ object Mailer {
                     MimeMessage(session).apply {
                         setFrom(InternetAddress(settings.username))
                         val recipients =
-                            settings.mailTo.split(",", "\n")
-                                .map { it.trim() }.filter { it.isNotEmpty() }
-                                .map { InternetAddress(it) }.toTypedArray()
+                            settings.mailTo
+                                .split(",", "\n")
+                                .map { it.trim() }
+                                .filter { it.isNotEmpty() }
+                                .map { InternetAddress(it) }
+                                .toTypedArray()
                         setRecipients(Message.RecipientType.TO, recipients)
                         subject = buildSubject(record, language)
                         setContent(buildHtml(record, language), "text/html; charset=utf-8")
@@ -113,29 +128,12 @@ object Mailer {
         val title = localizeMailTemplate(getTitleInfo(record).mailTitle, language)
         val status =
             when {
-                record.total == 0 -> mailText(language, "No tasks", "タスクなし", "작업 없음", "无任务")
-                record.resultUnknown == record.total ->
-                    mailText(language, "Result unconfirmed", "結果要確認", "결과 확인 필요", "结果待确认")
-                record.failed == 0 && record.resultUnknown == 0 ->
-                    mailText(language, "All successful", "すべて成功", "모두 성공", "全部成功")
-                record.failed == 0 ->
-                    mailText(
-                        language,
-                        "${record.resultUnknown} unconfirmed",
-                        "${record.resultUnknown} 件要確認",
-                        "${record.resultUnknown}개 확인 필요",
-                        "${record.resultUnknown}项待确认",
-                    )
-                record.failed >= record.total ->
-                    mailText(language, "All failed", "すべて失敗", "모두 실패", "全部失败")
-                else ->
-                    mailText(
-                        language,
-                        "${record.failed} failed, ${record.resultUnknown} unconfirmed",
-                        "${record.failed} 件失敗、${record.resultUnknown} 件要確認",
-                        "${record.failed}개 실패, ${record.resultUnknown}개 확인 필요",
-                        "${record.failed}项失败 ${record.resultUnknown}项待确认",
-                    )
+                record.total == 0 -> localizeText("无任务", language)
+                record.resultUnknown == record.total -> localizeText("结果待确认", language)
+                record.failed == 0 && record.resultUnknown == 0 -> localizeText("全部成功", language)
+                record.failed == 0 -> localizeText("${record.resultUnknown}项待确认", language)
+                record.failed >= record.total -> localizeText("全部失败", language)
+                else -> localizeText("${record.failed}项失败 ${record.resultUnknown}项待确认", language)
             }
         return "$title - $status"
     }
@@ -151,7 +149,7 @@ object Mailer {
             if (record.results.isEmpty()) {
                 """
                 <div
-                  style="padding:14px;background:#EFF6FF;border:1px solid #BFDBFE;
+                  style="padding:14px;background:${DefaultMailPalette.PRIMARY_TINT};border:1px solid ${DefaultMailPalette.PRIMARY_BORDER};
                          text-align:center;margin-top:16px;font-size:13px;
                          border-radius:10px;color:#1E40AF;">
                     本次没有可显示的签到任务。
@@ -168,15 +166,15 @@ object Mailer {
   <meta charset="UTF-8">
   <title>${escape(titleInfo.pageTitle)}</title>
 </head>
-<body style="margin:0;padding:16px;background:#F8FBFF;font-family:Arial,'Microsoft YaHei','PingFang SC',sans-serif;color:#0F172A;">
+<body style="margin:0;padding:16px;background:${DefaultMailPalette.PAGE_BACKGROUND};font-family:Arial,'Microsoft YaHei','PingFang SC',sans-serif;color:${DefaultMailPalette.TEXT};">
   <div
-    style="max-width:720px;margin:0 auto;background:#FFFFFF;
-           border:1px solid #BFDBFE;border-radius:16px;padding:18px;
+    style="max-width:720px;margin:0 auto;background:${DefaultMailPalette.SURFACE};
+           border:1px solid ${DefaultMailPalette.PRIMARY_BORDER};border-radius:16px;padding:18px;
            box-shadow:0 4px 18px rgba(37,99,235,.10);">
 
     <div
-      style="background:#2563EB;background:linear-gradient(135deg,#2563EB,#60A5FA);
-             border-radius:13px;padding:16px 12px;text-align:center;color:#FFFFFF;">
+      style="background:${DefaultMailPalette.PRIMARY};background:linear-gradient(135deg,${DefaultMailPalette.PRIMARY},${DefaultMailPalette.PRIMARY_LIGHT});
+             border-radius:13px;padding:16px 12px;text-align:center;color:${DefaultMailPalette.SURFACE};">
       <div style="font-size:19px;font-weight:bold;line-height:1.4;letter-spacing:.5px;">
         ${escape(titleInfo.mainTitle)}
       </div>
@@ -186,8 +184,8 @@ object Mailer {
     </div>
 
     <div
-      style="margin-top:14px;padding:10px 12px;background:#EFF6FF;
-             border:1px solid #BFDBFE;border-radius:10px;text-align:center;
+      style="margin-top:14px;padding:10px 12px;background:${DefaultMailPalette.PRIMARY_TINT};
+             border:1px solid ${DefaultMailPalette.PRIMARY_BORDER};border-radius:10px;text-align:center;
              font-size:12px;color:#1E3A8A;">
       <strong>🕒 签到时间：</strong> ${escape(formatMailDate(record.timestamp, language))}
     </div>
@@ -253,8 +251,8 @@ object Mailer {
 
               <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;table-layout:fixed;">
                 <tr>
-                  ${statCard("签到数", record.total.toString(), "#FFFFFF", "#BFDBFE", "#1E3A8A")}
-                  ${statCard("成功", success.toString(), "#EFF6FF", "#93C5FD", "#2563EB")}
+                  ${statCard("签到数", record.total.toString(), DefaultMailPalette.SURFACE, DefaultMailPalette.PRIMARY_BORDER, "#1E3A8A")}
+                  ${statCard("成功", success.toString(), DefaultMailPalette.PRIMARY_TINT, "#93C5FD", DefaultMailPalette.PRIMARY)}
                   ${statCard("失败", record.failed.toString(), "#FEF2F2", "#FECACA", "#DC2626")}
                   ${statCard("待确认", record.resultUnknown.toString(), "#FFFBEB", "#FDE68A", "#D97706")}
                 </tr>
@@ -303,8 +301,7 @@ object Mailer {
             record.results
                 .groupBy { result ->
                     result.accountId.ifBlank { "label:${result.accountLabel.ifBlank { "未知账号" }}" }
-                }
-                .toSortedMap()
+                }.toSortedMap()
         if (groups.isEmpty()) return ""
         val body =
             groups.values.joinToString("\n") { results ->
@@ -407,7 +404,11 @@ object Mailer {
         }
         if (row.rewardName.isBlank()) return "—"
         val name = row.rewardName
-        val cnt = row.rewardCount.takeIf { it.isNotBlank() }?.let { "×$it" }.orEmpty()
+        val cnt =
+            row.rewardCount
+                .takeIf { it.isNotBlank() }
+                ?.let { "×$it" }
+                .orEmpty()
         val icon =
             if (TrustedUrlPolicy.isRewardIconUrl(row.rewardIcon)) {
                 """<img src="${escape(
@@ -507,8 +508,20 @@ object Mailer {
         }
 
     private fun parseCloudTime(message: String): CloudTime {
-        val claimed = Regex("本次\\+([^·]+)").find(message)?.groupValues?.getOrNull(1)?.trim().orEmpty()
-        val after = Regex("当前([^·，,。]+)").find(message)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+        val claimed =
+            Regex("本次\\+([^·]+)")
+                .find(message)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.trim()
+                .orEmpty()
+        val after =
+            Regex("当前([^·，,。]+)")
+                .find(message)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.trim()
+                .orEmpty()
         return CloudTime(after = after.ifBlank { "—" }, claimed = claimed.ifBlank { "—" })
     }
 
@@ -534,95 +547,65 @@ object Mailer {
         language: AppLanguage,
     ): String {
         if (language == AppLanguage.SIMPLIFIED_CHINESE || language == AppLanguage.SYSTEM) return html
-        val phrases =
+        val sourceKeys =
             listOf(
-                MailPhrase("米游社和云游戏签到结果总结", "Miyoushe and cloud gaming sign-in summary", "米游社・クラウドゲーム受取結果", "미요우서 및 클라우드 게임 출석 결과"),
-                MailPhrase("云游戏签到结果总结", "Cloud gaming sign-in summary", "クラウドゲーム受取結果", "클라우드 게임 출석 결과"),
-                MailPhrase("米游社签到结果总结", "Miyoushe sign-in summary", "米游社受取結果", "미요우서 출석 결과"),
-                MailPhrase("签到结果总结", "Sign-in summary", "受取結果", "출석 결과"),
-                MailPhrase("米游社和云游戏签到结果", "Miyoushe and cloud gaming sign-in results", "米游社・クラウドゲーム受取結果", "미요우서 및 클라우드 게임 출석 결과"),
-                MailPhrase("云游戏签到结果", "Cloud gaming sign-in results", "クラウドゲーム受取結果", "클라우드 게임 출석 결과"),
-                MailPhrase("米游社签到结果", "Miyoushe sign-in results", "米游社受取結果", "미요우서 출석 결과"),
-                MailPhrase("云游戏签到明细", "Cloud gaming details", "クラウドゲーム詳細", "클라우드 게임 상세"),
-                MailPhrase("米游社签到明细", "Miyoushe details", "米游社詳細", "미요우서 상세"),
-                MailPhrase("签到明细", "Sign-in details", "受取詳細", "출석 상세"),
-                MailPhrase("签到结果", "Sign-in result", "受取結果", "출석 결과"),
-                MailPhrase("一日签到已毕 · 今日收获如下", "Today's sign-in is complete · Here are your rewards", "本日の受取が完了しました・獲得内容", "오늘 출석 완료 · 획득 내역"),
-                MailPhrase("签到时间：", "Sign-in time:", "受取時刻：", "출석 시간:"),
-                MailPhrase("本次没有可显示的签到任务。", "There are no sign-in tasks to display.", "表示できる受取タスクはありません。", "표시할 출석 작업이 없습니다."),
-                MailPhrase("本次签到统计", "Sign-in statistics", "受取統計", "출석 통계"),
-                MailPhrase("本邮件由「米游社签到」App 自动发送，不包含任何 Cookie / Token 等敏感信息。", "This email was sent automatically by the Miyoushe Sign-in app and contains no sensitive Cookie or Token data.", "このメールは「米游社受取」アプリから自動送信され、CookieやTokenなどの機密情報は含まれません。", "이 이메일은 미요우서 출석 앱에서 자동 전송했으며 Cookie 또는 Token과 같은 민감한 정보를 포함하지 않습니다."),
-                MailPhrase("米游社成功：", "Miyoushe successful: ", "米游社成功：", "미요우서 성공: "),
-                MailPhrase("云游戏成功：", "Cloud gaming successful: ", "クラウドゲーム成功：", "클라우드 게임 성공: "),
-                MailPhrase("米游社结果", "Miyoushe results", "米游社結果", "미요우서 결과"),
-                MailPhrase("云游戏结果", "Cloud gaming results", "クラウドゲーム結果", "클라우드 게임 결과"),
-                MailPhrase("领取后免费时长", "Free time after claim", "受取後の無料時間", "수령 후 무료 시간"),
-                MailPhrase("领取时长", "Claimed time", "受取時間", "수령 시간"),
-                MailPhrase("累计天数", "Total days", "累計日数", "누적 일수"),
-                MailPhrase("今日奖励", "Today's reward", "本日の報酬", "오늘의 보상"),
-                MailPhrase("签到数", "Tasks", "タスク数", "작업 수"),
-                MailPhrase("未知账号", "Unknown account", "不明なアカウント", "알 수 없는 계정"),
-                MailPhrase("结果待确认", "Result unconfirmed", "結果要確認", "결과 확인 필요"),
-                MailPhrase("已跳过", "Skipped", "スキップ済み", "건너뜀"),
-                MailPhrase("已签", "Already claimed", "受取済み", "이미 수령"),
-                MailPhrase("待确认", "Unconfirmed", "要確認", "확인 필요"),
-                MailPhrase("成功", "Success", "成功", "성공"),
-                MailPhrase("失败", "Failed", "失敗", "실패"),
-                MailPhrase("游戏", "Game", "ゲーム", "게임"),
-                MailPhrase("原神", "Genshin Impact", "原神", "원신"),
-                MailPhrase("崩坏：星穹铁道", "Honkai: Star Rail", "崩壊：スターレイル", "붕괴: 스타레일"),
-                MailPhrase("崩坏3", "Honkai Impact 3rd", "崩壊3rd", "붕괴3rd"),
-                MailPhrase("崩坏学园2", "Guns GirlZ", "崩壊学園", "붕괴학원 2"),
-                MailPhrase("未定事件簿", "Tears of Themis", "未定事件簿", "미해결사건부"),
-                MailPhrase("绝区零", "Zenless Zone Zero", "ゼンレスゾーンゼロ", "젠레스 존 제로"),
-                MailPhrase("云原神", "Cloud Genshin Impact", "クラウド原神", "클라우드 원신"),
-                MailPhrase("云崩铁", "Cloud Honkai: Star Rail", "クラウド崩壊：スターレイル", "클라우드 붕괴: 스타레일"),
+                "米游社和云游戏签到结果总结",
+                "云游戏签到结果总结",
+                "米游社签到结果总结",
+                "签到结果总结",
+                "米游社和云游戏签到结果",
+                "云游戏签到结果",
+                "米游社签到结果",
+                "云游戏签到明细",
+                "米游社签到明细",
+                "签到明细",
+                "签到结果",
+                "一日签到已毕 · 今日收获如下",
+                "签到时间：",
+                "本次没有可显示的签到任务。",
+                "本次签到统计",
+                "本邮件由「米游社签到」App 自动发送，不包含任何 Cookie / Token 等敏感信息。",
+                "米游社成功：",
+                "云游戏成功：",
+                "米游社结果",
+                "云游戏结果",
+                "领取后免费时长",
+                "领取时长",
+                "累计天数",
+                "今日奖励",
+                "签到数",
+                "未知账号",
+                "结果待确认",
+                "已跳过",
+                "已签",
+                "待确认",
+                "成功",
+                "失败",
+                "游戏",
+                "打卡后米游币：",
+                "本次获取：",
+                "原神",
+                "崩坏：星穹铁道",
+                "崩坏3",
+                "崩坏学园2",
+                "未定事件簿",
+                "绝区零",
+                "云原神",
+                "云崩铁",
             )
         var result = html
-        phrases.sortedByDescending { it.source.length }.forEach { phrase ->
-            result = result.replace(phrase.source, phrase.value(language))
+        sourceKeys.sortedByDescending(String::length).forEach { source ->
+            result = result.replace(source, localizeText(source, language))
         }
-        result = result.replace(Regex("(\\d+)天")) { match ->
-            val days = match.groupValues[1]
-            mailText(language, "$days days", "$days 日", "${days}일", "$days 天")
-        }
+        result =
+            result.replace(Regex("(\\d+)天")) { match ->
+                localizeText("${match.groupValues[1]} 天", language)
+            }
         val languageTag = language.localeTag ?: "en"
         return result.replace("lang=\"zh-CN\"", "lang=\"$languageTag\"")
     }
 
-    private data class MailPhrase(
-        val source: String,
-        val en: String,
-        val ja: String,
-        val ko: String,
-        val zhHant: String = source,
-    ) {
-        fun value(language: AppLanguage): String =
-            when (language) {
-                AppLanguage.TRADITIONAL_CHINESE -> localizeText(zhHant, AppLanguage.TRADITIONAL_CHINESE)
-                AppLanguage.JAPANESE -> ja
-                AppLanguage.KOREAN -> ko
-                else -> en
-            }
-    }
-
-    private fun mailText(
-        language: AppLanguage,
-        en: String,
-        ja: String,
-        ko: String,
-        zhHans: String,
-    ): String =
-        when (language) {
-            AppLanguage.SIMPLIFIED_CHINESE, AppLanguage.SYSTEM -> zhHans
-            AppLanguage.TRADITIONAL_CHINESE -> localizeText(zhHans, AppLanguage.TRADITIONAL_CHINESE)
-            AppLanguage.JAPANESE -> ja
-            AppLanguage.KOREAN -> ko
-            else -> en
-        }
-
-    private fun isCloud(result: TaskResult): Boolean =
-        result.gameKey == "CloudYS" || result.gameKey == "CloudSR" || result.game.startsWith("云")
+    private fun isCloud(result: TaskResult): Boolean = result.gameKey == "CloudYS" || result.gameKey == "CloudSR" || result.game.startsWith("云")
 
     private fun escape(s: String): String =
         s

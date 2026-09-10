@@ -262,9 +262,10 @@ data class RunRecord(
     /** 今日此前已经签到过的任务数。 */
     val alreadySigned: Int get() = results.count { it.success && it.alreadySigned }
     val resultUnknown: Int get() = results.count { it.failureCategory == FailureCategory.RESULT_UNKNOWN }
-    val skipped: Int get() = results.count {
-        it.skipped && it.failureCategory != FailureCategory.RESULT_UNKNOWN
-    }
+    val skipped: Int get() =
+        results.count {
+            it.skipped && it.failureCategory != FailureCategory.RESULT_UNKNOWN
+        }
 
     fun toJson(): JSONObject =
         JSONObject().apply {

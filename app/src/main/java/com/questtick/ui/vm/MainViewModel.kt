@@ -51,7 +51,10 @@ class MainViewModel
         }
 
         /** 供非 ViewModel 的登录/资源流程复用应用级原始错误日志入口。 */
-        fun recordApplicationError(feature: String, detail: String) {
+        fun recordApplicationError(
+            feature: String,
+            detail: String,
+        ) {
             appErrorLogger.record(feature, IllegalStateException(detail), detail)
         }
 
@@ -94,8 +97,10 @@ class MainViewModel
             if (account.mysCookie.isNotBlank() || account.hasMysKeepLogin) {
                 secureStore.effectiveMysDeviceId(forceCreate = true)
             }
-            if (account.genshinToken.isNotBlank() || account.starrailToken.isNotBlank() ||
-                account.hasGenshinCloudKeepLogin || account.hasStarrailCloudKeepLogin
+            if (account.genshinToken.isNotBlank() ||
+                account.starrailToken.isNotBlank() ||
+                account.hasGenshinCloudKeepLogin ||
+                account.hasStarrailCloudKeepLogin
             ) {
                 secureStore.effectiveCloudDeviceId(forceCreate = true)
             }
@@ -152,7 +157,9 @@ class MainViewModel
             }
         }
 
-        fun saveMysQrLogin(
+        /** 将米游社扫码结果合并到编辑草稿；持久化只在用户点击保存时执行。 */
+        @Suppress("detekt:LongParameterList")
+        fun buildMysQrLoginDraft(
             account: Account,
             cookie: String,
             uid: String,
@@ -161,43 +168,17 @@ class MainViewModel
             ltoken: String,
             keepLogin: Boolean,
             nickname: String = "",
-            onUpdated: ((Account) -> Unit)? = null,
-        ) {
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    val signinCookie = CredentialFieldSanitizer.mysSigninCookie(cookie)
-                    val fallback =
-                        account.copy(
-                            label = mergeMysNicknameLabel(account.label, nickname),
-                            mysCookie = signinCookie,
-                            mysUid = uid,
-                            stoken = stoken,
-                            stmid = stmid,
-                            ltoken = ltoken,
-                            qrLoginBound = keepLogin,
-                        )
-                    val updated =
-                        accountRepository.update(account.id) { latest ->
-                            latest.copy(
-                                label = mergeMysNicknameLabel(latest.label, nickname),
-                                mysCookie = signinCookie,
-                                mysUid = uid,
-                                stoken = stoken,
-                                stmid = stmid,
-                                ltoken = ltoken,
-                                qrLoginBound = keepLogin,
-                            )
-                        } ?: run {
-                            accountRepository.upsert(fallback)
-                            fallback
-                        }
-                    secureStore.effectiveMysDeviceId(forceCreate = true)
-                    withContext(Dispatchers.Main) { onUpdated?.invoke(updated) }
-                } catch (e: Exception) {
-                    appErrorLogger.record("米游社扫码结果保存", e)
-                    appStateRepository.triggerToast("保存扫码登录结果失败")
-                }
-            }
+        ): Account {
+            val signinCookie = CredentialFieldSanitizer.mysSigninCookie(cookie)
+            return account.copy(
+                label = mergeMysNicknameLabel(account.label, nickname),
+                mysCookie = signinCookie,
+                mysUid = uid,
+                stoken = stoken,
+                stmid = stmid,
+                ltoken = ltoken,
+                qrLoginBound = keepLogin,
+            )
         }
 
         private fun mergeMysNicknameLabel(
@@ -256,11 +237,9 @@ class MainViewModel
             }
         }
 
-        fun effectiveMysDeviceId(forceCreate: Boolean = true): String =
-            secureStore.effectiveMysDeviceId(forceCreate)
+        fun effectiveMysDeviceId(forceCreate: Boolean = true): String = secureStore.effectiveMysDeviceId(forceCreate)
 
-        fun effectiveCloudDeviceId(forceCreate: Boolean = true): String =
-            secureStore.effectiveCloudDeviceId(forceCreate)
+        fun effectiveCloudDeviceId(forceCreate: Boolean = true): String = secureStore.effectiveCloudDeviceId(forceCreate)
 
         fun persistGeneratedMysDeviceId(id: String) {
             secureStore.persistGeneratedMysDeviceId(id)
@@ -270,34 +249,21 @@ class MainViewModel
             secureStore.persistGeneratedCloudDeviceId(id)
         }
 
-        fun saveCloudQrLogin(
+        /** 将云游戏扫码结果合并到编辑草稿；持久化只在用户点击保存时执行。 */
+        fun buildCloudQrLoginDraft(
             account: Account,
             gameKey: String,
             comboToken: String,
             webCookie: String,
             keepLogin: Boolean,
-            onUpdated: ((Account) -> Unit)? = null,
-        ) {
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    val signinToken = CredentialFieldSanitizer.cloudSigninToken(comboToken)
-                    val fallback =
-                        mergeCloudQrLogin(account, gameKey, signinToken, webCookie, keepLogin)
-                    val updated =
-                        accountRepository.update(account.id) { latest ->
-                            mergeCloudQrLogin(latest, gameKey, signinToken, webCookie, keepLogin)
-                        } ?: run {
-                            accountRepository.upsert(fallback)
-                            fallback
-                        }
-                    secureStore.effectiveCloudDeviceId(forceCreate = true)
-                    withContext(Dispatchers.Main) { onUpdated?.invoke(updated) }
-                } catch (e: Exception) {
-                    appErrorLogger.record("云游戏扫码结果保存", e)
-                    appStateRepository.triggerToast("保存云游戏扫码结果失败")
-                }
-            }
-        }
+        ): Account =
+            mergeCloudQrLogin(
+                account,
+                gameKey,
+                CredentialFieldSanitizer.cloudSigninToken(comboToken),
+                webCookie,
+                keepLogin,
+            )
 
         fun logoutCloudAccount(
             account: Account,
@@ -420,12 +386,24 @@ class MainViewModel
             }
     }
 
-internal fun mergeEditableAccount(latest: Account, edited: Account): Account =
+internal fun mergeEditableAccount(
+    latest: Account,
+    edited: Account,
+): Account =
     latest.copy(
         label = edited.label,
         mysCookie = edited.mysCookie,
         genshinToken = edited.genshinToken,
         starrailToken = edited.starrailToken,
+        genshinWebCookie = edited.genshinWebCookie,
+        starrailWebCookie = edited.starrailWebCookie,
+        genshinCloudQrLoginBound = edited.genshinCloudQrLoginBound,
+        starrailCloudQrLoginBound = edited.starrailCloudQrLoginBound,
         selectedGames = edited.selectedGames,
+        mysUid = edited.mysUid,
+        stoken = edited.stoken,
+        stmid = edited.stmid,
+        ltoken = edited.ltoken,
+        qrLoginBound = edited.qrLoginBound,
         mysCoinEnabled = edited.mysCoinEnabled,
     )

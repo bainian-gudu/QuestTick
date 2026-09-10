@@ -81,8 +81,7 @@ class SignInWorkerPolicyTest {
         category: FailureCategory,
         retryable: Boolean = false,
         skipped: Boolean = false,
-    ): RunRecord =
-        RunRecord(timestamp = 1L, runId = "run-1", results = listOf(result(category, retryable, skipped)))
+    ): RunRecord = RunRecord(timestamp = 1L, runId = "run-1", results = listOf(result(category, retryable, skipped)))
 
     private fun result(
         category: FailureCategory,

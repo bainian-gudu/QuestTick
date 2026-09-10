@@ -17,8 +17,10 @@ import java.util.concurrent.TimeUnit
 class OkHttpTransport internal constructor(
     okHttpClient: OkHttpClient,
     private val redirectPolicyOverride: RedirectTrustPolicy?,
-) : HttpTransport, StreamingHttpTransport {
+) : HttpTransport,
+    StreamingHttpTransport {
     constructor(okHttpClient: OkHttpClient) : this(okHttpClient, null)
+
     internal val client: OkHttpClient = okHttpClient.withAutomaticRedirectsAndRetriesDisabled()
 
     override suspend fun execute(request: HttpRequest): HttpResponse =
@@ -119,7 +121,8 @@ class OkHttpTransport internal constructor(
         }
 
     private fun requestClient(config: HttpRequestConfig): OkHttpClient =
-        client.newBuilder()
+        client
+            .newBuilder()
             .connectTimeout(config.connectTimeoutMillis, TimeUnit.MILLISECONDS)
             .readTimeout(config.readTimeoutMillis, TimeUnit.MILLISECONDS)
             .writeTimeout(config.writeTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -144,8 +147,7 @@ class OkHttpTransport internal constructor(
     }
 
     internal companion object {
-        fun forSameOriginTest(okHttpClient: OkHttpClient): OkHttpTransport =
-            OkHttpTransport(okHttpClient, TrustedRedirects.sameOriginForTest)
+        fun forSameOriginTest(okHttpClient: OkHttpClient): OkHttpTransport = OkHttpTransport(okHttpClient, TrustedRedirects.sameOriginForTest)
     }
 }
 
@@ -158,8 +160,7 @@ private fun HttpResponseConsumerException.unwrapConsumerFailure(): Throwable {
     return current
 }
 
-private fun Headers.toImmutableMap(): Map<String, List<String>> =
-    names().associateWith { name -> values(name).toList() }
+private fun Headers.toImmutableMap(): Map<String, List<String>> = names().associateWith { name -> values(name).toList() }
 
 private fun OkHttpClient.withAutomaticRedirectsAndRetriesDisabled(): OkHttpClient =
     if (!followRedirects && !followSslRedirects && !retryOnConnectionFailure) {

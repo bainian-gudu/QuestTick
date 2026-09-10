@@ -56,12 +56,13 @@ object HttpFailureMapper {
                 )
             is UntrustedRedirectException,
             is IllegalArgumentException,
-            -> HttpFailure(
-                kind = HttpFailureKind.SECURITY_REJECTED,
-                errorCode = "request-rejected",
-                retryable = false,
-                outcomeUnknown = false,
-            )
+            ->
+                HttpFailure(
+                    kind = HttpFailureKind.SECURITY_REJECTED,
+                    errorCode = "request-rejected",
+                    retryable = false,
+                    outcomeUnknown = false,
+                )
             is IOException ->
                 HttpFailure(
                     kind = HttpFailureKind.OTHER_IO,

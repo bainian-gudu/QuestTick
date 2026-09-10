@@ -55,7 +55,11 @@ class AddAccountViewModelTest {
 
             mainDispatcherRule.advanceTimeBy(1)
             mainDispatcherRule.runCurrent()
-            assertTrue(viewModel.uiState.value.cookieWarning.orEmpty().contains("缺少cookie_token"))
+            assertTrue(
+                viewModel.uiState.value.cookieWarning
+                    .orEmpty()
+                    .contains("缺少cookie_token"),
+            )
         } finally {
             viewModel.resetEditorState()
         }
@@ -253,7 +257,11 @@ class AddAccountViewModelTest {
 
         viewModel.saveAccount {}
         mainDispatcherRule.runCurrent()
-        assertTrue(viewModel.uiState.value.saveError.orEmpty().isNotBlank())
+        assertTrue(
+            viewModel.uiState.value.saveError
+                .orEmpty()
+                .isNotBlank(),
+        )
 
         viewModel.dismissSaveError()
 
@@ -364,7 +372,6 @@ class AddAccountViewModelTest {
             genshinCloudQrLoginBound = genshinCloudQrLoginBound,
             starrailCloudQrLoginBound = starrailCloudQrLoginBound,
         )
-
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

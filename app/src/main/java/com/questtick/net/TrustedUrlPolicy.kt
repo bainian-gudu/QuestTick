@@ -88,16 +88,13 @@ object TrustedUrlPolicy {
     }
 
     /** 更新地址只允许当前仓库的 GitHub 元数据或 APK 地址。 */
-    fun isUpdateSourceUrl(rawUrl: String): Boolean =
-        isUpdateMetadataUrl(rawUrl) || isUpdateAssetUrl(rawUrl)
+    fun isUpdateSourceUrl(rawUrl: String): Boolean = isUpdateMetadataUrl(rawUrl) || isUpdateAssetUrl(rawUrl)
 
     /** GitHub Release 元数据仅允许当前仓库的 API。 */
-    fun isUpdateMetadataUrl(rawUrl: String): Boolean =
-        isDirectUpdateMetadataUrl(rawUrl)
+    fun isUpdateMetadataUrl(rawUrl: String): Boolean = isDirectUpdateMetadataUrl(rawUrl)
 
     /** APK 地址仅允许当前仓库的 GitHub Release。 */
-    fun isUpdateAssetUrl(rawUrl: String): Boolean =
-        isDirectUpdateAssetUrl(rawUrl)
+    fun isUpdateAssetUrl(rawUrl: String): Boolean = isDirectUpdateAssetUrl(rawUrl)
 
     /** 更新元数据重定向必须保持在 GitHub 官方域名。 */
     fun isUpdateMetadataRedirect(
@@ -128,8 +125,10 @@ object TrustedUrlPolicy {
     fun isUpdateReleasePageUrl(rawUrl: String): Boolean {
         val url = parseHttps(rawUrl) ?: return false
         return url.host == "github.com" &&
-            (url.encodedPath == "$GITHUB_REPOSITORY_PATH/releases" ||
-                url.encodedPath.startsWith("$GITHUB_REPOSITORY_PATH/releases/"))
+            (
+                url.encodedPath == "$GITHUB_REPOSITORY_PATH/releases" ||
+                    url.encodedPath.startsWith("$GITHUB_REPOSITORY_PATH/releases/")
+            )
     }
 
     private fun isDirectUpdateMetadataUrl(rawUrl: String): Boolean {
@@ -166,8 +165,9 @@ object TrustedUrlPolicy {
     private fun isIpLiteral(host: String): Boolean {
         if (':' in host) return true
         val parts = host.split('.')
-        return parts.size == 4 && parts.all { part ->
-            part.isNotEmpty() && part.all(Char::isDigit) && part.toIntOrNull() in 0..255
-        }
+        return parts.size == 4 &&
+            parts.all { part ->
+                part.isNotEmpty() && part.all(Char::isDigit) && part.toIntOrNull() in 0..255
+            }
     }
 }

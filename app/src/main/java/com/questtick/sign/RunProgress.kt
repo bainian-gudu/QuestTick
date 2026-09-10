@@ -4,7 +4,9 @@ import com.questtick.data.Account
 import com.questtick.data.TaskResult
 
 /** 签到运行阶段，用于首页展示当前任务而不是只依赖百分比。 */
-enum class RunProgressPhase(val label: String) {
+enum class RunProgressPhase(
+    val label: String,
+) {
     IDLE("待机"),
     PREPARING("准备任务"),
     CHECKING("检查环境"),
@@ -19,13 +21,17 @@ enum class RunProgressPhase(val label: String) {
 }
 
 /** 单个签到任务类型。 */
-enum class RunTaskType(val label: String) {
+enum class RunTaskType(
+    val label: String,
+) {
     MYS("米游社"),
     CLOUD("云游戏"),
 }
 
 /** 单个签到任务状态。 */
-enum class RunTaskStatus(val label: String) {
+enum class RunTaskStatus(
+    val label: String,
+) {
     PENDING("等待中"),
     RUNNING("进行中"),
     SUCCESS("成功"),
@@ -37,12 +43,13 @@ enum class RunTaskStatus(val label: String) {
 }
 
 val RunTaskStatus.isTerminal: Boolean
-    get() = this == RunTaskStatus.SUCCESS ||
-        this == RunTaskStatus.ALREADY_SIGNED ||
-        this == RunTaskStatus.FAILED ||
-        this == RunTaskStatus.SKIPPED ||
-        this == RunTaskStatus.RESULT_UNKNOWN ||
-        this == RunTaskStatus.CANCELLED
+    get() =
+        this == RunTaskStatus.SUCCESS ||
+            this == RunTaskStatus.ALREADY_SIGNED ||
+            this == RunTaskStatus.FAILED ||
+            this == RunTaskStatus.SKIPPED ||
+            this == RunTaskStatus.RESULT_UNKNOWN ||
+            this == RunTaskStatus.CANCELLED
 
 data class RunTaskProgress(
     val id: String,
@@ -151,9 +158,11 @@ fun runProgressTaskPreview(
     if (tasks.size <= safeMax) return tasks
 
     val anchorIndex =
-        tasks.indexOfFirst { it.status == RunTaskStatus.RUNNING }
+        tasks
+            .indexOfFirst { it.status == RunTaskStatus.RUNNING }
             .takeIf { it >= 0 }
-            ?: tasks.indexOfFirst { !it.status.isTerminal }
+            ?: tasks
+                .indexOfFirst { !it.status.isTerminal }
                 .takeIf { it >= 0 }
             ?: tasks.indexOfLast { it.status.isTerminal }.coerceAtLeast(0)
     val start = (anchorIndex - safeMax / 2).coerceIn(0, tasks.size - safeMax)

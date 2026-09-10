@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppUpdateCheckerVersionTest {
-
     @Test
     fun `newer semantic version is detected`() {
         assertTrue(AppUpdateChecker.isVersionNewer("1.2.0", "1.1.9"))

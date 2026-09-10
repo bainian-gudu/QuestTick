@@ -116,7 +116,9 @@ fun AccountsScreen(
                             EmptyState(
                                 badge = {
                                     Box(
-                                        Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
+                                        Modifier
+                                            .size(64.dp)
+                                            .clip(RoundedCornerShape(20.dp))
                                             .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f)),
                                         contentAlignment = Alignment.Center,
                                     ) {
@@ -142,7 +144,9 @@ fun AccountsScreen(
                             EmptyState(
                                 badge = {
                                     Box(
-                                        Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
+                                        Modifier
+                                            .size(64.dp)
+                                            .clip(RoundedCornerShape(20.dp))
                                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
                                         contentAlignment = Alignment.Center,
                                     ) {

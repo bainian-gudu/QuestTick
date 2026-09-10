@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -286,11 +285,11 @@ fun HomeThemeProgressCard(
     val completed = progress.done.coerceIn(0, safeTotal)
     val finished = !progress.running && progress.phase != RunProgressPhase.IDLE
     val isRootCheckFailedBlock =
-        progress.phase == RunProgressPhase.BLOCKED && progress.message == RootBlockMessages.CheckFailedContent
+        progress.phase == RunProgressPhase.BLOCKED && progress.message == RootBlockMessages.CHECK_FAILED_CONTENT
     val headline =
         when (progress.phase) {
             RunProgressPhase.FINISHED -> "签到完成"
-            RunProgressPhase.BLOCKED -> if (isRootCheckFailedBlock) RootBlockMessages.CheckFailedTitle else RootBlockMessages.DetectedTitle
+            RunProgressPhase.BLOCKED -> if (isRootCheckFailedBlock) RootBlockMessages.CHECK_FAILED_TITLE else RootBlockMessages.DETECTED_TITLE
             RunProgressPhase.CANCELLED -> "签到已取消"
             RunProgressPhase.FAILED -> "签到异常结束"
             RunProgressPhase.CHECKING -> "正在检查运行环境"
@@ -298,7 +297,7 @@ fun HomeThemeProgressCard(
         }
     val subtitle =
         when (progress.phase) {
-            RunProgressPhase.BLOCKED -> progress.message.ifBlank { RootBlockMessages.DetectedContent }
+            RunProgressPhase.BLOCKED -> progress.message.ifBlank { RootBlockMessages.DETECTED_CONTENT }
             RunProgressPhase.CANCELLED -> progress.message.ifBlank { "签到任务已取消" }
             RunProgressPhase.CHECKING -> progress.message.ifBlank { "正在执行 Root 与运行环境检测" }
             else -> "当前阶段：${progress.phase.label}"
@@ -389,11 +388,12 @@ fun HomeThemeProgressCard(
             Spacer(Modifier.height(13.dp))
 
             Text(
-                text = if (progress.phase == RunProgressPhase.BLOCKED) {
-                    progress.message.ifBlank { RootBlockMessages.DetectedContent }
-                } else {
-                    "已完成 $completed / $safeTotal"
-                },
+                text =
+                    if (progress.phase == RunProgressPhase.BLOCKED) {
+                        progress.message.ifBlank { RootBlockMessages.DETECTED_CONTENT }
+                    } else {
+                        "已完成 $completed / $safeTotal"
+                    },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 12.sp,
@@ -419,7 +419,6 @@ fun HomeThemeProgressCard(
         }
     }
 }
-
 
 @Composable
 private fun CenteredSparkIcon(modifier: Modifier = Modifier) {
@@ -483,7 +482,11 @@ private fun ProgressTaskRow(task: RunTaskProgress) {
             )
             Spacer(Modifier.height(1.dp))
             Text(
-                task.type.label + task.message.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(),
+                task.type.label +
+                    task.message
+                        .takeIf { it.isNotBlank() }
+                        ?.let { " · $it" }
+                        .orEmpty(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 maxLines = 1,

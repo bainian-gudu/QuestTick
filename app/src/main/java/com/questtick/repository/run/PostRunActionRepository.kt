@@ -19,8 +19,7 @@ class PostRunActionRepository
 
         fun get(actionId: String): PostRunActionEntity? = dao.getById(actionId)
 
-        fun outstanding(): List<PostRunActionEntity> =
-            dao.getByStatuses(listOf(STATUS_PENDING, STATUS_PROCESSING))
+        fun outstanding(): List<PostRunActionEntity> = dao.getByStatuses(listOf(STATUS_PENDING, STATUS_PROCESSING))
 
         fun observeAll(): Flow<List<PostRunActionEntity>> = dao.observeAll()
 
@@ -144,13 +143,16 @@ class PostRunActionRepository
             return min(BASE_RETRY_MILLIS * (1L shl exponent), MAX_RETRY_MILLIS)
         }
 
-        private fun sanitizeCode(value: String): String =
-            value.trim().replace(Regex("[^A-Za-z0-9_.-]"), "-").take(80)
+        private fun sanitizeCode(value: String): String = value.trim().replace(Regex("[^A-Za-z0-9_.-]"), "-").take(80)
 
         sealed interface ClaimResult {
-            data class Claimed(val action: PostRunActionEntity) : ClaimResult
+            data class Claimed(
+                val action: PostRunActionEntity,
+            ) : ClaimResult
 
-            data class NotReady(val readyAt: Long) : ClaimResult
+            data class NotReady(
+                val readyAt: Long,
+            ) : ClaimResult
 
             data object Missing : ClaimResult
 

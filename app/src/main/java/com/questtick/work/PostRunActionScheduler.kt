@@ -47,11 +47,11 @@ class PostRunActionScheduler
                     action.nextAttemptAt
                 }
             val constraints =
-                Constraints.Builder()
+                Constraints
+                    .Builder()
                     .setRequiredNetworkType(
                         if (action.type == PostRunActionType.EMAIL.name) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED,
-                    )
-                    .build()
+                    ).build()
             val request =
                 OneTimeWorkRequestBuilder<PostRunActionWorker>()
                     .setInputData(Data.Builder().putString(PostRunActionWorker.KEY_ACTION_ID, action.actionId).build())
@@ -69,5 +69,5 @@ class PostRunActionScheduler
         private fun uniqueWorkName(
             actionId: String,
             attemptCount: Int,
-        ): String = "post_run_action:${actionId}:$attemptCount"
+        ): String = "post_run_action:$actionId:$attemptCount"
     }

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,12 +34,17 @@ class RecordsViewModel
         private val settingsRepository: SettingsRepository,
         private val appErrorLogger: AppErrorLogger,
     ) : ViewModel() {
+        private var refreshJob: Job? = null
+        private var lastRefreshAt = 0L
+
         val history: StateFlow<List<RunRecord>> = historyRepository.history
         val loadState: StateFlow<RepositoryLoadState> = historyRepository.loadState
         val emailDeliveries: StateFlow<Map<String, EmailDeliveryUiState>> =
-            postRunActionRepository.observeAll()
+            postRunActionRepository
+                .observeAll()
                 .map { actions ->
-                    actions.asSequence()
+                    actions
+                        .asSequence()
                         .filter { it.type == PostRunActionType.EMAIL.name }
                         .associate { action ->
                             action.runId to
@@ -48,14 +54,25 @@ class RecordsViewModel
                                     attemptCount = action.attemptCount,
                                 )
                         }
-                }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-        fun refresh() {
-            viewModelScope.launch(Dispatchers.IO) {
-                runCatching { historyRepository.reload() }
-                    .onFailure { appErrorLogger.record("签到记录刷新", it) }
-            }
+        /**
+         * 记录页在主分页器中会保留组合状态，每次切回页面都会收到可见性事件。
+         * 已加载且刚刷新过时直接复用仓库快照，避免大历史记录反复从 Room 解码。
+         */
+        fun refresh(force: Boolean = false) {
+            val now = System.currentTimeMillis()
+            if (!force && historyRepository.loaded.value && now - lastRefreshAt < MIN_REFRESH_INTERVAL_MILLIS) return
+            if (refreshJob?.isActive == true) return
+            lastRefreshAt = now
+            refreshJob =
+                viewModelScope.launch(Dispatchers.IO) {
+                    runCatching { historyRepository.reload() }
+                        .onFailure {
+                            lastRefreshAt = 0L
+                            appErrorLogger.record("签到记录刷新", it)
+                        }
+                }
         }
 
         fun clearHistory() {
@@ -74,8 +91,11 @@ class RecordsViewModel
                 try {
                     val mail = settingsRepository.getMailSettings()
                     if (
-                        !mail.enabled || mail.mailTo.isBlank() || mail.smtpServer.isBlank() ||
-                        mail.username.isBlank() || mail.password.isBlank()
+                        !mail.enabled ||
+                        mail.mailTo.isBlank() ||
+                        mail.smtpServer.isBlank() ||
+                        mail.username.isBlank() ||
+                        mail.password.isBlank()
                     ) {
                         appStateRepository.triggerToast("请先在设置中启用并完善邮件配置")
                         return@launch
@@ -88,6 +108,10 @@ class RecordsViewModel
                     appStateRepository.triggerToast("邮件重新发送失败，请稍后重试")
                 }
             }
+        }
+
+        private companion object {
+            const val MIN_REFRESH_INTERVAL_MILLIS = 15_000L
         }
     }
 

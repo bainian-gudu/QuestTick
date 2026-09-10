@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import android.util.Log
+import com.questtick.log.AppLog
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -216,12 +216,13 @@ internal class KeystoreEncryptedSharedPreferences(
         val payload = decodeTypedPayload(plain, TYPE_STRING_SET) ?: return null
         if (payload.isEmpty()) return linkedSetOf()
         return try {
-            payload.split(STRING_SET_SEPARATOR)
+            payload
+                .split(STRING_SET_SEPARATOR)
                 .mapTo(linkedSetOf()) { encoded ->
                     String(Base64.decode(encoded, Base64.NO_WRAP), StandardCharsets.UTF_8)
                 }
         } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Failed to decode secure string set: ${e.message}")
+            AppLog.w(TAG, "Failed to decode secure string set: ${e.message}")
             null
         }
     }
@@ -247,7 +248,7 @@ internal class KeystoreEncryptedSharedPreferences(
             cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), GCMParameterSpec(GCM_TAG_SIZE_BITS, iv))
             String(cipher.doFinal(cipherText), StandardCharsets.UTF_8)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to decrypt secure preference value: ${e.message}")
+            AppLog.w(TAG, "Failed to decrypt secure preference value: ${e.message}")
             null
         }
     }
@@ -258,11 +259,11 @@ internal class KeystoreEncryptedSharedPreferences(
 
         val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
         val specBuilder =
-            KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            KeyGenParameterSpec
+                .Builder(
+                    KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
                 .setRandomizedEncryptionRequired(true)

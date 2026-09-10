@@ -1,6 +1,6 @@
 package com.questtick.sign
 
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpTransport
 import com.questtick.net.get
@@ -54,7 +54,7 @@ object CookieRefresher {
                 val json = resp.json()
                 val retcode = json.optInt("retcode", -999)
                 if (retcode != 0) {
-                    Log.w(TAG, "getCookieAccountInfoBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
+                    AppLog.w(TAG, "getCookieAccountInfoBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
                     onDiagnostic(
                         "Cookie Token 刷新接口返回错误",
                         "getCookieAccountInfoBySToken http=${resp.code}, retcode=$retcode, " +
@@ -65,7 +65,7 @@ object CookieRefresher {
                 json.optJSONObject("data")?.optString("cookie_token").orEmpty()
             } catch (e: Exception) {
                 e.throwIfCancellation()
-                Log.w(TAG, "getCookieAccountInfoBySToken exception, uid=${Mask.uid(uid)}", e)
+                AppLog.w(TAG, "getCookieAccountInfoBySToken exception, uid=${Mask.uid(uid)}", e)
                 onDiagnostic("Cookie Token 刷新请求异常", ErrorText.detailOf(e))
                 return null
             }
@@ -84,7 +84,7 @@ object CookieRefresher {
                 val json = resp.json()
                 val retcode = json.optInt("retcode", -999)
                 if (retcode != 0) {
-                    Log.w(TAG, "getLTokenBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
+                    AppLog.w(TAG, "getLTokenBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
                     onDiagnostic(
                         "LToken 刷新接口返回错误",
                         "getLTokenBySToken http=${resp.code}, retcode=$retcode, message=${json.optString("message")}",
@@ -95,7 +95,7 @@ object CookieRefresher {
                 }
             } catch (e: Exception) {
                 e.throwIfCancellation()
-                Log.w(TAG, "getLTokenBySToken exception, uid=${Mask.uid(uid)}", e)
+                AppLog.w(TAG, "getLTokenBySToken exception, uid=${Mask.uid(uid)}", e)
                 onDiagnostic("LToken 刷新请求异常", ErrorText.detailOf(e))
                 ""
             }
@@ -141,8 +141,7 @@ object CookieRefresher {
         return "https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoBySToken?uid=$encodedUid"
     }
 
-    private fun urlEncode(value: String): String =
-        URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+    private fun urlEncode(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8.name())
 
     /** 判断签到结果是否表示 Cookie 已失效。 */
     fun isCookieExpired(message: String): Boolean {

@@ -85,16 +85,15 @@ class ExecutionStateRepository
             category: FailureCategory,
             retryAfterMillis: Long?,
             now: Long = System.currentTimeMillis(),
-        ) =
-            finishSlot(
-                workId = workId,
-                businessDayKey = businessDayKey,
-                status = if (retryAfterMillis != null) SLOT_RETRY_WAIT else SLOT_TERMINAL_FAILURE,
-                runId = record?.runId.orEmpty(),
-                category = category,
-                notBefore = retryAfterMillis?.let { now + it.coerceAtLeast(MIN_RETRY_DELAY_MS) } ?: 0L,
-                now = now,
-            )
+        ) = finishSlot(
+            workId = workId,
+            businessDayKey = businessDayKey,
+            status = if (retryAfterMillis != null) SLOT_RETRY_WAIT else SLOT_TERMINAL_FAILURE,
+            runId = record?.runId.orEmpty(),
+            category = category,
+            notBefore = retryAfterMillis?.let { now + it.coerceAtLeast(MIN_RETRY_DELAY_MS) } ?: 0L,
+            now = now,
+        )
 
         private suspend fun finishSlot(
             workId: String,
@@ -104,20 +103,19 @@ class ExecutionStateRepository
             category: FailureCategory,
             notBefore: Long,
             now: Long,
-        ) =
-            withContext(Dispatchers.IO) {
-                val updated =
-                    database.executionStateDao().finishScheduleSlot(
-                        dayKey = businessDayKey,
-                        ownerWorkId = workId,
-                        status = status,
-                        runId = runId,
-                        failureCategory = category.name,
-                        notBefore = notBefore,
-                        now = now,
-                    )
-                check(updated == 1) { "Scheduled slot ownership was lost" }
-            }
+        ) = withContext(Dispatchers.IO) {
+            val updated =
+                database.executionStateDao().finishScheduleSlot(
+                    dayKey = businessDayKey,
+                    ownerWorkId = workId,
+                    status = status,
+                    runId = runId,
+                    failureCategory = category.name,
+                    notBefore = notBefore,
+                    now = now,
+                )
+            check(updated == 1) { "Scheduled slot ownership was lost" }
+        }
 
         /** 真正进入运行器前递增实际运行次数；WorkManager 空转重试不会消耗该计数。 */
         suspend fun markScheduledRunStarted(
@@ -139,15 +137,18 @@ class ExecutionStateRepository
         ): Set<String>? =
             withContext(Dispatchers.IO) {
                 database.withTransaction {
-                    val slot = database.executionStateDao().getScheduleSlot(businessDayKey)
-                        ?: return@withTransaction emptySet()
+                    val slot =
+                        database.executionStateDao().getScheduleSlot(businessDayKey)
+                            ?: return@withTransaction emptySet()
                     if (slot.ownerWorkId != workId) return@withTransaction emptySet()
                     // 尚未真正进入运行器时执行完整计划；已开始但没有形成记录时禁止盲目重放。
                     if (slot.runCount == 0) return@withTransaction null
                     if (slot.runId.isBlank()) return@withTransaction emptySet()
-                    val record = database.historyDao().getByRunId(slot.runId)?.toModel()
-                        ?: return@withTransaction emptySet()
-                    record.results.asSequence()
+                    val record =
+                        database.historyDao().getByRunId(slot.runId)?.toModel()
+                            ?: return@withTransaction emptySet()
+                    record.results
+                        .asSequence()
                         .filter { !it.success && !it.skipped && it.retryable }
                         .filter { it.failureCategory != FailureCategory.RESULT_UNKNOWN }
                         .map { it.taskId }
@@ -168,13 +169,12 @@ class ExecutionStateRepository
         suspend fun applyRunGuards(
             record: RunRecord,
             now: Long = System.currentTimeMillis(),
-        ) =
-            withContext(Dispatchers.IO) {
-                database.withTransaction {
-                    // 单个签到任务失败只记录任务结果，不再冻结整个账号；Root 阻断仍由运行器单独处理。
-                    database.executionStateDao().deleteAllAccountGuards()
-                }
+        ) = withContext(Dispatchers.IO) {
+            database.withTransaction {
+                // 单个签到任务失败只记录任务结果，不再冻结整个账号；Root 阻断仍由运行器单独处理。
+                database.executionStateDao().deleteAllAccountGuards()
             }
+        }
 
         /** 清理旧版本遗留的账号冻结记录，避免历史状态阻止本次签到。 */
         suspend fun clearAccountGuards() =

@@ -27,9 +27,7 @@ class HistoryRepository
 
         val history: StateFlow<List<RunRecord>> = state
 
-        override suspend fun loadFromStore(): List<RunRecord> {
-            return withContext(kotlinx.coroutines.Dispatchers.IO) { store.getHistory() }
-        }
+        override suspend fun loadFromStore(): List<RunRecord> = withContext(kotlinx.coroutines.Dispatchers.IO) { store.getHistory() }
 
         override suspend fun saveToStore(data: List<RunRecord>) {
             // 历史记录只追加，不通过 StatefulRepository.updateAndPersist 全量保存

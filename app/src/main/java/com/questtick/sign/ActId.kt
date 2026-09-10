@@ -1,5 +1,6 @@
 package com.questtick.sign
 
+import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
 import com.questtick.net.HttpTransport
@@ -42,16 +43,22 @@ object ActId {
     private const val MAX_NAVIGATION_BYTES = 1024 * 1024
 
     /** 米游社首页导航中的游戏签到入口配置。 */
-    private data class NavigationSource(val gids: Int, val host: String, val basePath: String, val allowActIdFilename: Boolean = false)
-
-    private val NAVIGATION_SOURCES = mapOf(
-        "Honkai2" to NavigationSource(3, "webstatic.mihoyo.com", "/bbs/event/signin/bh2/"),
-        "Honkai3rd" to NavigationSource(1, "webstatic.mihoyo.com", "/bbs/event/signin/bh3/"),
-        "TearsOfThemis" to NavigationSource(4, "webstatic.mihoyo.com", "/bbs/event/signin/nxx/"),
-        "Genshin" to NavigationSource(2, "act.mihoyo.com", "/bbs/event/signin/hk4e/"),
-        "StarRail" to NavigationSource(6, "act.mihoyo.com", "/bbs/event/signin/hkrpg/", true),
-        "ZZZ" to NavigationSource(8, "act.mihoyo.com", "/bbs/event/signin/zzz/", true),
+    private data class NavigationSource(
+        val gids: Int,
+        val host: String,
+        val basePath: String,
+        val allowActIdFilename: Boolean = false,
     )
+
+    private val NAVIGATION_SOURCES =
+        mapOf(
+            "Honkai2" to NavigationSource(3, "webstatic.mihoyo.com", "/bbs/event/signin/bh2/"),
+            "Honkai3rd" to NavigationSource(1, "webstatic.mihoyo.com", "/bbs/event/signin/bh3/"),
+            "TearsOfThemis" to NavigationSource(4, "webstatic.mihoyo.com", "/bbs/event/signin/nxx/"),
+            "Genshin" to NavigationSource(2, "act.mihoyo.com", "/bbs/event/signin/hk4e/"),
+            "StarRail" to NavigationSource(6, "act.mihoyo.com", "/bbs/event/signin/hkrpg/", true),
+            "ZZZ" to NavigationSource(8, "act.mihoyo.com", "/bbs/event/signin/zzz/", true),
+        )
 
     fun isValid(actId: String?): Boolean {
         val value = actId?.trim().orEmpty()
@@ -62,7 +69,12 @@ object ActId {
     fun parseFromText(text: String?): String? {
         val source = text ?: return null
         for (pattern in PATTERNS) {
-            val candidate = pattern.find(source)?.groupValues?.getOrNull(1)?.trim()
+            val candidate =
+                pattern
+                    .find(source)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.trim()
             if (isValid(candidate)) return candidate
         }
         return null
@@ -93,9 +105,17 @@ object ActId {
     }
 
     /** 从米游社首页导航 JSON 严格提取当前游戏签到入口的 act_id。 */
-    fun parseFromNavigation(body: String?, gameKey: String): String? {
+    fun parseFromNavigation(
+        body: String?,
+        gameKey: String,
+    ): String? {
         val source = NAVIGATION_SOURCES[gameKey] ?: return null
-        val root = try { JSONObject(body ?: return null) } catch (_: Exception) { return null }
+        val root =
+            try {
+                JSONObject(body ?: return null)
+            } catch (_: Exception) {
+                return null
+            }
         if (root.optInt("retcode", Int.MIN_VALUE) != 0) return null
         val navigator = root.optJSONObject("data")?.optJSONArray("navigator") ?: return null
         val candidates = linkedSetOf<String>()
@@ -103,18 +123,35 @@ object ActId {
         for (i in 0 until navigator.length()) {
             val path = navigator.optJSONObject(i)?.optString("app_path") ?: continue
             val candidate = parseNavigationPath(path, source)
-            if (candidate != null) candidates += candidate
-            else if (path.contains(source.basePath)) rejectedGamePath = true
+            if (candidate != null) {
+                candidates += candidate
+            } else if (path.contains(source.basePath)) {
+                rejectedGamePath = true
+            }
         }
         if (rejectedGamePath || candidates.size != 1) return null
         return candidates.first()
     }
 
-    private fun parseNavigationPath(raw: String, source: NavigationSource): String? {
+    private fun parseNavigationPath(
+        raw: String,
+        source: NavigationSource,
+    ): String? {
         if (raw.isBlank() || raw != raw.trim() || raw.contains('%') || Regex("[\\s\\\\\\u0000-\\u001f\\u007f]").containsMatchIn(raw)) return null
-        val uri = try { URI(raw) } catch (_: Exception) { return null }
-        if (uri.scheme != "https" || (uri.port != -1 && uri.port != 443) || !uri.userInfo.isNullOrBlank() || !uri.rawFragment.isNullOrBlank() ||
-            uri.host?.lowercase() != source.host.lowercase()) return null
+        val uri =
+            try {
+                URI(raw)
+            } catch (_: Exception) {
+                return null
+            }
+        if (uri.scheme != "https" ||
+            (uri.port != -1 && uri.port != 443) ||
+            !uri.userInfo.isNullOrBlank() ||
+            !uri.rawFragment.isNullOrBlank() ||
+            uri.host?.lowercase() != source.host.lowercase()
+        ) {
+            return null
+        }
         val query = uri.rawQuery ?: return null
         val pairs = query.split('&').filter { it.isNotEmpty() }
         val actPairs = pairs.filter { it.substringBefore('=') == "act_id" }
@@ -122,8 +159,9 @@ object ActId {
         val parts = actPairs.single().split('=')
         if (parts.size != 2 || !isValid(parts[1])) return null
         val candidate = parts[1]
-        val accepted = setOf(source.basePath, source.basePath + "index.html") +
-            if (source.allowActIdFilename) setOf(source.basePath + candidate + ".html") else emptySet()
+        val accepted =
+            setOf(source.basePath, source.basePath + "index.html") +
+                if (source.allowActIdFilename) setOf(source.basePath + candidate + ".html") else emptySet()
         if (uri.path !in accepted) return null
         val filename = uri.path.removePrefix(source.basePath)
         val filenameId = Regex("^(e\\d{12,20})\\.html$").find(filename)?.groupValues?.get(1)
@@ -139,11 +177,12 @@ object ActId {
         val source = NAVIGATION_SOURCES[game.key] ?: return null
         val url = "$NAVIGATION_URL?gids=${source.gids}"
         return try {
-            val response = httpTransport.getIdempotent(
-                url,
-                headers = mapOf("User-Agent" to Endpoints.USER_AGENT, "Accept" to "application/json"),
-                config = HttpRequestConfig(maxResponseBytes = MAX_NAVIGATION_BYTES),
-            )
+            val response =
+                httpTransport.getIdempotent(
+                    url,
+                    headers = mapOf("User-Agent" to Endpoints.USER_AGENT, "Accept" to "application/json"),
+                    config = HttpRequestConfig(maxResponseBytes = MAX_NAVIGATION_BYTES),
+                )
             if (response.code !in 200..299) return null
             val final = response.finalUrl.ifBlank { url }
             val finalUri = URI(final)
@@ -152,7 +191,7 @@ object ActId {
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("${game.name} act_id 导航获取失败: ${ErrorText.detailOf(e)}")
-            android.util.Log.w("ActId", "导航 act_id 获取失败: ${game.key}", e)
+            AppLog.w("ActId", "导航 act_id 获取失败: ${game.key}", e)
             null
         }
     }
@@ -199,20 +238,21 @@ object ActId {
                 val actId =
                     try {
                         val js =
-                            httpTransport.getIdempotent(
-                                scriptUrl,
-                                mapOf(
-                                    "User-Agent" to Endpoints.USER_AGENT,
-                                    "Accept" to "*/*",
-                                    "Referer" to game.actPage,
-                                ),
-                                config = HttpRequestConfig(maxResponseBytes = MAX_SCRIPT_BYTES),
-                            ).body
+                            httpTransport
+                                .getIdempotent(
+                                    scriptUrl,
+                                    mapOf(
+                                        "User-Agent" to Endpoints.USER_AGENT,
+                                        "Accept" to "*/*",
+                                        "Referer" to game.actPage,
+                                    ),
+                                    config = HttpRequestConfig(maxResponseBytes = MAX_SCRIPT_BYTES),
+                                ).body
                         parseFromText(js)
                     } catch (e: Exception) {
                         e.throwIfCancellation()
                         recordError?.invoke("${game.name} act_id 脚本解析失败: ${ErrorText.detailOf(e)}")
-                        android.util.Log.d("ActId", "解析 JS 失败: $scriptUrl, ${e.javaClass.simpleName}: ${e.message}")
+                        AppLog.d("ActId", "解析 JS 失败: $scriptUrl, ${e.javaClass.simpleName}: ${e.message}")
                         null
                     }
                 if (actId != null) return actId
@@ -221,7 +261,7 @@ object ActId {
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("${game.name} act_id 获取失败: ${ErrorText.detailOf(e)}")
-            android.util.Log.w("ActId", "获取最新 act_id 失败: ${game.actPage}", e)
+            AppLog.w("ActId", "获取最新 act_id 失败: ${game.actPage}", e)
             null
         }
     }

@@ -6,7 +6,7 @@ import com.questtick.i18n.localizedText
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import com.questtick.log.AppLog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.questtick.ui.components.AnimatedSwitch
@@ -124,7 +126,7 @@ internal fun openExternalUrl(
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     } catch (e: Exception) {
-        Log.w("SettingsScreen", "无法打开外部链接: $url", e)
+        AppLog.w("SettingsScreen", "无法打开外部链接: $url", e)
     }
 }
 
@@ -142,6 +144,7 @@ internal fun SettingsCard(
 }
 
 @Composable
+@Suppress("detekt:LongMethod", "detekt:FunctionNaming")
 internal fun SettingsEntryCard(
     icon: ImageVector,
     iconColor: Color,
@@ -159,12 +162,16 @@ internal fun SettingsEntryCard(
         }
     PanelCard(modifier = cardModifier) {
         Row(
-            Modifier.fillMaxWidth().heightIn(min = SettingsEntryMinHeight)
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = SettingsEntryMinHeight)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                Modifier.size(40.dp).clip(RoundedCornerShape(12.dp))
+                Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(iconColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -175,13 +182,26 @@ internal fun SettingsEntryCard(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterStart,
             ) {
-                Text(
-                    title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                )
+                Column(Modifier.fillMaxWidth()) {
+                    Text(
+                        title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        softWrap = true,
+                    )
+                    if (subtitle.isNotBlank()) {
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            subtitle,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            color = TextSecondary,
+                            softWrap = true,
+                        )
+                    }
+                }
             }
             when {
                 trailing != null -> trailing()
@@ -338,14 +358,21 @@ internal fun SettingsCompactOutlinedButton(
 }
 
 @Composable
+@Suppress("detekt:FunctionNaming")
 internal fun SettingsFetchButton(
     fetching: Boolean,
+    completed: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     SettingsCompactOutlinedButton(
-        text = if (fetching) "获取中" else "获取",
-        enabled = !fetching,
+        text =
+            when {
+                fetching -> "获取中"
+                completed -> "获取完成"
+                else -> "获取"
+            },
+        enabled = !fetching && !completed,
         modifier = modifier,
         onClick = onClick,
     )
@@ -427,6 +454,33 @@ internal fun FieldBox(
         singleLine = true,
         keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
         modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = fieldColors(),
+    )
+}
+
+@Composable
+@Suppress("detekt:FunctionNaming")
+internal fun ScheduleTimeField(
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onValueChange(it.filter(Char::isDigit).take(2)) },
+        placeholder = {
+            Text(
+                text = placeholder,
+                modifier = Modifier.fillMaxWidth(),
+                color = TextSecondary.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+            )
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+        modifier = Modifier.width(56.dp),
         shape = RoundedCornerShape(12.dp),
         colors = fieldColors(),
     )
@@ -548,10 +602,12 @@ internal fun fieldColors() =
     )
 
 @Composable
+@Suppress("detekt:FunctionNaming")
 internal fun PrimaryButton(
     text: String,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
     onClick: () -> Unit,
 ) {
     Button(
@@ -560,11 +616,19 @@ internal fun PrimaryButton(
         modifier = Modifier.fillMaxWidth().height(50.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        contentPadding = contentPadding,
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
             Spacer(Modifier.size(8.dp))
         }
-        Text(text, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+        Text(
+            text,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 15.sp,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }

@@ -1,6 +1,6 @@
 package com.questtick.sign
 
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.data.FailureCategory
 import com.questtick.net.HttpTransport
@@ -42,12 +42,23 @@ class MysSignIn(
         val actPage: String,
     )
 
-    data class Reward(val day: Int, val name: String, val cnt: String, val icon: String = "")
+    data class Reward(
+        val day: Int,
+        val name: String,
+        val cnt: String,
+        val icon: String = "",
+    )
 
-    data class Role(val gameUid: String, val region: String, val nickname: String)
+    data class Role(
+        val gameUid: String,
+        val region: String,
+        val nickname: String,
+    )
 
     sealed class RoleResult {
-        data class Ok(val role: Role) : RoleResult()
+        data class Ok(
+            val role: Role,
+        ) : RoleResult()
 
         object NoRole : RoleResult()
 
@@ -140,8 +151,7 @@ class MysSignIn(
         private val ALREADY_SIGNED = Regex("已签到|已经签到|签到过|今日已签到|already", RegexOption.IGNORE_CASE)
     }
 
-    private fun host(game: GameConfig): String =
-        if (game.key == "ZZZ") Endpoints.ZZZ_HOST else Endpoints.WEB_HOST
+    private fun host(game: GameConfig): String = if (game.key == "ZZZ") Endpoints.ZZZ_HOST else Endpoints.WEB_HOST
 
     /** 当前生效的 act_id：优先使用动态缓存，缺失时回退到内置默认值。 */
     private fun currentActId(game: GameConfig): String = actIdCache[game.key]?.takeIf { ActId.isValid(it) } ?: game.actId
@@ -170,7 +180,7 @@ class MysSignIn(
                     } else {
                         ErrorText.fromRetcode(retcode) ?: "登录校验失败，请检查 Cookie 是否有效"
                     }
-                Log.w(TAG, "getRole failed: ${game.key}, http=${res.code}, retcode=$retcode")
+                AppLog.w(TAG, "getRole failed: ${game.key}, http=${res.code}, retcode=$retcode")
                 return RoleResult.Failed(
                     message = friendly,
                     detail =
@@ -197,7 +207,7 @@ class MysSignIn(
             )
         } catch (e: Exception) {
             e.throwIfCancellation()
-            Log.w(TAG, "getRole exception: ${game.key}", e)
+            AppLog.w(TAG, "getRole exception: ${game.key}", e)
             RoleResult.Failed(
                 message = "查询角色信息时${ErrorText.fromException(e)}",
                 detail = Mask.sensitive(ErrorText.detailOf(e)),
@@ -293,7 +303,9 @@ class MysSignIn(
                 httpSuccess && (message == "OK" || retcode == 0) -> SignResult(true, false, "签到成功")
                 else -> {
                     // act_id 疑似失效时尝试动态刷新并重试一次。
-                    if (httpSuccess && retryOnActIdInvalid && actIdAutoRefresh &&
+                    if (httpSuccess &&
+                        retryOnActIdInvalid &&
+                        actIdAutoRefresh &&
                         ActIdInvalid.isInvalid(retcode, message)
                     ) {
                         val retryResult = refreshActIdAndRetry(cookie, game, role, actId)
@@ -347,9 +359,10 @@ class MysSignIn(
     ): SignResult? {
         onLog("WARN", "[${game.name}] act_id 疑似失效（当前 $staleActId），尝试自动获取最新 act_id…")
 
-        val latest = ActId.fetchLatest(game, httpTransport) { detail ->
-            recordError?.invoke("ACT_ID 自动刷新", detail)
-        }
+        val latest =
+            ActId.fetchLatest(game, httpTransport) { detail ->
+                recordError?.invoke("ACT_ID 自动刷新", detail)
+            }
         if (latest == null) {
             onLog("WARN", "[${game.name}] 未能获取最新 act_id，跳过重试")
             return null
@@ -406,7 +419,7 @@ class MysSignIn(
             val infoRetcode = infoData.optInt("retcode", -999)
             val homeRetcode = homeData.optInt("retcode", -999)
             if (infoRetcode != 0 || homeRetcode != 0) {
-                Log.w(TAG, "getReward failed: ${game.key}, infoRetcode=$infoRetcode, homeRetcode=$homeRetcode")
+                AppLog.w(TAG, "getReward failed: ${game.key}, infoRetcode=$infoRetcode, homeRetcode=$homeRetcode")
                 onLog(
                     "ERROR",
                     "[${game.name}] 奖励查询失败：infoRetcode=$infoRetcode, infoMessage=${infoData.optString("message")}, " +
@@ -421,9 +434,10 @@ class MysSignIn(
                 firstPositiveInt(infoObject, "total_sign_day", "totalSignDay", "sign_day", "signDay")
                     ?: firstPositiveInt(homeObject, "total_sign_day", "totalSignDay", "sign_day", "signDay")
                     ?: 0
-            val awards = homeObject?.optJSONArray("awards")
-                ?: homeObject?.optJSONArray("award_list")
-                ?: infoObject?.optJSONArray("awards")
+            val awards =
+                homeObject?.optJSONArray("awards")
+                    ?: homeObject?.optJSONArray("award_list")
+                    ?: infoObject?.optJSONArray("awards")
             if (totalSignDay <= 0 || awards == null || awards.length() == 0) {
                 onLog(
                     "ERROR",
@@ -439,7 +453,7 @@ class MysSignIn(
             }
             val icon = normalizeRewardIcon(extractRewardIcon(award))
             if (icon.isBlank()) {
-                onLog("ERROR", "[${game.name}] 奖励图片地址缺失：${award.toString()}")
+                onLog("ERROR", "[${game.name}] 奖励图片地址缺失：$award")
             }
             Reward(
                 day = totalSignDay,
@@ -449,7 +463,7 @@ class MysSignIn(
             )
         } catch (e: Exception) {
             e.throwIfCancellation()
-            Log.w(TAG, "getReward exception: ${game.key}", e)
+            AppLog.w(TAG, "getReward exception: ${game.key}", e)
             onLog("ERROR", "[${game.name}] 奖励查询异常：${ErrorText.detailOf(e)}")
             null
         }

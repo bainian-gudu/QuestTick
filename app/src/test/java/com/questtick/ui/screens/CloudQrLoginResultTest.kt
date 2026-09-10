@@ -8,11 +8,12 @@ import org.junit.Test
 class CloudQrLoginResultTest {
     @Test
     fun buildCloudQrLoginResultKeepsCookieHeaderWhenRequested() {
-        val result = buildCloudQrLoginResult(
-            comboToken = "combo_token",
-            cookieHeader = "cookie=value",
-            keepLogin = true,
-        )
+        val result =
+            buildCloudQrLoginResult(
+                comboToken = "combo_token",
+                cookieHeader = "cookie=value",
+                keepLogin = true,
+            )
 
         assertTrue(result.keepLogin)
         assertEquals("combo_token", result.comboToken)
@@ -21,11 +22,12 @@ class CloudQrLoginResultTest {
 
     @Test
     fun buildCloudQrLoginResultClearsCookieHeaderForOneTimeLogin() {
-        val result = buildCloudQrLoginResult(
-            comboToken = "combo_token",
-            cookieHeader = "cookie=value",
-            keepLogin = false,
-        )
+        val result =
+            buildCloudQrLoginResult(
+                comboToken = "combo_token",
+                cookieHeader = "cookie=value",
+                keepLogin = false,
+            )
 
         assertFalse(result.keepLogin)
         assertEquals("combo_token", result.comboToken)

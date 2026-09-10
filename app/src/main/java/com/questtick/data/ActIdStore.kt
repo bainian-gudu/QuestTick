@@ -1,7 +1,7 @@
 package com.questtick.data
 
 import android.content.SharedPreferences
-import android.util.Log
+import com.questtick.log.AppLog
 import org.json.JSONObject
 
 /** act_id 缓存存储；非敏感，使用明文 SharedPreferences。 */
@@ -37,7 +37,7 @@ internal class ActIdStore(
         if (values.isEmpty()) {
             val success = prefs.edit().remove(key).commitSafely(TAG, "clear act_id cache")
             if (!success) {
-                Log.w(TAG, "Failed to clear act_id cache, keeping existing in-memory cache")
+                AppLog.w(TAG, "Failed to clear act_id cache, keeping existing in-memory cache")
                 return@synchronized
             }
             cache = mutableMapOf()
@@ -52,11 +52,12 @@ internal class ActIdStore(
         val obj = JSONObject()
         trimmed.forEach { (k, v) -> obj.put(k, v) }
         val success =
-            prefs.edit()
+            prefs
+                .edit()
                 .putString(key, obj.toString())
                 .commitSafely(TAG, "save act_id cache")
         if (!success) {
-            Log.w(TAG, "Failed to save act_id cache, keeping existing in-memory cache")
+            AppLog.w(TAG, "Failed to save act_id cache, keeping existing in-memory cache")
             return@synchronized
         }
         cache = trimmed.toMutableMap()

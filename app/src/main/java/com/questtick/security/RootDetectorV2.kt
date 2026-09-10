@@ -1,5 +1,6 @@
 package com.questtick.security
 
+import com.questtick.log.AppLog
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -79,7 +80,7 @@ object RootDetectorV2 {
             } catch (e: Throwable) {
                 unavailableProbes += "rootbeer"
                 if (com.questtick.BuildConfig.DEBUG) {
-                    android.util.Log.d("RootDetectorV2", "RootBeer检测异常: ${e.javaClass.simpleName}")
+                    AppLog.d("RootDetectorV2", "RootBeer检测异常: ${e.javaClass.simpleName}")
                 }
             }
         } else {
@@ -239,26 +240,23 @@ object RootDetectorV2 {
             "/data/adb/service.d",
         )
 
-    private fun checkSuBinary(): Boolean {
-        return SU_PATHS.any { File(it).exists() }
-    }
+    private fun checkSuBinary(): Boolean = SU_PATHS.any { File(it).exists() }
 
-    private fun checkDangerousProps(): Boolean {
-        return try {
+    private fun checkDangerousProps(): Boolean =
+        try {
             val debuggable = getProp("ro.debuggable") == "1"
             val secure = getProp("ro.secure") == "0"
             debuggable || secure
         } catch (_: Exception) {
             false
         }
-    }
 
     private fun getProp(key: String): String? =
         try {
             execFirstLine(arrayOf("getprop", key))
         } catch (e: Exception) {
             if (com.questtick.BuildConfig.DEBUG) {
-                android.util.Log.d("RootDetectorV2", "getProp异常: ${e.message}")
+                AppLog.d("RootDetectorV2", "getProp异常: ${e.message}")
             }
             null
         }
@@ -411,11 +409,9 @@ object RootDetectorV2 {
         }
     }
 
-    private fun detectRootManagementApps(context: Context?): List<String> =
-        detectInstalledPackages(context, ROOT_MANAGEMENT_PACKAGES)
+    private fun detectRootManagementApps(context: Context?): List<String> = detectInstalledPackages(context, ROOT_MANAGEMENT_PACKAGES)
 
-    private fun detectRootRiskApps(context: Context?): List<String> =
-        detectInstalledPackages(context, ROOT_RISK_PACKAGES)
+    private fun detectRootRiskApps(context: Context?): List<String> = detectInstalledPackages(context, ROOT_RISK_PACKAGES)
 
     private fun checkMagiskSpecificPaths(): List<String> {
         val magiskPaths =
@@ -495,14 +491,13 @@ object RootDetectorV2 {
             false
         }
 
-    private fun isSelinuxPermissive(): Boolean {
-        return try {
+    private fun isSelinuxPermissive(): Boolean =
+        try {
             getProp("ro.build.selinux") == "0" ||
                 File("/sys/fs/selinux/enforce").takeIf { it.exists() }?.readText()?.trim() == "0"
         } catch (_: Exception) {
             false
         }
-    }
 
     private fun checkWritableSystemPaths(): Boolean {
         val paths =

@@ -6,25 +6,26 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SignInResultSupportTest {
-
-    private val cloudYsBinding = CloudGameBinding(
-        game = CloudSignIn.GAMES.getValue("CloudYS"),
-        tokenOf = { it.genshinToken },
-        webCookieOf = { it.genshinWebCookie },
-        hasKeepLogin = { it.hasGenshinCloudKeepLogin },
-        updateToken = { account, token -> account.copy(genshinToken = token) },
-    )
+    private val cloudYsBinding =
+        CloudGameBinding(
+            game = CloudSignIn.GAMES.getValue("CloudYS"),
+            tokenOf = { it.genshinToken },
+            webCookieOf = { it.genshinWebCookie },
+            hasKeepLogin = { it.hasGenshinCloudKeepLogin },
+            updateToken = { account, token -> account.copy(genshinToken = token) },
+        )
 
     @Test
     fun `build mys task result carries reward fields`() {
         val reward = MysSignIn.Reward(day = 3, name = "原石", cnt = "20", icon = "icon_url")
-        val outcome = MysSignIn.Outcome(
-            success = true,
-            skipped = false,
-            message = "签到成功",
-            alreadySigned = false,
-            reward = reward,
-        )
+        val outcome =
+            MysSignIn.Outcome(
+                success = true,
+                skipped = false,
+                message = "签到成功",
+                alreadySigned = false,
+                reward = reward,
+            )
 
         val account = Account(id = "account-1", label = "主账号")
         val result = buildMysTaskResult("原神", "Genshin", account, outcome)
@@ -55,14 +56,15 @@ class SignInResultSupportTest {
 
     @Test
     fun `build mys outcome detail includes reward and flags`() {
-        val outcome = MysSignIn.Outcome(
-            success = true,
-            skipped = true,
-            message = "今日已签到",
-            alreadySigned = true,
-            reward = MysSignIn.Reward(day = 5, name = "摩拉", cnt = "8000"),
-            detail = "retcode=0",
-        )
+        val outcome =
+            MysSignIn.Outcome(
+                success = true,
+                skipped = true,
+                message = "今日已签到",
+                alreadySigned = true,
+                reward = MysSignIn.Reward(day = 5, name = "摩拉", cnt = "8000"),
+                detail = "retcode=0",
+            )
 
         val detail = buildMysOutcomeDetail(outcome)
 
@@ -81,13 +83,14 @@ class SignInResultSupportTest {
 
     @Test
     fun `build failed task results includes mys and selected cloud tasks`() {
-        val account = Account(
-            id = "1",
-            label = "test",
-            mysCookie = "cookie_token=abc; account_id=123",
-            genshinToken = "cloud_token",
-            selectedGames = setOf("Genshin", "CloudYS"),
-        )
+        val account =
+            Account(
+                id = "1",
+                label = "test",
+                mysCookie = "cookie_token=abc; account_id=123",
+                genshinToken = "cloud_token",
+                selectedGames = setOf("Genshin", "CloudYS"),
+            )
 
         val results = buildFailedTaskResults(account, "失败", listOf(cloudYsBinding))
 
@@ -97,26 +100,29 @@ class SignInResultSupportTest {
 
     @Test
     fun `compute sign in task total sums mys and cloud tasks`() {
-        val first = Account(
-            id = "1",
-            label = "a",
-            mysCookie = "cookie_token=abc; account_id=123",
-            selectedGames = setOf("Genshin", "ZZZ"),
-        )
-        val second = Account(
-            id = "2",
-            label = "b",
-            genshinToken = "cloud_token",
-            selectedGames = setOf("CloudYS"),
-        )
-        val third = Account(
-            id = "3",
-            label = "c",
-            mysUid = "10001",
-            stoken = "stoken",
-            qrLoginBound = true,
-            selectedGames = setOf("StarRail"),
-        )
+        val first =
+            Account(
+                id = "1",
+                label = "a",
+                mysCookie = "cookie_token=abc; account_id=123",
+                selectedGames = setOf("Genshin", "ZZZ"),
+            )
+        val second =
+            Account(
+                id = "2",
+                label = "b",
+                genshinToken = "cloud_token",
+                selectedGames = setOf("CloudYS"),
+            )
+        val third =
+            Account(
+                id = "3",
+                label = "c",
+                mysUid = "10001",
+                stoken = "stoken",
+                qrLoginBound = true,
+                selectedGames = setOf("StarRail"),
+            )
 
         val total = computeSignInTaskTotal(listOf(first, second, third), listOf(cloudYsBinding))
 
@@ -125,13 +131,14 @@ class SignInResultSupportTest {
 
     @Test
     fun `compute sign in task total includes enabled mys coin check in`() {
-        val account = Account(
-            id = "1",
-            label = "a",
-            mysCookie = "cookie_token=abc; account_id=123",
-            selectedGames = setOf("Genshin"),
-            mysCoinEnabled = true,
-        )
+        val account =
+            Account(
+                id = "1",
+                label = "a",
+                mysCookie = "cookie_token=abc; account_id=123",
+                selectedGames = setOf("Genshin"),
+                mysCoinEnabled = true,
+            )
 
         assertEquals(2, computeSignInTaskTotal(listOf(account), emptyList()))
     }

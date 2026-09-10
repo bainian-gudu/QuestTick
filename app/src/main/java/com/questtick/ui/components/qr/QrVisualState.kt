@@ -17,7 +17,9 @@ internal sealed interface QrVisualState {
 
     object Cancelled : QrVisualState
 
-    data class Busy(val message: String) : QrVisualState
+    data class Busy(
+        val message: String,
+    ) : QrVisualState
 
     data class Error(
         val message: String,

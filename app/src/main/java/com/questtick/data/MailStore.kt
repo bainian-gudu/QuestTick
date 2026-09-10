@@ -24,7 +24,8 @@ internal class MailStore(
 
     fun save(settings: MailSettings) {
         val success =
-            prefs.edit()
+            prefs
+                .edit()
                 .putString(key, settings.toJson().toString())
                 .commitSafely(TAG, "save mail settings")
         if (!success) {

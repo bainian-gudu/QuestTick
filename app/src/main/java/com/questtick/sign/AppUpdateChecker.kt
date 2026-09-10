@@ -7,7 +7,12 @@ import com.questtick.net.getIdempotent
 import com.questtick.net.TrustedUrlPolicy
 import com.questtick.core.runCatchingCancellable
 import com.questtick.core.throwIfCancellation
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.max
@@ -33,14 +38,13 @@ object AppUpdateChecker {
         )
     private val SHA256_PATTERN = Regex("""^[a-fA-F0-9]{64}$""")
 
-    private fun getDynamicTimeout(level: AppUpdateNetwork.NetLevel): Long {
-        return when (level) {
+    private fun getDynamicTimeout(level: AppUpdateNetwork.NetLevel): Long =
+        when (level) {
             AppUpdateNetwork.NetLevel.FAST -> 2000L
             AppUpdateNetwork.NetLevel.NORMAL -> 5000L
             AppUpdateNetwork.NetLevel.SLOW -> 10000L
             AppUpdateNetwork.NetLevel.OFFLINE -> 2000L
         }
-    }
 
     data class AppUpdateInfo(
         val currentVersion: String,
@@ -55,9 +59,16 @@ object AppUpdateChecker {
         val hasUpdate: Boolean,
     )
 
-    private data class ApkAsset(val name: String, val url: String, val sha256: String)
+    private data class ApkAsset(
+        val name: String,
+        val url: String,
+        val sha256: String,
+    )
 
-    private data class FetchBodyResult(val body: String, val etag: String)
+    private data class FetchBodyResult(
+        val body: String,
+        val etag: String,
+    )
 
     /**
      * 强制走网络获取最新发布信息，不读取本地强缓存；适合手动检查与自动更新提示。
@@ -305,7 +316,8 @@ object AppUpdateChecker {
         if (latestVersion.isBlank()) error("no version")
         val apk = findApkAsset(json.optJSONArray("assets"), latestVersion) ?: return noReleaseInfo(currentVersion)
         val releaseUrl =
-            json.optString("html_url")
+            json
+                .optString("html_url")
                 .takeIf(TrustedUrlPolicy::isUpdateReleasePageUrl)
                 ?: RELEASES_PAGE
         return AppUpdateInfo(
@@ -336,8 +348,12 @@ object AppUpdateChecker {
             if (!name.endsWith(".apk", true) || !TrustedUrlPolicy.isUpdateAssetUrl(url)) continue
             if (name.contains("unsigned", true)) continue
             val sha =
-                o.optString("digest").removePrefix("sha256:").lowercase()
-                    .takeIf { SHA256_PATTERN.matches(it) }.orEmpty()
+                o
+                    .optString("digest")
+                    .removePrefix("sha256:")
+                    .lowercase()
+                    .takeIf { SHA256_PATTERN.matches(it) }
+                    .orEmpty()
             if (sha.isBlank()) continue
             candidates.add(ApkAsset(name, url, sha))
         }
@@ -353,9 +369,7 @@ object AppUpdateChecker {
         current: String,
     ): Boolean = compareVersions(latest, current) > 0
 
-    private fun normalizeVersion(raw: String): String {
-        return VERSION_PATTERN.find(raw.trim().removePrefix("v").removePrefix("V"))?.value.orEmpty()
-    }
+    private fun normalizeVersion(raw: String): String = VERSION_PATTERN.find(raw.trim().removePrefix("v").removePrefix("V"))?.value.orEmpty()
 
     private fun isLikelyPreReleaseVersion(raw: String): Boolean = PRE_RELEASE_PATTERN.containsMatchIn(raw)
 

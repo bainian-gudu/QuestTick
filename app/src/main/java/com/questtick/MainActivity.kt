@@ -7,7 +7,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.util.Log
+import com.questtick.log.AppLog
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -33,7 +33,10 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var appErrorLogger: AppErrorLogger
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(com.questtick.i18n.AppLocaleController.wrap(newBase))
+        super.attachBaseContext(
+            com.questtick.i18n.AppLocaleController
+                .wrap(newBase),
+        )
     }
 
     /** 通知点击请求跳转的底部 Tab，下游由 AppRoot 监听。 */
@@ -87,7 +90,7 @@ class MainActivity : ComponentActivity() {
                             try {
                                 Notifier.ensureChannel(this@MainActivity)
                             } catch (e: Exception) {
-                                Log.w(TAG, "通知渠道创建失败", e)
+                                AppLog.w(TAG, "通知渠道创建失败", e)
                                 appErrorLogger.record("通知渠道创建", e)
                             }
                         }
@@ -124,24 +127,27 @@ class MainActivity : ComponentActivity() {
         dynamicColorEnabled: Boolean,
         customThemeColor: String,
     ) {
-        val palette = when {
-            oledPureBlack -> AppUiThemeCatalog.OledDark
-            darkTheme -> AppUiThemeCatalog.Dark
-            else -> AppUiThemeCatalog.Light
-        }
-        val customColor = runCatching {
-            if (customThemeColor.isBlank()) null else android.graphics.Color.parseColor(customThemeColor)
-        }.getOrNull()
-        val background = if (customColor != null) {
-            customColor
-        } else if (dynamicColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val palette =
+            when {
+                oledPureBlack -> AppUiThemeCatalog.OledDark
+                darkTheme -> AppUiThemeCatalog.Dark
+                else -> AppUiThemeCatalog.Light
+            }
+        val customColor =
             runCatching {
-                val colorRes = if (darkTheme) android.R.color.system_neutral1_900 else android.R.color.system_neutral1_10
-                getColor(colorRes)
-            }.getOrDefault(palette.backgroundBottom.toArgb())
-        } else {
-            palette.backgroundBottom.toArgb()
-        }
+                if (customThemeColor.isBlank()) null else android.graphics.Color.parseColor(customThemeColor)
+            }.getOrNull()
+        val background =
+            if (customColor != null) {
+                customColor
+            } else if (dynamicColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                runCatching {
+                    val colorRes = if (darkTheme) android.R.color.system_neutral1_900 else android.R.color.system_neutral1_10
+                    getColor(colorRes)
+                }.getOrDefault(palette.backgroundBottom.toArgb())
+            } else {
+                palette.backgroundBottom.toArgb()
+            }
         val resolvedBackground = if (oledPureBlack) Color.Black.toArgb() else background
         window.setBackgroundDrawable(ColorDrawable(resolvedBackground))
         window.statusBarColor = Color.Transparent.toArgb()
@@ -178,8 +184,9 @@ class MainActivity : ComponentActivity() {
         when (mode) {
             "LIGHT" -> false
             "DARK" -> true
-            else -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
+            else ->
+                (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                    Configuration.UI_MODE_NIGHT_YES
         }
 
     /** 窗口重新获得焦点时刷新高刷与挖孔屏参数。 */
@@ -224,13 +231,16 @@ class MainActivity : ComponentActivity() {
             if (modes.isEmpty()) return
             val current = display?.mode
             // 不跨分辨率切换显示模式，避免部分设备因高刷模式分辨率不同而闪屏。
-            val sameResolution = current?.let { mode ->
-                modes.filter { it.physicalWidth == mode.physicalWidth && it.physicalHeight == mode.physicalHeight }
-            }.orEmpty()
+            val sameResolution =
+                current
+                    ?.let { mode ->
+                        modes.filter { it.physicalWidth == mode.physicalWidth && it.physicalHeight == mode.physicalHeight }
+                    }.orEmpty()
             val candidates = if (sameResolution.isNotEmpty()) sameResolution else modes.toList()
-            val best = candidates
-                .filter { it.refreshRate.isFinite() && it.refreshRate > 0f }
-                .maxByOrNull { it.refreshRate } ?: return
+            val best =
+                candidates
+                    .filter { it.refreshRate.isFinite() && it.refreshRate > 0f }
+                    .maxByOrNull { it.refreshRate } ?: return
             val lp = window.attributes
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 lp.preferredDisplayModeId = best.modeId
@@ -239,7 +249,7 @@ class MainActivity : ComponentActivity() {
             lp.preferredRefreshRate = best.refreshRate
             window.attributes = lp
         } catch (t: Throwable) {
-            Log.w(TAG, "高刷/挖孔参数设置失败", t)
+            AppLog.w(TAG, "高刷/挖孔参数设置失败", t)
             appErrorLogger.record("显示参数设置", t)
         }
     }

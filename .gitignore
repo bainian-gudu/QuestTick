@@ -11,6 +11,9 @@ local.properties
 # Build outputs
 app/build/
 build/
+*.apk
+*.aab
+*.zip
 
 # Keystore (do NOT commit signing keys)
 *.jks

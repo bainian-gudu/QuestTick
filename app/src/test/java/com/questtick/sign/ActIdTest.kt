@@ -7,15 +7,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ActIdTest {
-
     @Test
     fun `valid act_id format`() {
         assertTrue(ActId.isValid("e202311201442471"))
         assertTrue(ActId.isValid("e202406242138391"))
         assertFalse(ActId.isValid(""))
         assertFalse(ActId.isValid(null))
-        assertFalse(ActId.isValid("202311201442471"))   // 缺少 e 前缀。
-        assertFalse(ActId.isValid("e12345"))            // 数字位数不足。
+        assertFalse(ActId.isValid("202311201442471")) // 缺少 e 前缀。
+        assertFalse(ActId.isValid("e12345")) // 数字位数不足。
         assertFalse(ActId.isValid("eabc202311201442471")) // 包含非数字字符。
     }
 
@@ -47,13 +46,14 @@ class ActIdTest {
 
     @Test
     fun `extract script urls resolves relative paths`() {
-        val html = """
+        val html =
+            """
             <html><head>
             <script src="/js/main.abc123.js"></script>
             <script src="https://cdn.example.com/vendor.js"></script>
             <script src="bad url with spaces"></script>
             </head></html>
-        """.trimIndent()
+            """.trimIndent()
         val urls = ActId.extractScriptUrls(html, "https://act.mihoyo.com/bbs/event/signin/hk4e/index.html")
         assertTrue(urls.contains("https://act.mihoyo.com/js/main.abc123.js"))
         assertFalse(urls.contains("https://cdn.example.com/vendor.js"))
@@ -75,7 +75,6 @@ class ActIdTest {
 }
 
 class ActIdInvalidTest {
-
     @Test
     fun `invalid retcodes trigger refresh`() {
         assertTrue(ActIdInvalid.isInvalid(-500001, ""))

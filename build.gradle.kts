@@ -1,19 +1,35 @@
 // 根项目构建脚本：集中声明各模块共用的插件版本与依赖解析策略。
 plugins {
     // Android Gradle Plugin
-    id("com.android.application") version "9.2.1" apply false
-    id("com.android.test") version "9.2.1" apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.test) apply false
 
     // Baseline Profile 生成插件
-    id("androidx.baselineprofile") version "1.5.0-alpha05" apply false
+    alias(libs.plugins.baselineprofile) apply false
 
     // Compose / Kotlin / KSP
-    id("org.jetbrains.kotlin.plugin.compose") version "2.4.0" apply false
-    id("com.google.devtools.ksp") version "2.3.9" apply false
+    alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.ksp) apply false
 
     // DI 与覆盖率
-    id("com.google.dagger.hilt.android") version "2.59.2" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.8" apply false
+    alias(libs.plugins.hilt) apply false
+    alias(libs.plugins.kover) apply false
+
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.detekt) apply false
+}
+
+spotless {
+    kotlin {
+        target("**/*.kt")
+        targetExclude("**/build/**/*.kt")
+        ktlint(libs.versions.ktlint.get())
+    }
+    kotlinGradle {
+        target("**/*.gradle.kts")
+        targetExclude("**/build/**/*.gradle.kts")
+        ktlint(libs.versions.ktlint.get())
+    }
 }
 
 subprojects {

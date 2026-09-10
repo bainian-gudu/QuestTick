@@ -15,15 +15,17 @@ class AuthRepositoryTest {
 
     @Test
     fun loginCookieParsingExtractsCredentials() {
-        val cookies = auth.parseLoginCookies(
-            setCookieHeaders = listOf(
-                "stuid=123456789; Path=/",
-                "stoken_v2=stoken_value; Path=/; HttpOnly",
-                "ltoken_v2=ltoken_value; Path=/",
-                "account_mid_v2=mid_value; Path=/",
-                "cookie_token_v2=cookie_token_value; Path=/",
-            ),
-        )
+        val cookies =
+            auth.parseLoginCookies(
+                setCookieHeaders =
+                    listOf(
+                        "stuid=123456789; Path=/",
+                        "stoken_v2=stoken_value; Path=/; HttpOnly",
+                        "ltoken_v2=ltoken_value; Path=/",
+                        "account_mid_v2=mid_value; Path=/",
+                        "cookie_token_v2=cookie_token_value; Path=/",
+                    ),
+            )
 
         assertEquals("123456789", cookies.uid)
         assertEquals("stoken_value", cookies.stoken)
@@ -80,26 +82,29 @@ class AuthRepositoryTest {
     }
 
     @Test
-    fun refreshCookieReturnsNullWhenNotKeepLogin() = runTest {
-        val result = auth.refreshCookie(
-            Account(
-                id = "1",
-                label = "test",
-                mysUid = "123456789",
-                stoken = "stoken",
-                qrLoginBound = false,
-            ),
-        )
+    fun refreshCookieReturnsNullWhenNotKeepLogin() =
+        runTest {
+            val result =
+                auth.refreshCookie(
+                    Account(
+                        id = "1",
+                        label = "test",
+                        mysUid = "123456789",
+                        stoken = "stoken",
+                        qrLoginBound = false,
+                    ),
+                )
 
-        assertNull(result)
-    }
+            assertNull(result)
+        }
 
     @Test
-    fun refreshCloudTokenFailsWhenNotKeepLogin() = runTest {
-        val result = auth.refreshCloudToken("CloudYS", webCookie = "", deviceId = "device")
+    fun refreshCloudTokenFailsWhenNotKeepLogin() =
+        runTest {
+            val result = auth.refreshCloudToken("CloudYS", webCookie = "", deviceId = "device")
 
-        assertTrue(result.isFailure)
-    }
+            assertTrue(result.isFailure)
+        }
 
     @Test
     fun cookieExpiredTextDetection() {

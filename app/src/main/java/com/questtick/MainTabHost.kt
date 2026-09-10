@@ -58,7 +58,10 @@ import com.questtick.ui.vm.LogsViewModel
 import com.questtick.ui.vm.RecordsViewModel
 import com.questtick.ui.vm.SettingsViewModel
 
-internal enum class Tab(val label: String, val icon: ImageVector) {
+internal enum class Tab(
+    val label: String,
+    val icon: ImageVector,
+) {
     Home("主页", Icons.Filled.Home),
     Accounts("账号", Icons.Filled.People),
     Records("记录", Icons.Filled.History),

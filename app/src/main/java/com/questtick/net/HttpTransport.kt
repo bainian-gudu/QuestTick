@@ -101,7 +101,10 @@ class HttpResponse internal constructor(
     fun bodyBytes(): ByteArray = rawBody.copyOf()
 
     fun headerValues(name: String): List<String> =
-        rawHeaders.entries.firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }?.value.orEmpty()
+        rawHeaders.entries
+            .firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }
+            ?.value
+            .orEmpty()
 
     fun json(): JSONObject =
         try {
@@ -110,8 +113,7 @@ class HttpResponse internal constructor(
             JSONObject()
         }
 
-    override fun toString(): String =
-        "HttpResponse(code=$code, bodyBytes=${rawBody.size}, finalUrl=redacted, headers=redacted)"
+    override fun toString(): String = "HttpResponse(code=$code, bodyBytes=${rawBody.size}, finalUrl=redacted, headers=redacted)"
 
     companion object {
         /** 供 Fake 与纯单元测试创建响应，不依赖 OkHttp 类型。 */
@@ -120,8 +122,7 @@ class HttpResponse internal constructor(
             body: String,
             finalUrl: String = "",
             headers: Map<String, List<String>> = emptyMap(),
-        ): HttpResponse =
-            HttpResponse(code, body.toByteArray(Charsets.UTF_8), finalUrl, headers.immutableCopy(), Charsets.UTF_8)
+        ): HttpResponse = HttpResponse(code, body.toByteArray(Charsets.UTF_8), finalUrl, headers.immutableCopy(), Charsets.UTF_8)
 
         fun bytes(
             code: Int,
@@ -130,7 +131,6 @@ class HttpResponse internal constructor(
             headers: Map<String, List<String>> = emptyMap(),
             charset: Charset = Charsets.UTF_8,
         ): HttpResponse = HttpResponse(code, body.copyOf(), finalUrl, headers.immutableCopy(), charset)
-
     }
 }
 
@@ -239,7 +239,6 @@ suspend fun HttpTransport.executeResult(request: HttpRequest): ApiResult<HttpRes
         )
     }
 
-private fun Map<String, List<String>>.immutableCopy(): Map<String, List<String>> =
-    entries.associate { (name, values) -> name to values.toList() }
+private fun Map<String, List<String>>.immutableCopy(): Map<String, List<String>> = entries.associate { (name, values) -> name to values.toList() }
 
 private const val JSON_CONTENT_TYPE = "application/json;charset=utf-8"

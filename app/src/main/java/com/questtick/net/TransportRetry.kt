@@ -167,16 +167,18 @@ internal object TransportFailures {
                 is SSLException -> TransportFailureKind.TLS
                 is EOFException,
                 is ProtocolException,
-                -> if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
-                    TransportFailureKind.RESPONSE_INTERRUPTED
-                } else {
-                    TransportFailureKind.CONNECTION_INTERRUPTED
-                }
-                is SocketException -> if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
-                    TransportFailureKind.RESPONSE_INTERRUPTED
-                } else {
-                    TransportFailureKind.CONNECTION_INTERRUPTED
-                }
+                ->
+                    if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
+                        TransportFailureKind.RESPONSE_INTERRUPTED
+                    } else {
+                        TransportFailureKind.CONNECTION_INTERRUPTED
+                    }
+                is SocketException ->
+                    if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
+                        TransportFailureKind.RESPONSE_INTERRUPTED
+                    } else {
+                        TransportFailureKind.CONNECTION_INTERRUPTED
+                    }
                 else -> TransportFailureKind.OTHER_IO
             }
         return TransportFailureException(kind, phase, requestMethod, error)
@@ -211,10 +213,16 @@ internal object TransportFailures {
         val seen = mutableSetOf<Throwable>()
         while (seen.add(current)) {
             if (
-                current is ResponseTooLargeException || current is UnknownHostException ||
-                current is ConnectException || current is NoRouteToHostException ||
-                current is SocketTimeoutException || current is SSLException || current is EOFException ||
-                current is ProtocolException || current is SocketException || current is InterruptedIOException
+                current is ResponseTooLargeException ||
+                current is UnknownHostException ||
+                current is ConnectException ||
+                current is NoRouteToHostException ||
+                current is SocketTimeoutException ||
+                current is SSLException ||
+                current is EOFException ||
+                current is ProtocolException ||
+                current is SocketException ||
+                current is InterruptedIOException
             ) {
                 return current
             }

@@ -36,32 +36,35 @@ class RootDetectorV2Test {
 
     @Test
     fun explicitRootEvidenceAlwaysBlocks() {
-        val result = safeResult().copy(
-            isRooted = true,
-            rootEvidenceTriggers = listOf("su_binary_fs"),
-        )
+        val result =
+            safeResult().copy(
+                isRooted = true,
+                rootEvidenceTriggers = listOf("su_binary_fs"),
+            )
 
         assertEquals(RootBlockingPolicy.Decision.BLOCK_ROOT_EVIDENCE, RootBlockingPolicy.decide(result))
     }
 
     @Test
     fun partialProbeAvailabilityDoesNotPretendRootOrBlock() {
-        val result = safeResult().copy(
-            completeness = RootDetectorV2.CheckCompleteness.PARTIAL,
-            checkedProbeCount = RootDetectorV2.TOTAL_PROBE_GROUPS - 1,
-            unavailableProbes = listOf("rootbeer"),
-        )
+        val result =
+            safeResult().copy(
+                completeness = RootDetectorV2.CheckCompleteness.PARTIAL,
+                checkedProbeCount = RootDetectorV2.TOTAL_PROBE_GROUPS - 1,
+                unavailableProbes = listOf("rootbeer"),
+            )
 
         assertEquals(RootBlockingPolicy.Decision.ALLOW, RootBlockingPolicy.decide(result))
     }
 
     @Test
     fun failedRootCheckBlocksWithoutPretendingRootWasDetected() {
-        val failed = safeResult().copy(
-            completeness = RootDetectorV2.CheckCompleteness.FAILED,
-            checkedProbeCount = 0,
-            unavailableProbes = listOf("rootbeer", "filesystem", "command"),
-        )
+        val failed =
+            safeResult().copy(
+                completeness = RootDetectorV2.CheckCompleteness.FAILED,
+                checkedProbeCount = 0,
+                unavailableProbes = listOf("rootbeer", "filesystem", "command"),
+            )
 
         assertFalse(failed.isRooted)
         assertEquals(RootBlockingPolicy.Decision.BLOCK_CHECK_FAILED, RootBlockingPolicy.decide(failed))

@@ -17,7 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +38,9 @@ import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.WarnAmber
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
+
+private const val MILLIS_PER_DAY = 86_400_000L
 
 /** 首页签到日历：按月展示每日签到状态。 */
 @Composable
@@ -44,9 +50,14 @@ fun SignInCalendarCard(
     modifier: Modifier = Modifier,
 ) {
     val theme = LocalAppUiTheme.current
-    val calendar =
-        remember(days, currentMillis / 60_000L) {
-            buildCalendarUi(days, currentMillis)
+    val timeZone = SIGN_IN_TIME_ZONE
+    val localDay = Math.floorDiv(currentMillis + timeZone.getOffset(currentMillis), MILLIS_PER_DAY)
+    val currentDays by rememberUpdatedState(days)
+    val calendar by
+        remember(localDay, timeZone.id) {
+            derivedStateOf {
+                buildCalendarUi(currentDays, currentMillis, timeZone)
+            }
         }
 
     PanelCard(modifier = modifier.fillMaxWidth()) {
@@ -100,7 +111,7 @@ fun SignInCalendarCard(
             Spacer(Modifier.height(8.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                calendar.cells.chunked(7).forEach { row ->
+                calendar.rows.forEach { row ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         row.forEach { cell ->
                             CalendarDayCell(cell = cell, modifier = Modifier.weight(1f))
@@ -218,7 +229,7 @@ private data class CalendarUi(
     val monthTitle: String,
     val signedDays: Int,
     val streakDays: Int,
-    val cells: List<CalendarDayUi?>,
+    val rows: List<List<CalendarDayUi?>>,
 )
 
 @Immutable
@@ -234,10 +245,10 @@ private enum class DayStatus { None, Success, Partial, Failed }
 private fun buildCalendarUi(
     days: List<SignInCalendarDay>,
     currentMillis: Long,
+    timeZone: TimeZone,
 ): CalendarUi {
     // Keep one timezone snapshot for the whole render. A device timezone change during
     // recomposition must not make the month, today key, and cell keys disagree.
-    val timeZone = SIGN_IN_TIME_ZONE
     val base = Calendar.getInstance(timeZone, Locale.getDefault()).apply { timeInMillis = currentMillis }
     val year = base.get(Calendar.YEAR)
     val month = base.get(Calendar.MONTH)
@@ -293,7 +304,7 @@ private fun buildCalendarUi(
         monthTitle = java.text.SimpleDateFormat("yyyy/MM", Locale.ROOT).format(monthStart.time),
         signedDays = signedKeysThisMonth,
         streakDays = streak,
-        cells = cells,
+        rows = cells.chunked(7),
     )
 }
 

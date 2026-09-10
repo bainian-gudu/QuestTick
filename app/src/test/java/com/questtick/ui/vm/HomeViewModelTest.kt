@@ -28,7 +28,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
-
     private lateinit var context: Context
     private lateinit var appStateRepo: AppStateRepository
     private lateinit var accountRepo: AccountRepository
@@ -65,25 +64,27 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `HomeViewModel 初始化后 running 状态为 false`() = runTest {
-        val viewModel = createViewModel()
+    fun `HomeViewModel 初始化后 running 状态为 false`() =
+        runTest {
+            val viewModel = createViewModel()
 
-        viewModel.running.test {
-            assertFalse(awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            viewModel.running.test {
+                assertFalse(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `HomeViewModel progress 初始状态不为 null`() = runTest {
-        val viewModel = createViewModel()
+    fun `HomeViewModel progress 初始状态不为 null`() =
+        runTest {
+            val viewModel = createViewModel()
 
-        viewModel.progress.test {
-            val initial = awaitItem()
-            assertNotNull(initial)
-            cancelAndIgnoreRemainingEvents()
+            viewModel.progress.test {
+                val initial = awaitItem()
+                assertNotNull(initial)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
     fun `HomeViewModel 暴露 accounts Flow`() {
@@ -91,8 +92,8 @@ class HomeViewModelTest {
         assertNotNull(viewModel.accounts)
     }
 
-    private fun createViewModel(): HomeViewModel {
-        return HomeViewModel(
+    private fun createViewModel(): HomeViewModel =
+        HomeViewModel(
             appStateRepository = appStateRepo,
             accountRepository = accountRepo,
             historyRepository = historyRepo,
@@ -105,5 +106,4 @@ class HomeViewModelTest {
             runCoordinator = SignInRunCoordinator(),
             appErrorLogger = appErrorLogger,
         )
-    }
 }

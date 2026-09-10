@@ -334,6 +334,7 @@ class SignInRunner(
         trigger: RunTrigger = RunTrigger.MANUAL,
         allowedTaskIds: Set<String>? = null,
         excludedAccountIds: Set<String> = emptySet(),
+        scheduledBusinessDayAt: Long? = null,
     ): RunRecord {
         val runId = UUID.randomUUID().toString()
         val startTime = System.currentTimeMillis()
@@ -362,7 +363,7 @@ class SignInRunner(
         // 定时签到复用当天手动签到结果；已确认成功的任务不再重复请求，失败任务仍可按定时重试策略处理。
         val signedTaskIdsForDay =
             if (trigger == RunTrigger.SCHEDULED || trigger == RunTrigger.RETRY) {
-                runPersistenceRepository.signedTaskIdsForDay(startTime)
+                runPersistenceRepository.signedTaskIdsForDay(scheduledBusinessDayAt ?: startTime)
             } else {
                 emptySet()
             }
@@ -391,422 +392,427 @@ class SignInRunner(
             withContext(Dispatchers.IO) {
                 runPersistenceRepository.startRun(runId, trigger, startTime, taskPlan)
             }
-        val uncertainTaskIds =
-            withContext(Dispatchers.IO) {
-                runPersistenceRepository.uncertainTaskIdsForDay(startTime).intersect(taskPlan.map { it.id }.toSet())
-            }
+            val uncertainTaskIds =
+                withContext(Dispatchers.IO) {
+                    runPersistenceRepository.uncertainTaskIdsForDay(startTime).intersect(taskPlan.map { it.id }.toSet())
+                }
 
-        val workerParallelism =
-            if (parallel) {
-                minOf(accounts.size.coerceAtLeast(1), maxParallelism)
-            } else {
-                1
-            }
+            val workerParallelism =
+                if (parallel) {
+                    minOf(accounts.size.coerceAtLeast(1), maxParallelism)
+                } else {
+                    1
+                }
 
             withContext(Dispatchers.IO.limitedParallelism(workerParallelism)) {
-            logs.clear()
+                logs.clear()
 
-            val settings = store.getAppSettings()
-            // 将设置页自定义云游戏版本同步到生效版本，确保签到请求使用用户指定的版本号。
-            CloudVersionRepository.applyOverrides(settings.cloudYsVersion, settings.cloudSrVersion)
-            debugLoggingEnabled = settings.debugLoggingEnabled
-            // 版本自动获取必须由本次真正可执行的对应签到任务触发，不能只看账号是否保存了凭证。
-            val hasMysTasks =
-                taskPlan.any { it.type == RunTaskType.MYS && it.id !in uncertainTaskIds } ||
-                    accounts.any { MysCoinCheckIn.featureEnabled && it.mysCoinEnabled }
-            val hasCloudYsTasks =
-                taskPlan.any {
-                    it.type == RunTaskType.CLOUD && it.id !in uncertainTaskIds &&
-                        it.id.substringAfterLast('|') == "CloudYS"
+                val settings = store.getAppSettings()
+                // 将设置页自定义云游戏版本同步到生效版本，确保签到请求使用用户指定的版本号。
+                CloudVersionRepository.applyOverrides(settings.cloudYsVersion, settings.cloudSrVersion)
+                debugLoggingEnabled = settings.debugLoggingEnabled
+                // 版本自动获取必须由本次真正可执行的对应签到任务触发，不能只看账号是否保存了凭证。
+                val hasMysTasks =
+                    taskPlan.any { it.type == RunTaskType.MYS && it.id !in uncertainTaskIds } ||
+                        accounts.any { MysCoinCheckIn.featureEnabled && it.mysCoinEnabled }
+                val hasCloudYsTasks =
+                    taskPlan.any {
+                        it.type == RunTaskType.CLOUD &&
+                            it.id !in uncertainTaskIds &&
+                            it.id.substringAfterLast('|') == "CloudYS"
+                    }
+                val hasCloudSrTasks =
+                    taskPlan.any {
+                        it.type == RunTaskType.CLOUD &&
+                            it.id !in uncertainTaskIds &&
+                            it.id.substringAfterLast('|') == "CloudSR"
+                    }
+                val hasCloudTasks = hasCloudYsTasks || hasCloudSrTasks
+
+                // 先写入运行起点，让版本准备、Root 检测和后续任务日志都落入同一签到组。
+                log("INFO", "========== 开始执行签到 ==========")
+                log(
+                    "DEBUG",
+                    "调试日志已启用",
+                    "enabledAccounts=${accounts.size}, totalAccounts=${allAccounts.size}, workerParallelism=$workerParallelism, " +
+                        "hasMysTasks=$hasMysTasks, hasCloudTasks=$hasCloudTasks",
+                )
+
+                val actIdCache = ConcurrentHashMap<String, String>()
+                actIdCache.putAll(store.getActIdCache())
+
+                val done = AtomicInteger(0)
+                val hadUnexpectedAccountFailure = AtomicBoolean(false)
+                val completeTask: (String, TaskResult, String) -> Unit = { taskId, result, progressLabel ->
+                    val normalizedResult =
+                        result.copy(
+                            taskId = taskId,
+                            accountId = result.accountId.ifBlank { taskId.substringBefore('|') },
+                        )
+                    when (resultAccumulator.accept(taskId, normalizedResult)) {
+                        TaskResultAcceptance.ACCEPTED -> {
+                            val persisted =
+                                try {
+                                    runPersistenceRepository.persistTaskResult(runId, taskId, normalizedResult)
+                                } catch (e: Exception) {
+                                    throw RunPersistenceException(
+                                        "任务终态持久化异常: $taskId (${e.javaClass.simpleName})",
+                                        e,
+                                    )
+                                }
+                            if (!persisted) {
+                                throw RunPersistenceException("任务终态持久化失败或已存在: $taskId")
+                            }
+                            markProgressTaskFinished(taskId, normalizedResult)
+                            val completed = done.incrementAndGet()
+                            onProgress(progressLabel, completed.coerceAtMost(total), total)
+                        }
+                        TaskResultAcceptance.DUPLICATE -> {
+                            hadUnexpectedAccountFailure.set(true)
+                            log(
+                                "WARN",
+                                "忽略重复的任务终态结果",
+                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
+                            )
+                        }
+                        TaskResultAcceptance.UNPLANNED -> {
+                            hadUnexpectedAccountFailure.set(true)
+                            log(
+                                "ERROR",
+                                "忽略未列入计划的任务结果",
+                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
+                            )
+                        }
+                    }
                 }
-            val hasCloudSrTasks =
-                taskPlan.any {
-                    it.type == RunTaskType.CLOUD && it.id !in uncertainTaskIds &&
-                        it.id.substringAfterLast('|') == "CloudSR"
+                val shouldExecuteTask: (String) -> Boolean = { taskId ->
+                    resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)
                 }
-            val hasCloudTasks = hasCloudYsTasks || hasCloudSrTasks
-
-            // 先写入运行起点，让版本准备、Root 检测和后续任务日志都落入同一签到组。
-            log("INFO", "========== 开始执行签到 ==========")
-            log(
-                "DEBUG",
-                "调试日志已启用",
-                "enabledAccounts=${accounts.size}, totalAccounts=${allAccounts.size}, workerParallelism=$workerParallelism, " +
-                    "hasMysTasks=$hasMysTasks, hasCloudTasks=$hasCloudTasks",
-            )
-
-            val actIdCache = ConcurrentHashMap<String, String>()
-            actIdCache.putAll(store.getActIdCache())
-
-            val done = AtomicInteger(0)
-            val hadUnexpectedAccountFailure = AtomicBoolean(false)
-            val completeTask: (String, TaskResult, String) -> Unit = { taskId, result, progressLabel ->
-                val normalizedResult =
-                    result.copy(
-                        taskId = taskId,
-                        accountId = result.accountId.ifBlank { taskId.substringBefore('|') },
-                    )
-                when (resultAccumulator.accept(taskId, normalizedResult)) {
-                    TaskResultAcceptance.ACCEPTED -> {
-                        val persisted =
+                val isTaskRunning: (String) -> Boolean = { taskId ->
+                    try {
+                        runPersistenceRepository.isTaskRunning(runId, taskId)
+                    } catch (e: Exception) {
+                        throw RunPersistenceException(
+                            "读取任务持久化状态异常: $taskId (${e.javaClass.simpleName})",
+                            e,
+                        )
+                    }
+                }
+                val startTask: (String, String) -> Boolean = { taskId, message ->
+                    if (!shouldExecuteTask(taskId)) {
+                        false
+                    } else {
+                        val started =
                             try {
-                                runPersistenceRepository.persistTaskResult(runId, taskId, normalizedResult)
+                                runPersistenceRepository.markTaskRunning(runId, taskId, message)
                             } catch (e: Exception) {
                                 throw RunPersistenceException(
-                                    "任务终态持久化异常: $taskId (${e.javaClass.simpleName})",
+                                    "任务执行权持久化异常: $taskId (${e.javaClass.simpleName})",
                                     e,
                                 )
                             }
-                        if (!persisted) {
-                            throw RunPersistenceException("任务终态持久化失败或已存在: $taskId")
-                        }
-                        markProgressTaskFinished(taskId, normalizedResult)
-                        val completed = done.incrementAndGet()
-                        onProgress(progressLabel, completed.coerceAtMost(total), total)
-                    }
-                    TaskResultAcceptance.DUPLICATE -> {
-                        hadUnexpectedAccountFailure.set(true)
-                        log(
-                            "WARN",
-                            "忽略重复的任务终态结果",
-                            "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
-                        )
-                    }
-                    TaskResultAcceptance.UNPLANNED -> {
-                        hadUnexpectedAccountFailure.set(true)
-                        log(
-                            "ERROR",
-                            "忽略未列入计划的任务结果",
-                            "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
-                        )
+                        if (!started) throw RunPersistenceException("无法获取任务执行权: $taskId")
+                        markProgressTaskRunning(taskId, message)
+                        true
                     }
                 }
-            }
-            val shouldExecuteTask: (String) -> Boolean = { taskId ->
-                resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)
-            }
-            val isTaskRunning: (String) -> Boolean = { taskId ->
-                try {
-                    runPersistenceRepository.isTaskRunning(runId, taskId)
-                } catch (e: Exception) {
-                    throw RunPersistenceException(
-                        "读取任务持久化状态异常: $taskId (${e.javaClass.simpleName})",
-                        e,
+
+                runCoordinator?.setProgressPhase(RunProgressPhase.CHECKING, "正在检查运行环境")
+                // Root 阻断必须使用强制实时检测，不能复用短期缓存，避免 Root 状态变化后继续放行。
+                val rootResult =
+                    if (rootCheckAlreadyPerformed) {
+                        precheckedRootResult
+                    } else {
+                        try {
+                            rootEnvironmentChecker.check(forceRefresh = true)
+                        } catch (e: Throwable) {
+                            e.throwIfCancellation()
+                            log(
+                                "ERROR",
+                                RootBlockMessages.CHECK_FAILED_CONTENT,
+                                "${e.javaClass.simpleName}: ${e.message}",
+                            )
+                            null
+                        }
+                    }
+                if (rootCheckAlreadyPerformed && rootResult == null) {
+                    log(
+                        "ERROR",
+                        RootBlockMessages.CHECK_FAILED_CONTENT,
+                        "manual pre-check failed before runner start",
                     )
                 }
-            }
-            val startTask: (String, String) -> Boolean = { taskId, message ->
-                if (!shouldExecuteTask(taskId)) {
-                    false
+                logSystemInfo(settings, allAccounts, rootResult)
+                val rootDecision = RootBlockingPolicy.decide(rootResult)
+                if (rootDecision != RootBlockingPolicy.Decision.ALLOW) {
+                    val rootCheckFailed = rootDecision == RootBlockingPolicy.Decision.BLOCK_CHECK_FAILED
+                    val blockMessage = rootBlockResultMessage(rootDecision)
+                    log(
+                        "ERROR",
+                        blockMessage,
+                        rootResult?.let {
+                            "completeness=${it.completeness}, checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS}, " +
+                                "unavailable=${it.unavailableProbes.take(5).joinToString()}, score=${it.score}, " +
+                                "rootEvidence=${it.rootEvidenceTriggers.take(5).joinToString()}, triggers=${it.triggers.take(5).joinToString()}"
+                        } ?: "root check unavailable",
+                    )
+                    val blockedResults =
+                        sortTaskResultsForRecord(
+                            accounts.flatMap { account ->
+                                buildSkippedTaskResults(
+                                    account = account,
+                                    message = blockMessage,
+                                    cloudGameBindings = cloudGameBindings,
+                                    failure =
+                                        TaskFailureDescriptor(
+                                            category = FailureCategory.SECURITY_BLOCKED,
+                                            errorCode = if (rootCheckFailed) "root-check-failed" else "root-detected",
+                                        ),
+                                ).filter { it.taskId in plannedTaskIds }
+                            },
+                        )
+                    blockedResults.forEach { result ->
+                        completeTask(result.taskId, result, "${result.accountLabel} · ${result.game}")
+                        logOutcome(
+                            account = result.accountLabel,
+                            game = result.game,
+                            success = false,
+                            skipped = true,
+                            message = result.message,
+                            detail = "blockedBy=rootCheck",
+                        )
+                    }
+                    onProgress(blockMessage, 0, total)
+                    runCoordinator?.skipUnfinishedTasks(blockMessage)
+                    val record =
+                        RunRecord(
+                            timestamp = System.currentTimeMillis(),
+                            results = blockedResults,
+                            runId = runId,
+                            trigger = trigger,
+                            terminationReason =
+                                if (rootCheckFailed) {
+                                    RunTerminationReason.ROOT_CHECK_FAILED
+                                } else {
+                                    RunTerminationReason.ROOT_DETECTED
+                                },
+                        )
+                    runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存阻断结果")
+                    finish(record, actIdCache, startTime, enqueuePostRunActions = false)
+                    runCoordinator?.finishProgress(RunProgressPhase.BLOCKED, blockMessage)
+                    return@withContext record
+                }
+
+                // 上次进程中断时已经发出请求但没有结果的任务，本业务日不再自动重放。
+                if (uncertainTaskIds.isNotEmpty()) {
+                    taskPlan.filter { it.id in uncertainTaskIds }.forEach { task ->
+                        val parts = task.id.split('|', limit = 3)
+                        completeTask(
+                            task.id,
+                            TaskResult(
+                                game = task.targetName,
+                                gameKey = parts.getOrNull(2).orEmpty(),
+                                accountLabel = task.accountLabel,
+                                accountId = parts.getOrNull(0).orEmpty(),
+                                success = false,
+                                skipped = true,
+                                message = RunPersistenceRepository.RESULT_UNKNOWN_MESSAGE,
+                                failureCategory = FailureCategory.RESULT_UNKNOWN,
+                                errorCode = "previous-run-result-unknown",
+                                retryable = false,
+                            ),
+                            "${task.accountLabel} · ${task.targetName}（结果待确认）",
+                        )
+                    }
+                }
+
+                runCoordinator?.setProgressPhase(RunProgressPhase.REFRESHING, "正在准备版本与凭证")
+                // Root 已确认放行后再启动准备任务。这里的并行独立于“并行签到”开关；
+                // 该开关仍只控制多账号处理，米游社与云游戏请求各自等待自己的准备结果。
+                val mysPreparation =
+                    async {
+                        prepareMysRuntime(settings, hasMysTasks)
+                    }
+                val cloudPreparation =
+                    async {
+                        prepareCloudRuntime(settings, hasCloudYsTasks, hasCloudSrTasks, hasCloudTasks)
+                    }
+                log(
+                    "DEBUG",
+                    "运行配置快照",
+                    buildString {
+                        append("parallel=${settings.parallelEnabled}, ")
+                        append("actIdAutoRefresh=${settings.actIdAutoRefresh}, ")
+                        append("mysAppVersion={autoFetch=${settings.mysAppVersionAutoFetch}, ")
+                        append("custom=${settings.mysAppVersion.ifBlank { "<empty>" }}, ")
+                        append("effective=${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion).ifBlank { "<empty>" }}}, ")
+                        append("cloudVersion={autoFetch=${settings.cloudVersionAutoFetch}, ")
+                        append("ysCustom=${settings.cloudYsVersion.ifBlank { "<empty>" }}, ")
+                        append("srCustom=${settings.cloudSrVersion.ifBlank { "<empty>" }}, ")
+                        append("ysEffective=${CloudVersionRepository.effectiveYs()}, ")
+                        append("srEffective=${CloudVersionRepository.effectiveSr()}}, ")
+                        append("rootCheck={enabled=true, mode=evidence, blockRun=true}, ")
+                        append("actIdCacheKeys=${actIdCache.keys.joinToString()}")
+                    },
+                )
+
+                val cpuCores = Runtime.getRuntime().availableProcessors()
+                val maxMem = Runtime.getRuntime().maxMemory() / 1024 / 1024
+                val freeMem = Runtime.getRuntime().freeMemory() / 1024 / 1024
+                val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
+                val mysVersion =
+                    when {
+                        settings.mysAppVersion.isNotBlank() -> "自定义(${settings.mysAppVersion})"
+                        settings.mysAppVersionAutoFetch ->
+                            "自动准备中(${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion)})"
+                        else -> "默认(${MysAppVersionRepository.currentVersion})"
+                    }
+
+                log(
+                    "INFO",
+                    "运行模式: $mode, 启用账号: ${accounts.size} 个",
+                    "parallel=$parallel, cpuCores=$cpuCores, maxHeap=${maxMem}MB, freeHeap=${freeMem}MB, " +
+                        "thread=${Thread.currentThread().name}",
+                )
+                log("INFO", "米游社版本准备已并行启动", "configured=$mysVersion")
+                if (settings.actIdAutoRefresh) {
+                    log("INFO", "act_id 自动刷新已开启")
+                }
+                if (settings.parallelEnabled) {
+                    log("INFO", "并行调度线程上限: $workerParallelism")
+                }
+
+                log("INFO", "任务总数: $total 个游戏签到（${accounts.size} 个账号）")
+
+                accounts.forEach(::logPlannedTasksForAccount)
+                runCoordinator?.setProgressPhase(RunProgressPhase.SIGNING, "准备开始签到任务")
+
+                if (parallel && accounts.size > 1) {
+                    log("INFO", "────── 启动并行调度，${accounts.size} 个协程同时执行 ──────")
+                    coroutineScope {
+                        accounts
+                            .mapIndexed { index, acc ->
+                                async {
+                                    try {
+                                        accountStartJitter(acc.label, index, accounts.size)
+                                        processAccount(
+                                            acc,
+                                            settings,
+                                            mysPreparation,
+                                            cloudPreparation,
+                                            actIdCache,
+                                            total,
+                                            done,
+                                            onProgress,
+                                            shouldExecuteTask = shouldExecuteTask,
+                                            onTaskStarted = startTask,
+                                            onTaskCompleted = completeTask,
+                                        )
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (e: Exception) {
+                                        e.throwIfCancellation()
+                                        if (e is RunPersistenceException) throw e
+                                        log(
+                                            "ERROR",
+                                            "[${acc.label}] 账号处理异常终止",
+                                            ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+                                        )
+                                        hadUnexpectedAccountFailure.set(true)
+                                        addFailedResultsForAccount(
+                                            acc,
+                                            e,
+                                            { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
+                                            isTaskRunning,
+                                            completeTask,
+                                        )
+                                    }
+                                }
+                            }.awaitAll()
+                    }
                 } else {
-                    val started =
+                    for (acc in accounts) {
                         try {
-                            runPersistenceRepository.markTaskRunning(runId, taskId, message)
+                            processAccount(
+                                acc,
+                                settings,
+                                mysPreparation,
+                                cloudPreparation,
+                                actIdCache,
+                                total,
+                                done,
+                                onProgress,
+                                shouldExecuteTask = shouldExecuteTask,
+                                onTaskStarted = startTask,
+                                onTaskCompleted = completeTask,
+                            )
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
-                            throw RunPersistenceException(
-                                "任务执行权持久化异常: $taskId (${e.javaClass.simpleName})",
+                            e.throwIfCancellation()
+                            if (e is RunPersistenceException) throw e
+                            log(
+                                "ERROR",
+                                "[${acc.label}] 账号处理异常终止",
+                                ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+                            )
+                            hadUnexpectedAccountFailure.set(true)
+                            addFailedResultsForAccount(
+                                acc,
                                 e,
+                                { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
+                                isTaskRunning,
+                                completeTask,
                             )
                         }
-                    if (!started) throw RunPersistenceException("无法获取任务执行权: $taskId")
-                    markProgressTaskRunning(taskId, message)
-                    true
-                }
-            }
-
-            runCoordinator?.setProgressPhase(RunProgressPhase.CHECKING, "正在检查运行环境")
-            // Root 阻断必须使用强制实时检测，不能复用短期缓存，避免 Root 状态变化后继续放行。
-            val rootResult =
-                if (rootCheckAlreadyPerformed) {
-                    precheckedRootResult
-                } else {
-                    try {
-                        rootEnvironmentChecker.check(forceRefresh = true)
-                    } catch (e: Throwable) {
-                        e.throwIfCancellation()
-                        log(
-                            "ERROR",
-                            RootBlockMessages.CheckFailedContent,
-                            "${e.javaClass.simpleName}: ${e.message}",
-                        )
-                        null
                     }
                 }
-            if (rootCheckAlreadyPerformed && rootResult == null) {
-                log(
-                    "ERROR",
-                    RootBlockMessages.CheckFailedContent,
-                    "manual pre-check failed before runner start",
-                )
-            }
-            logSystemInfo(settings, allAccounts, rootResult)
-            val rootDecision = RootBlockingPolicy.decide(rootResult)
-            if (rootDecision != RootBlockingPolicy.Decision.ALLOW) {
-                val rootCheckFailed = rootDecision == RootBlockingPolicy.Decision.BLOCK_CHECK_FAILED
-                val blockMessage = rootBlockResultMessage(rootDecision)
-                log(
-                    "ERROR",
-                    blockMessage,
-                    rootResult?.let {
-                        "completeness=${it.completeness}, checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS}, " +
-                            "unavailable=${it.unavailableProbes.take(5).joinToString()}, score=${it.score}, " +
-                            "rootEvidence=${it.rootEvidenceTriggers.take(5).joinToString()}, triggers=${it.triggers.take(5).joinToString()}"
-                    } ?: "root check unavailable",
-                )
-                val blockedResults =
-                    sortTaskResultsForRecord(
-                        accounts.flatMap { account ->
-                            buildSkippedTaskResults(
-                                account = account,
-                                message = blockMessage,
-                                cloudGameBindings = cloudGameBindings,
-                                failure =
-                                    TaskFailureDescriptor(
-                                        category = FailureCategory.SECURITY_BLOCKED,
-                                        errorCode = if (rootCheckFailed) "root-check-failed" else "root-detected",
-                                    ),
-                            ).filter { it.taskId in plannedTaskIds }
-                        },
+
+                if (resultAccumulator.size != total) {
+                    hadUnexpectedAccountFailure.set(true)
+                    log(
+                        "ERROR",
+                        "签到任务结果不完整，正在补齐未完成任务",
+                        "planned=$total, completed=${resultAccumulator.size}",
                     )
-                blockedResults.forEach { result ->
-                    completeTask(result.taskId, result, "${result.accountLabel} · ${result.game}")
-                    logOutcome(
-                        account = result.accountLabel,
-                        game = result.game,
-                        success = false,
-                        skipped = true,
-                        message = result.message,
-                        detail = "blockedBy=rootCheck",
-                    )
+                    accounts.forEach { account ->
+                        buildFailedTaskResults(
+                            account = account,
+                            errorMessage = "任务执行异常中断",
+                            cloudGameBindings = cloudGameBindings,
+                            failure = TaskFailureDescriptor(FailureCategory.INTERNAL_ERROR, "missing-terminal-result"),
+                        ).forEach { result ->
+                            val taskId = taskIdForResult(account, result, cloudGameBindings)
+                            if (resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)) {
+                                val finalResult =
+                                    if (isTaskRunning(taskId)) {
+                                        result.asUnknownAfterRequest("missing-terminal-after-request")
+                                    } else {
+                                        result
+                                    }
+                                completeTask(taskId, finalResult, "${account.label} · 异常收尾")
+                            }
+                        }
+                    }
                 }
-                onProgress(blockMessage, 0, total)
-                runCoordinator?.skipUnfinishedTasks(blockMessage)
+                onProgress("完成", resultAccumulator.size.coerceAtMost(total), total)
+
+                val sortedResults = sortTaskResultsForRecord(resultAccumulator.values())
                 val record =
                     RunRecord(
                         timestamp = System.currentTimeMillis(),
-                        results = blockedResults,
+                        results = sortedResults,
                         runId = runId,
                         trigger = trigger,
                         terminationReason =
-                            if (rootCheckFailed) {
-                                RunTerminationReason.ROOT_CHECK_FAILED
+                            if (hadUnexpectedAccountFailure.get()) {
+                                RunTerminationReason.INTERNAL_ERROR
                             } else {
-                                RunTerminationReason.ROOT_DETECTED
+                                RunTerminationReason.COMPLETED
                             },
                     )
-                runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存阻断结果")
-                finish(record, actIdCache, startTime, enqueuePostRunActions = false)
-                runCoordinator?.finishProgress(RunProgressPhase.BLOCKED, blockMessage)
-                return@withContext record
-            }
-
-            // 上次进程中断时已经发出请求但没有结果的任务，本业务日不再自动重放。
-            if (uncertainTaskIds.isNotEmpty()) {
-                taskPlan.filter { it.id in uncertainTaskIds }.forEach { task ->
-                    val parts = task.id.split('|', limit = 3)
-                    completeTask(
-                        task.id,
-                        TaskResult(
-                            game = task.targetName,
-                            gameKey = parts.getOrNull(2).orEmpty(),
-                            accountLabel = task.accountLabel,
-                            accountId = parts.getOrNull(0).orEmpty(),
-                            success = false,
-                            skipped = true,
-                            message = RunPersistenceRepository.RESULT_UNKNOWN_MESSAGE,
-                            failureCategory = FailureCategory.RESULT_UNKNOWN,
-                            errorCode = "previous-run-result-unknown",
-                            retryable = false,
-                        ),
-                        "${task.accountLabel} · ${task.targetName}（结果待确认）",
-                    )
-                }
-            }
-
-            runCoordinator?.setProgressPhase(RunProgressPhase.REFRESHING, "正在准备版本与凭证")
-            // Root 已确认放行后再启动准备任务。这里的并行独立于“并行签到”开关；
-            // 该开关仍只控制多账号处理，米游社与云游戏请求各自等待自己的准备结果。
-            val mysPreparation = async {
-                prepareMysRuntime(settings, hasMysTasks)
-            }
-            val cloudPreparation = async {
-                prepareCloudRuntime(settings, hasCloudYsTasks, hasCloudSrTasks, hasCloudTasks)
-            }
-            log(
-                "DEBUG",
-                "运行配置快照",
-                buildString {
-                    append("parallel=${settings.parallelEnabled}, ")
-                    append("actIdAutoRefresh=${settings.actIdAutoRefresh}, ")
-                    append("mysAppVersion={autoFetch=${settings.mysAppVersionAutoFetch}, ")
-                    append("custom=${settings.mysAppVersion.ifBlank { "<empty>" }}, ")
-                    append("effective=${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion).ifBlank { "<empty>" }}}, ")
-                    append("cloudVersion={autoFetch=${settings.cloudVersionAutoFetch}, ")
-                    append("ysCustom=${settings.cloudYsVersion.ifBlank { "<empty>" }}, ")
-                    append("srCustom=${settings.cloudSrVersion.ifBlank { "<empty>" }}, ")
-                    append("ysEffective=${CloudVersionRepository.effectiveYs()}, ")
-                    append("srEffective=${CloudVersionRepository.effectiveSr()}}, ")
-                    append("rootCheck={enabled=true, mode=evidence, blockRun=true}, ")
-                    append("actIdCacheKeys=${actIdCache.keys.joinToString()}")
-                },
-            )
-
-            val cpuCores = Runtime.getRuntime().availableProcessors()
-            val maxMem = Runtime.getRuntime().maxMemory() / 1024 / 1024
-            val freeMem = Runtime.getRuntime().freeMemory() / 1024 / 1024
-            val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
-            val mysVersion =
-                when {
-                    settings.mysAppVersion.isNotBlank() -> "自定义(${settings.mysAppVersion})"
-                    settings.mysAppVersionAutoFetch ->
-                        "自动准备中(${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion)})"
-                    else -> "默认(${MysAppVersionRepository.currentVersion})"
-                }
-
-            log(
-                "INFO",
-                "运行模式: $mode, 启用账号: ${accounts.size} 个",
-                "parallel=$parallel, cpuCores=$cpuCores, maxHeap=${maxMem}MB, freeHeap=${freeMem}MB, " +
-                    "thread=${Thread.currentThread().name}",
-            )
-            log("INFO", "米游社版本准备已并行启动", "configured=$mysVersion")
-            if (settings.actIdAutoRefresh) {
-                log("INFO", "act_id 自动刷新已开启")
-            }
-            if (settings.parallelEnabled) {
-                log("INFO", "并行调度线程上限: $workerParallelism")
-            }
-
-            log("INFO", "任务总数: $total 个游戏签到（${accounts.size} 个账号）")
-
-            accounts.forEach(::logPlannedTasksForAccount)
-            runCoordinator?.setProgressPhase(RunProgressPhase.SIGNING, "准备开始签到任务")
-
-            if (parallel && accounts.size > 1) {
-                log("INFO", "────── 启动并行调度，${accounts.size} 个协程同时执行 ──────")
-                coroutineScope {
-                    accounts.mapIndexed { index, acc ->
-                        async {
-                            try {
-                                accountStartJitter(acc.label, index, accounts.size)
-                                processAccount(
-                                    acc,
-                                    settings,
-                                    mysPreparation,
-                                    cloudPreparation,
-                                    actIdCache,
-                                    total,
-                                    done,
-                                    onProgress,
-                                    shouldExecuteTask = shouldExecuteTask,
-                                    onTaskStarted = startTask,
-                                    onTaskCompleted = completeTask,
-                                )
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                e.throwIfCancellation()
-                                if (e is RunPersistenceException) throw e
-                                log(
-                                    "ERROR",
-                                    "[${acc.label}] 账号处理异常终止",
-                                    ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
-                                )
-                                hadUnexpectedAccountFailure.set(true)
-                                addFailedResultsForAccount(
-                                    acc,
-                                    e,
-                                    { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
-                                    isTaskRunning,
-                                    completeTask,
-                                )
-                            }
-                        }
-                    }.awaitAll()
-                }
-            } else {
-                for (acc in accounts) {
-                    try {
-                        processAccount(
-                            acc,
-                            settings,
-                            mysPreparation,
-                            cloudPreparation,
-                            actIdCache,
-                            total,
-                            done,
-                            onProgress,
-                            shouldExecuteTask = shouldExecuteTask,
-                            onTaskStarted = startTask,
-                            onTaskCompleted = completeTask,
-                        )
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        e.throwIfCancellation()
-                        if (e is RunPersistenceException) throw e
-                        log(
-                            "ERROR",
-                            "[${acc.label}] 账号处理异常终止",
-                            ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
-                        )
-                        hadUnexpectedAccountFailure.set(true)
-                        addFailedResultsForAccount(
-                            acc,
-                            e,
-                            { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
-                            isTaskRunning,
-                            completeTask,
-                        )
-                    }
-                }
-            }
-
-            if (resultAccumulator.size != total) {
-                hadUnexpectedAccountFailure.set(true)
-                log(
-                    "ERROR",
-                    "签到任务结果不完整，正在补齐未完成任务",
-                    "planned=$total, completed=${resultAccumulator.size}",
-                )
-                accounts.forEach { account ->
-                    buildFailedTaskResults(
-                        account = account,
-                        errorMessage = "任务执行异常中断",
-                        cloudGameBindings = cloudGameBindings,
-                        failure = TaskFailureDescriptor(FailureCategory.INTERNAL_ERROR, "missing-terminal-result"),
-                    ).forEach { result ->
-                        val taskId = taskIdForResult(account, result, cloudGameBindings)
-                        if (resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)) {
-                            val finalResult =
-                                if (isTaskRunning(taskId)) {
-                                    result.asUnknownAfterRequest("missing-terminal-after-request")
-                                } else {
-                                    result
-                                }
-                            completeTask(taskId, finalResult, "${account.label} · 异常收尾")
-                        }
-                    }
-                }
-            }
-            onProgress("完成", resultAccumulator.size.coerceAtMost(total), total)
-
-            val sortedResults = sortTaskResultsForRecord(resultAccumulator.values())
-            val record =
-                RunRecord(
-                    timestamp = System.currentTimeMillis(),
-                    results = sortedResults,
-                    runId = runId,
-                    trigger = trigger,
-                    terminationReason =
-                        if (hadUnexpectedAccountFailure.get()) {
-                            RunTerminationReason.INTERNAL_ERROR
-                        } else {
-                            RunTerminationReason.COMPLETED
-                        },
-                )
-            runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存签到结果")
-            finish(record, actIdCache, startTime)
+                runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存签到结果")
+                finish(record, actIdCache, startTime)
                 runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "签到任务已完成")
                 record
             }
@@ -876,32 +882,36 @@ class SignInRunner(
     ): CloudRuntimePreparation =
         coroutineScope {
             val deviceId = async(Dispatchers.IO) { store.effectiveCloudDeviceId(forceCreate = hasCloudTasks) }
-            val ysVersion = async {
-                if (!settings.cloudVersionAutoFetch || !hasCloudYs) return@async null
-                try {
-                    CloudVersionRepository.refreshYs(httpTransport)
-                        .onFailure { e ->
-                            log("WARN", "云原神版本刷新失败，使用缓存", "${e.javaClass.simpleName}: ${e.message}")
-                        }.getOrNull()
-                } catch (e: Throwable) {
-                    e.throwIfCancellation()
-                    log("WARN", "云原神版本准备异常，继续使用缓存", "${e.javaClass.simpleName}: ${e.message}")
-                    null
+            val ysVersion =
+                async {
+                    if (!settings.cloudVersionAutoFetch || !hasCloudYs) return@async null
+                    try {
+                        CloudVersionRepository
+                            .refreshYs(httpTransport)
+                            .onFailure { e ->
+                                log("WARN", "云原神版本刷新失败，使用缓存", "${e.javaClass.simpleName}: ${e.message}")
+                            }.getOrNull()
+                    } catch (e: Throwable) {
+                        e.throwIfCancellation()
+                        log("WARN", "云原神版本准备异常，继续使用缓存", "${e.javaClass.simpleName}: ${e.message}")
+                        null
+                    }
                 }
-            }
-            val srVersion = async {
-                if (!settings.cloudVersionAutoFetch || !hasCloudSr) return@async null
-                try {
-                    CloudVersionRepository.refreshSr(httpTransport)
-                        .onFailure { e ->
-                            log("WARN", "云崩铁版本刷新失败，使用缓存", "${e.javaClass.simpleName}: ${e.message}")
-                        }.getOrNull()
-                } catch (e: Throwable) {
-                    e.throwIfCancellation()
-                    log("WARN", "云崩铁版本准备异常，继续使用缓存", "${e.javaClass.simpleName}: ${e.message}")
-                    null
+            val srVersion =
+                async {
+                    if (!settings.cloudVersionAutoFetch || !hasCloudSr) return@async null
+                    try {
+                        CloudVersionRepository
+                            .refreshSr(httpTransport)
+                            .onFailure { e ->
+                                log("WARN", "云崩铁版本刷新失败，使用缓存", "${e.javaClass.simpleName}: ${e.message}")
+                            }.getOrNull()
+                    } catch (e: Throwable) {
+                        e.throwIfCancellation()
+                        log("WARN", "云崩铁版本准备异常，继续使用缓存", "${e.javaClass.simpleName}: ${e.message}")
+                        null
+                    }
                 }
-            }
 
             val preparedYs = ysVersion.await()
             val preparedSr = srVersion.await()
@@ -1078,7 +1088,6 @@ class SignInRunner(
         log("INFO", "────── 账号 ${acc.label} 处理完成 (${formatSignInElapsed(accountElapsed)}) ──────")
     }
 
-
     private fun markProgressTaskRunning(
         taskId: String,
         message: String,
@@ -1095,9 +1104,9 @@ class SignInRunner(
 
     private fun rootBlockResultMessage(decision: RootBlockingPolicy.Decision): String =
         if (decision == RootBlockingPolicy.Decision.BLOCK_ROOT_EVIDENCE) {
-            RootBlockMessages.DetectedContent
+            RootBlockMessages.DETECTED_CONTENT
         } else {
-            RootBlockMessages.CheckFailedContent
+            RootBlockMessages.CHECK_FAILED_CONTENT
         }
 
     private fun logOutcome(

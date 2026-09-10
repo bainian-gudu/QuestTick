@@ -4,10 +4,7 @@ import com.questtick.i18n.localizedText
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,20 +24,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.IosShare
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,16 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -227,7 +210,7 @@ fun LogsScreen(
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Spacer(Modifier.height(8.dp))
             PageTitle(
-                "运行日志",
+                "日志",
                 titleSubtitle,
             ) {
                 if (logs.isNotEmpty()) {
@@ -235,7 +218,8 @@ fun LogsScreen(
                         // 导出按钮作为下拉菜单触发器。
                         Box {
                             Row(
-                                Modifier.clip(RoundedCornerShape(8.dp))
+                                Modifier
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                                     .clickableNoRipple { showExportMenu = true }
                                     .padding(horizontal = 10.dp, vertical = 5.dp),
@@ -430,7 +414,9 @@ fun LogsScreen(
                     EmptyState(
                         badge = {
                             Box(
-                                Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
+                                Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(20.dp))
                                     .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -452,9 +438,11 @@ fun LogsScreen(
                     EmptyState(
                         badge = {
                             Box(
-                                Modifier.size(
-                                    64.dp,
-                                ).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                Modifier
+                                    .size(
+                                        64.dp,
+                                    ).clip(RoundedCornerShape(20.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
@@ -473,9 +461,11 @@ fun LogsScreen(
                     EmptyState(
                         badge = {
                             Box(
-                                Modifier.size(
-                                    64.dp,
-                                ).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
+                                Modifier
+                                    .size(
+                                        64.dp,
+                                    ).clip(RoundedCornerShape(20.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(

@@ -72,8 +72,9 @@ fun QRLoginScreen(
         }
     }
 
-    // 生成二维码。
-    LaunchedEffect(refreshKey) {
+    // 退出动画仍保留组合；不可见时不创建二维码，也不启动后续轮询。
+    LaunchedEffect(visible, refreshKey) {
+        if (!visible) return@LaunchedEffect
         loading = true
         errorMsg = ""
         status = QRLoginManager.ScanStatus.Created
@@ -82,9 +83,10 @@ fun QRLoginScreen(
         confirmedData = null
         showPendingCancelDialog = false
 
-        val result = withContext(Dispatchers.IO) {
-            QRLoginManager.createQRCode(deviceId, httpTransport, onError)
-        }
+        val result =
+            withContext(Dispatchers.IO) {
+                QRLoginManager.createQRCode(deviceId, httpTransport, onError)
+            }
         val qr =
             result.getOrElse { e ->
                 errorMsg = e.message ?: "生成二维码失败"
@@ -102,10 +104,10 @@ fun QRLoginScreen(
         loading = false
     }
 
-    // 轮询扫码状态。
-    LaunchedEffect(ticket) {
-        if (ticket.isBlank()) return@LaunchedEffect
-        QRLoginManager.pollStatus(ticket, deviceId, httpTransport, recordError = onError)
+    LaunchedEffect(visible, ticket) {
+        if (!visible || ticket.isBlank()) return@LaunchedEffect
+        QRLoginManager
+            .pollStatus(ticket, deviceId, httpTransport, recordError = onError)
             .flowOn(Dispatchers.IO)
             .collect { s ->
                 status = s

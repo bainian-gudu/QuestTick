@@ -11,8 +11,8 @@ internal const val DEFAULT_QR_BITMAP_SIZE = 512
 internal fun generateQrBitmap(
     content: String,
     size: Int = DEFAULT_QR_BITMAP_SIZE,
-): Bitmap? {
-    return try {
+): Bitmap? =
+    try {
         val matrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, size, size)
         val width = matrix.width
         val height = matrix.height
@@ -26,7 +26,6 @@ internal fun generateQrBitmap(
     } catch (_: Exception) {
         null
     }
-}
 
 private const val QR_BLACK = -0x1000000
 private const val QR_WHITE = -1
