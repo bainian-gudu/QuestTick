@@ -53,8 +53,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # TODO(temp): 诊断脚手架——失败时把 Gradle 日志尾部以 annotations 形式发布，
-      # 便于无法访问 Actions 日志流时通过 GitHub API（jobs.annotations）读取错误。
+      # TODO(temp): 诊断脚手架——失败时把关键错误段合并为单条 annotation 消息发布
+      # （GitHub 对逐行 annotation 有数量截断，合并成一条消息可完整保留），
+      # 便于无法访问 Actions 日志流时通过 GitHub API 读取错误。
       # 定位问题后请移除本步骤，恢复为单行命令：
       #   run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Run unit tests
@@ -64,9 +65,17 @@ jobs:
           ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-unit-test.log
           code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then
-            echo "::error:: unit-test step failed (exit=${code}); publishing last 150 log lines as annotations"
-            java -version 2>&1 | sed 's/^/::error:: [env] /'
-            tail -n 150 /tmp/gradle-unit-test.log 2>/dev/null | sed 's/^/::error:: [gradle] /'
+            # 把多行文本合并为单条 annotation 消息（% 转义 + 换行编码为 %0A）
+            emit_block() {
+              awk -v tag="$1" '
+                { s = $0; gsub(/%/, "%%", s); if (NR > 1) buf = buf "%0A"; buf = buf s }
+                END { if (buf != "") print "::error:: [" tag "] " buf }
+              '
+            }
+            grep -E "^e: |error: " /tmp/gradle-unit-test.log 2>/dev/null | head -n 25 | emit_block "kotlin-errors"
+            awk '/^FAILURE:/{f=1} f{print} /^BUILD FAILED/{if (f) exit}' /tmp/gradle-unit-test.log 2>/dev/null \
+              | head -n 40 | emit_block "failure-section"
+            tail -n 15 /tmp/gradle-unit-test.log 2>/dev/null | emit_block "raw-tail"
           fi
           exit "$code"
 
