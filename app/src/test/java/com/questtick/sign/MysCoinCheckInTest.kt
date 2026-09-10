@@ -185,6 +185,22 @@ class MysCoinCheckInTest {
         }
 
     @Test
+    fun `rate limited duplicate wording is not treated as already done`() =
+        runBlocking {
+            // “请勿重复打卡”曾命中旧正则的“重复”关键词，retcode 非 -5003 时必须按失败处理，
+            // 否则限流会被误判为已打卡并写入日历，导致当天后续定时打卡被跳过。
+            val transport =
+                HttpTransport {
+                    HttpResponse.text(200, "{\"retcode\":-1001,\"message\":\"操作过于频繁，请勿重复打卡\"}")
+                }
+
+            val outcome = MysCoinCheckIn.run("stoken=s; mid=m; stuid=1; ltoken=l; account_id=1", "device", "2.109.0", transport)
+
+            assertFalse(outcome.success)
+            assertFalse(outcome.alreadyDone)
+        }
+
+    @Test
     fun `server error preserves original retcode and message in detail`() =
         runBlocking {
             val transport =

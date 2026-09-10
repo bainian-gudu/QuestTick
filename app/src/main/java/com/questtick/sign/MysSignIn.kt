@@ -148,15 +148,13 @@ class MysSignIn(
                     ),
             )
 
-        private val ALREADY_SIGNED = Regex("已签到|已经签到|签到过|今日已签到|already", RegexOption.IGNORE_CASE)
+        private val ALREADY_SIGNED = Regex("已签到|已经签到|今日已签到|already", RegexOption.IGNORE_CASE)
     }
 
     private fun host(game: GameConfig): String = if (game.key == "ZZZ") Endpoints.ZZZ_HOST else Endpoints.WEB_HOST
 
     /** 当前生效的 act_id：优先使用动态缓存，缺失时回退到内置默认值。 */
     private fun currentActId(game: GameConfig): String = actIdCache[game.key]?.takeIf { ActId.isValid(it) } ?: game.actId
-
-    // 角色查询。
 
     suspend fun getRole(
         cookie: String,
@@ -215,8 +213,6 @@ class MysSignIn(
             )
         }
     }
-
-    // 签到请求。
 
     private fun signUrl(game: GameConfig): String =
         if (game.signgame != null) {
@@ -296,8 +292,9 @@ class MysSignIn(
                     failure = TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode"),
                 )
             }
-            // -5003 是官方“今日已签到”错误码，按已签到处理。
-            val already = httpSuccess && (retcode == -5003 || ALREADY_SIGNED.containsMatchIn(message))
+            // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
+            // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
+            val already = httpSuccess && (retcode == -5003 || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
             when {
                 already -> SignResult(true, true, "今日已签到")
                 httpSuccess && (message == "OK" || retcode == 0) -> SignResult(true, false, "签到成功")
@@ -372,7 +369,6 @@ class MysSignIn(
             return null
         }
 
-        // Mutex 保护并发写
         if (cacheMutex != null) {
             cacheMutex.withLock { actIdCache[game.key] = latest }
         } else {
@@ -381,8 +377,6 @@ class MysSignIn(
         onLog("INFO", "[${game.name}] 已获取最新 act_id=$latest，重试签到…")
         return signIn(cookie, game, role, retryOnActIdInvalid = false)
     }
-
-    // 奖励查询。
 
     private fun infoUrl(game: GameConfig): String =
         if (game.signgame != null) {

@@ -44,9 +44,7 @@ fun ResultRow(
     r: TaskResult,
     loadRewardImage: Boolean,
 ) {
-    // 缓存游戏目录查找结果。
     val game = remember(r.gameKey) { Games.byKey(r.gameKey) }
-    // 缓存图标与颜色计算结果。
     val (icon, tint) =
         remember(r.skipped, r.success, r.alreadySigned, r.failureCategory) {
             when {
@@ -74,7 +72,6 @@ fun ResultRow(
             Spacer(Modifier.size(8.dp))
             Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
         }
-        // 签到奖励图标与文字。
         if (r.rewardName.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
             Row(
