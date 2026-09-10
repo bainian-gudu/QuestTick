@@ -144,12 +144,10 @@ internal fun SettingsCard(
 }
 
 @Composable
-@Suppress("detekt:LongMethod", "detekt:FunctionNaming")
 internal fun SettingsEntryCard(
     icon: ImageVector,
     iconColor: Color,
     title: String,
-    subtitle: String,
     modifier: Modifier = Modifier,
     trailing: (@Composable RowScope.() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
@@ -178,31 +176,15 @@ internal fun SettingsEntryCard(
                 Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(14.dp))
-            Box(
+            Text(
+                title,
                 modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Column(Modifier.fillMaxWidth()) {
-                    Text(
-                        title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        softWrap = true,
-                    )
-                    if (subtitle.isNotBlank()) {
-                        Spacer(Modifier.height(3.dp))
-                        Text(
-                            subtitle,
-                            fontSize = 12.sp,
-                            lineHeight = 17.sp,
-                            color = TextSecondary,
-                            softWrap = true,
-                        )
-                    }
-                }
-            }
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                softWrap = true,
+            )
             when {
                 trailing != null -> trailing()
                 onClick != null -> {
