@@ -5,7 +5,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-/** 当前唯一受支持的数据库结构；旧结构直接替换为当前模型。 */
+/**
+ * 当前唯一受支持的数据库结构。
+ *
+ * 本库存放账号、签到记录与运行日志等用户数据，不可丢弃：升级版本时必须提供显式
+ * [androidx.room.migration.Migration] 并通过 [MIGRATIONS] 注册，同时在
+ * androidTest 的 AppDatabaseMigrationTest 中补充升级回归用例。禁止重新引入
+ * fallbackToDestructiveMigration——缺少迁移路径时应让构建/测试失败，而不是清空用户数据。
+ */
 @Database(
     entities = [
         AccountEntity::class,
@@ -40,8 +47,19 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         private const val DATABASE_NAME = "1"
 
+        /**
+         * 已注册的数据库升级迁移路径。
+         *
+         * 每次提升数据库版本时，在此追加对应的 Migration（如 MIGRATION_1_2），
+         * 并在 AppDatabaseMigrationTest 中登记同一条路径做升级回归验证。
+         */
+        @JvmField
+        val MIGRATIONS: Array<androidx.room.migration.Migration> = emptyArray()
+
         @Volatile private var instance: AppDatabase? = null
 
+        // 迁移数组当前为空，展开的拷贝开销仅在进程级单例初始化时发生一次。
+        @Suppress("SpreadOperator")
         fun get(context: Context): AppDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room
@@ -49,7 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
                         context.applicationContext,
                         AppDatabase::class.java,
                         DATABASE_NAME,
-                    ).fallbackToDestructiveMigration(dropAllTables = true)
+                    ).addMigrations(*MIGRATIONS)
                     // 使用 WAL 提升读写并发，减少主线程等待。
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                     .setQueryExecutor(

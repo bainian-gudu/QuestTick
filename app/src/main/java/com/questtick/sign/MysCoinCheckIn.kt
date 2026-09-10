@@ -17,7 +17,11 @@ internal object MysCoinCheckIn {
     private const val SIGN_URL = "https://bbs-api.miyoushe.com/apihub/app/api/signIn"
     private const val STATE_URL = "https://bbs-api.miyoushe.com/apihub/wapi/getUserMissionsState?point_sn=myb"
     private const val GENSHIN_GIDS = "2"
-    private val ALREADY_DONE = Regex("已.*(签到|打卡)|重复|already", RegexOption.IGNORE_CASE)
+
+    /** 米游社接口统一的“今日已签到/已打卡”错误码。 */
+    private const val RETCODE_ALREADY_DONE = -5003
+
+    private val ALREADY_DONE = Regex("已.*(签到|打卡)|already", RegexOption.IGNORE_CASE)
 
     data class Outcome(
         val success: Boolean,
@@ -78,7 +82,10 @@ internal object MysCoinCheckIn {
             val retcode = json.optInt("retcode", -999)
             val serverMessage = json.optString("message").ifBlank { "未知错误" }
             val httpSuccess = response.code in 200..299
-            val already = httpSuccess && ALREADY_DONE.containsMatchIn(serverMessage)
+            // 文案兜底只接受成功码，避免限流文案（如“请勿重复打卡”）被误判为已打卡。
+            val already =
+                httpSuccess &&
+                    (retcode == RETCODE_ALREADY_DONE || (retcode == 0 && ALREADY_DONE.containsMatchIn(serverMessage)))
             if (httpSuccess && (retcode == 0 || already)) delay(400)
             val afterRead = fetchState(coinCookie, httpTransport)
             val after = afterRead.state

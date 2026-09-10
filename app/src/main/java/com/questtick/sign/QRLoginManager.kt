@@ -40,8 +40,6 @@ object QRLoginManager {
 
     private const val MAX_QR_RESPONSE_BYTES = 1024 * 1024
 
-    // 数据结构。
-
     data class QRCode(
         val ticket: String,
         val url: String,
@@ -76,8 +74,6 @@ object QRLoginManager {
             val msg: String,
         ) : ScanStatus()
     }
-
-    // 对外 API。
 
     /** 生成登录二维码。 */
     suspend fun createQRCode(
@@ -204,8 +200,6 @@ object QRLoginManager {
                 }
             }
         }
-
-    // 内部辅助方法。
 
     internal fun mapQueryStatus(
         retcode: Int,

@@ -59,8 +59,6 @@ import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.vm.HomeViewModel
 import kotlinx.coroutines.isActive
 
-// 预计算常量，减少重组期间的对象分配。
-
 // 游戏网格行布局预计算；Games.ALL 是静态列表。
 private val GamesGridRows: List<List<GameInfo>> = Games.ALL.chunked(4)
 private const val SIGN_IN_COMPLETED_BUTTON_DURATION_MS = 3_000L
@@ -99,7 +97,6 @@ fun HomeScreen(
         if (isVisible) viewModel.refreshHistory()
     }
 
-    // 首页时钟每秒刷新…
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(isVisible) {
         if (!isVisible) return@LaunchedEffect

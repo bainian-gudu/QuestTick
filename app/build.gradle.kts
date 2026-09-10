@@ -215,6 +215,11 @@ android {
         buildConfig = true
     }
 
+    sourceSets {
+        // MigrationTestHelper 在 androidTest assets 中查找导出的 schema JSON，用于升级回归测试。
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     androidResources {
         // 资源收缩相关配置。
         @Suppress("UnstableApiUsage")
@@ -300,8 +305,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Kotlin 协程
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    // Kotlin 协程（版本统一在 gradle/libs.versions.toml 中管理，测试库与运行库保持一致）
+    implementation(libs.kotlinx.coroutines.android)
 
     // --- 网络请求 ---
     implementation("com.squareup.okhttp3:okhttp:5.4.0")
@@ -359,7 +364,7 @@ dependencies {
 
     // 测试框架
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("app.cash.turbine:turbine:1.1.0")
 
     androidTestImplementation("androidx.test:core:1.6.1")
