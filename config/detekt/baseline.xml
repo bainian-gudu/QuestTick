@@ -1452,5 +1452,17 @@
     <ID>UseOrEmpty:Mask.kt$Mask$text ?: ""</ID>
     <ID>UseOrEmpty:Passport.kt$Passport$text ?: ""</ID>
     <ID>UseRequire:TransportRetry.kt$TransportRetryPolicy$throw IllegalArgumentException("IDEMPOTENT_READ only supports GET or HEAD")</ID>
+    <!-- 以下条目为 SignInRunner 拆分（RunDiagnostics/RunFinalizer）平移的既有问题；下次运行 detektBaseline 可自动归位清理。 -->
+    <ID>CyclomaticComplexMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
+    <ID>LongMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
+    <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$3</ID>
+    <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$4</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"${settings.scheduleHour.toString().padStart(2, '0')}:${settings.scheduleMinute.toString().padStart(2, '0')}"</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$append("dsConfig={version=${dsConfig.version}, algorithm=${dsConfig.algorithm}, updateTime=${dsConfig.updateTime}}, ")</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0L)).versionName</ID>
+    <ID>TooGenericExceptionCaught:RunDiagnostics.kt$RunDiagnostics$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RunFinalizer.kt$RunFinalizer$e: Exception</ID>
   </CurrentIssues>
 </SmellBaseline>
