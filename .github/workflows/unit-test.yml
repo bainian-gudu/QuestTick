@@ -53,8 +53,22 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # TODO(temp): 诊断脚手架——失败时把 Gradle 日志尾部以 annotations 形式发布，
+      # 便于无法访问 Actions 日志流时通过 GitHub API（jobs.annotations）读取错误。
+      # 定位问题后请移除本步骤，恢复为单行命令：
+      #   run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          set +e
+          ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-unit-test.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "::error:: unit-test step failed (exit=${code}); publishing last 150 log lines as annotations"
+            java -version 2>&1 | sed 's/^/::error:: [env] /'
+            tail -n 150 /tmp/gradle-unit-test.log 2>/dev/null | sed 's/^/::error:: [gradle] /'
+          fi
+          exit "$code"
 
       - name: Generate Kover coverage report
         run: ./gradlew :app:koverXmlReportDebug :app:koverHtmlReportDebug --no-daemon --stacktrace
