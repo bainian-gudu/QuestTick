@@ -308,8 +308,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Kotlin 协程
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    // Kotlin 协程：版本统一收敛到版本目录（libs.versions.toml），运行时与测试库保持一致。
+    implementation(libs.kotlinx.coroutines.android)
 
     // --- 网络请求 ---
     implementation("com.squareup.okhttp3:okhttp:5.4.0")

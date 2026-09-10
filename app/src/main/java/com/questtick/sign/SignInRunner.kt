@@ -418,7 +418,7 @@ class SignInRunner(
                         "manual pre-check failed before runner start",
                     )
                 }
-                logSystemInfo(settings, allAccounts, rootResult)
+                diagnostics.logSystemInfo(settings, allAccounts, rootResult)
                 val rootDecision = RootBlockingPolicy.decide(rootResult)
                 if (rootDecision != RootBlockingPolicy.Decision.ALLOW) {
                     val rootCheckFailed = rootDecision == RootBlockingPolicy.Decision.BLOCK_CHECK_FAILED
