@@ -148,7 +148,7 @@ class MysSignIn(
                     ),
             )
 
-        private val ALREADY_SIGNED = Regex("已签到|已经签到|签到过|今日已签到|already", RegexOption.IGNORE_CASE)
+        private val ALREADY_SIGNED = Regex("已签到|已经签到|今日已签到|already", RegexOption.IGNORE_CASE)
     }
 
     private fun host(game: GameConfig): String = if (game.key == "ZZZ") Endpoints.ZZZ_HOST else Endpoints.WEB_HOST
@@ -292,8 +292,9 @@ class MysSignIn(
                     failure = TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode"),
                 )
             }
-            // -5003 是官方“今日已签到”错误码，按已签到处理。
-            val already = httpSuccess && (retcode == -5003 || ALREADY_SIGNED.containsMatchIn(message))
+            // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
+            // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
+            val already = httpSuccess && (retcode == -5003 || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
             when {
                 already -> SignResult(true, true, "今日已签到")
                 httpSuccess && (message == "OK" || retcode == 0) -> SignResult(true, false, "签到成功")
