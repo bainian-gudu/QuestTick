@@ -54,7 +54,7 @@ class RunFinalizer(
                 "失败 ${record.failed}，待确认 ${record.resultUnknown}，跳过 ${record.skipped}",
             "总耗时 ${formatSignInElapsed(totalElapsed)}, freeHeap=${freeMem}MB",
         )
-        log("INFO", "========== 签到结束 (${formatSignInElapsed(totalElapsed)}) ==========")
+        log("INFO", "========== 签到结束 (${formatSignInElapsed(totalElapsed)}) ==========", "")
 
         withContext(NonCancellable + Dispatchers.IO) {
             try {

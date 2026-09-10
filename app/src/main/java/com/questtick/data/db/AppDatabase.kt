@@ -58,6 +58,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         @Volatile private var instance: AppDatabase? = null
 
+        // 迁移数组当前为空，展开的拷贝开销仅在进程级单例初始化时发生一次。
+        @Suppress("SpreadOperator")
         fun get(context: Context): AppDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room

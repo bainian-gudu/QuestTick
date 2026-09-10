@@ -1455,6 +1455,7 @@
     <!-- 以下条目为 SignInRunner 拆分（RunDiagnostics/RunFinalizer）平移的既有问题；下次运行 detektBaseline 可自动归位清理。 -->
     <ID>CyclomaticComplexMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
     <ID>LongMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
+    <ID>InjectDispatcher:RunFinalizer.kt$RunFinalizer$IO</ID>
     <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$3</ID>
     <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$4</ID>
     <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"${settings.scheduleHour.toString().padStart(2, '0')}:${settings.scheduleMinute.toString().padStart(2, '0')}"</ID>
