@@ -31,7 +31,7 @@ class RunFinalizerTest {
     private lateinit var postRunActionScheduler: PostRunActionScheduler
     private lateinit var historyRepository: HistoryRepository
     private lateinit var signInCalendarRepository: SignInCalendarRepository
-    private lateinit var logs: MutableList<LogEntry>
+    private val logs = mutableListOf<LogEntry>()
     private lateinit var finalizer: RunFinalizer
 
     @Before
@@ -41,7 +41,7 @@ class RunFinalizerTest {
         postRunActionScheduler = mockk(relaxed = true)
         historyRepository = mockk(relaxed = true)
         signInCalendarRepository = mockk(relaxed = true)
-        logs = mutableListOf()
+        logs.clear()
         finalizer =
             RunFinalizer(
                 store = store,
