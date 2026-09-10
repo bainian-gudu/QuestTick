@@ -222,6 +222,14 @@ android {
         localeFilters.addAll(listOf("zh", "zh-rCN", "zh-rTW", "zh-rHK", "zh-rMO", "en", "ja", "ko"))
     }
 
+    testOptions {
+        unitTests {
+            // 编排器边界测试会执行失败路径中的 AppLog（android.util.Log），
+            // 让其返回默认值而不是抛出 “not mocked” 异常。
+            isReturnDefaultValues = true
+        }
+    }
+
     // 仅发布完整 APK，不生成按语言拆分且需要 Play Core 动态下载的 App Bundle。
     bundle {
         language {
@@ -359,7 +367,7 @@ dependencies {
 
     // 测试框架
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("app.cash.turbine:turbine:1.1.0")
 
     androidTestImplementation("androidx.test:core:1.6.1")

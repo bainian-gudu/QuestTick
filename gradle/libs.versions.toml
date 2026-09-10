@@ -1,6 +1,13 @@
 # 依赖与插件版本目录：构建脚本中不再硬编码版本号。
 [versions]
 ktlint = "1.5.0"
+# kotlinx-coroutines 运行时与测试库必须同版本，避免测试 classpath 中
+# core 被传递依赖提升后与 -test 库版本不一致。
+coroutines = "1.11.0"
+
+[libraries]
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version = "9.2.1" }
