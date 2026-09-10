@@ -10,7 +10,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.Autorenew
@@ -61,7 +59,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -74,7 +71,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.data.AppSettings
 import com.questtick.notify.Notifier
 import com.questtick.sign.AppUpdateChecker.AppUpdateInfo
-import com.questtick.sign.CloudVersionRepository
 import com.questtick.ui.components.GalaxyBackground
 import com.questtick.ui.components.PageTitle
 import com.questtick.ui.components.PanelCard
@@ -106,7 +102,6 @@ fun SettingsScreen(
     // 相邻 Pager 页面会被预组合；隐藏时保留 UI 快照，但不持续订阅状态流触发重组。
     val settings by viewModel.settings.collectAsStateWhenVisible(isVisible)
     val mail by viewModel.mail.collectAsStateWhenVisible(isVisible)
-    val mailLoaded by viewModel.mailLoaded.collectAsStateWhenVisible(isVisible)
     val cacheStorageState by viewModel.cacheStorageState.collectAsStateWhenVisible(isVisible)
 
     val onSaveSchedule = viewModel::saveSchedule
@@ -178,15 +173,6 @@ fun SettingsScreen(
                         icon = Icons.Filled.Schedule,
                         iconColor = Color(0xFF2F6BDB),
                         title = "定时任务",
-                        subtitle =
-                            if (settings.scheduleEnabled) {
-                                "每天 ${settings.scheduleHour.toString().padStart(
-                                    2,
-                                    '0',
-                                )}:${settings.scheduleMinute.toString().padStart(2, '0')}"
-                            } else {
-                                "关闭"
-                            },
                     ) { openSettingsPage(SettingsPage.Schedule) }
                 }
 
@@ -195,7 +181,6 @@ fun SettingsScreen(
                         icon = Icons.Filled.Palette,
                         iconColor = Color(0xFF20B8D8),
                         title = "外观",
-                        subtitle = themeModeLabel(settings.appThemeMode),
                     ) { openSettingsPage(SettingsPage.Appearance) }
                 }
 
@@ -205,58 +190,30 @@ fun SettingsScreen(
                         icon = Icons.Filled.Language,
                         iconColor = InfoBlue,
                         title = "界面语言",
-                        subtitle = currentLanguageLabel(settings.appLanguage),
                     ) { openSettingsPage(SettingsPage.Language) }
                 }
 
                 item(key = "row_mail") {
-                    val complete =
-                        mail.smtpServer.isNotBlank() &&
-                            mail.username.isNotBlank() &&
-                            mail.password.isNotBlank() &&
-                            mail.mailTo.isNotBlank()
                     SettingsEntryCard(
                         icon = Icons.Outlined.Email,
                         iconColor = Color(0xFF5BA8DF),
                         title = "邮件推送",
-                        subtitle =
-                            when {
-                                !mailLoaded || !mail.enabled -> "关闭"
-                                complete -> "已配置"
-                                else -> "配置不完整"
-                            },
                     ) { openSettingsPage(SettingsPage.Mail) }
                 }
 
                 item(key = "row_mys_version") {
-                    val mysSubtitle =
-                        buildList {
-                            if (settings.mysAppVersionAutoFetch) add("自动获取")
-                            if (settings.mysAppVersion.isNotBlank()) add("自定义 ${settings.mysAppVersion}")
-                        }.joinToString(" · ").ifEmpty { "默认 ${com.questtick.sign.MysAppVersionRepository.currentVersion}" }
                     SettingsEntryCard(
                         icon = Icons.Filled.Description,
                         iconColor = Color(0xFF8650C6),
                         title = "米游社版本",
-                        subtitle = mysSubtitle,
                     ) { openSettingsPage(SettingsPage.MysVersion) }
                 }
 
                 item(key = "row_cloud_version") {
-                    val cloudSubtitle =
-                        buildList {
-                            if (settings.cloudVersionAutoFetch) add("自动获取")
-                            if (settings.cloudYsVersion.isNotBlank()) add("云原神 ${settings.cloudYsVersion}")
-                            if (settings.cloudSrVersion.isNotBlank()) add("云崩铁 ${settings.cloudSrVersion}")
-                        }.joinToString(" · ").ifEmpty {
-                            "默认 ${CloudVersionRepository.effectiveYs()} / " +
-                                CloudVersionRepository.effectiveSr()
-                        }
                     SettingsEntryCard(
                         icon = Icons.Filled.Cloud,
                         iconColor = Color(0xFF0AAFC1),
                         title = "云游戏版本",
-                        subtitle = cloudSubtitle,
                     ) { openSettingsPage(SettingsPage.CloudVersion) }
                 }
 
@@ -265,47 +222,22 @@ fun SettingsScreen(
                         icon = Icons.Filled.Lock,
                         iconColor = Color(0xFFEF5B63),
                         title = "安全检测",
-                        subtitle = "Root 检测与阻断已强制开启",
                     ) { openSettingsPage(SettingsPage.Security) }
                 }
 
                 item(key = "row_device") {
-                    val customDeviceIdLabels =
-                        buildList {
-                            if (settings.mysDeviceId.isNotBlank()) add("米游社")
-                            if (settings.cloudDeviceId.isNotBlank()) add("云游戏")
-                            if (settings.cloudBackupDeviceId.isNotBlank()) add("云备用")
-                        }
-                    val deviceSubtitle =
-                        if (customDeviceIdLabels.isNotEmpty()) {
-                            "已自定义：${customDeviceIdLabels.joinToString("、")}"
-                        } else {
-                            "自动生成"
-                        }
                     SettingsEntryCard(
                         icon = Icons.Filled.Memory,
                         iconColor = Color(0xFFE6A832),
                         title = "设备 ID",
-                        subtitle = deviceSubtitle,
                     ) { openSettingsPage(SettingsPage.Device) }
                 }
 
                 item(key = "row_experiment") {
-                    val enabledExperiments =
-                        buildList {
-                            if (settings.parallelEnabled) add("并行签到")
-                        }
-                    val experimentSubtitle =
-                        if (enabledExperiments.isNotEmpty()) {
-                            "已启用：${enabledExperiments.joinToString("、")}"
-                        } else {
-                            "关闭"
-                        }
                     SettingsEntryCard(
                         icon = Icons.Filled.Science,
                         iconColor = Color(0xFFB24BC5),
                         title = "实验功能",
-                        subtitle = experimentSubtitle,
                     ) { openSettingsPage(SettingsPage.Experiment) }
                 }
 
@@ -314,7 +246,6 @@ fun SettingsScreen(
                         icon = Icons.Filled.Autorenew,
                         iconColor = Color(0xFFD66D2B),
                         title = "ACT_ID 自动刷新",
-                        subtitle = if (settings.actIdAutoRefresh) "已启用" else "关闭",
                     ) { openSettingsPage(SettingsPage.ActId) }
                 }
 
@@ -323,7 +254,6 @@ fun SettingsScreen(
                         icon = Icons.Filled.Storage,
                         iconColor = Color(0xFF2A9D8F),
                         title = "缓存管理",
-                        subtitle = if (cacheStorageState.loading) "正在计算占用" else "共 ${formatCacheSize(cacheStorageState.totalBytes)}",
                     ) { openSettingsPage(SettingsPage.Cache) }
                 }
 
@@ -332,7 +262,6 @@ fun SettingsScreen(
                         icon = Icons.Filled.Info,
                         iconColor = Color(0xFF64748B),
                         title = "关于",
-                        subtitle = "版本与项目信息",
                     ) { openSettingsPage(SettingsPage.About) }
                 }
 
@@ -801,36 +730,6 @@ private fun requestBatteryExemption(context: Context) {
         } catch (_: Exception) {
         }
     }
-}
-
-/** 后台保活状态行，用于设置概览页。 */
-@Composable
-private fun KeepAliveRow(visibleKey: Int) {
-    val context = LocalContext.current
-    var refreshTrigger by remember { mutableStateOf(0) }
-    val exempted = rememberBatteryExempted(visibleKey, refreshTrigger)
-
-    SettingsEntryCard(
-        icon = if (exempted) Icons.Filled.CheckCircle else Icons.Filled.BatteryAlert,
-        iconColor = if (exempted) SuccessGreen else WarnAmber,
-        title = "后台保活",
-        subtitle = if (exempted) "已加入电池优化白名单" else "建议加入白名单",
-        trailing = {
-            if (!exempted) {
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(WarnAmber.copy(alpha = 0.15f))
-                        .clickableNoRipple {
-                            requestBatteryExemption(context)
-                            refreshTrigger++
-                        }.padding(horizontal = 12.dp, vertical = 8.dp),
-                ) {
-                    Text("开启", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = WarnAmber)
-                }
-            }
-        },
-    )
 }
 
 /** 后台保活完整卡片，用于定时任务子页面展示更多说明。 */

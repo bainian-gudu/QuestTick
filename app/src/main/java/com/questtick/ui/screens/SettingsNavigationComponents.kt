@@ -31,13 +31,6 @@ import com.questtick.ui.theme.AppMotion
 
 /** 设置页导航复用组件：统一子页面转场、返回处理和标题布局。 */
 
-internal fun themeModeLabel(mode: String): String =
-    when (mode.uppercase()) {
-        "LIGHT" -> "浅色模式"
-        "DARK" -> "深色模式"
-        else -> "跟随系统"
-    }
-
 @Composable
 internal fun SettingsPageOverlay(
     visible: Boolean,
