@@ -2,17 +2,10 @@ package com.questtick.data.db
 
 import android.content.Context
 import androidx.room.Database
-import androidx.room.Migration
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-/**
- * 当前唯一受支持的数据库结构。
- *
- * 升级 schema 版本时必须同步登记 [MIGRATIONS] 中的 Migration 并导出新 schema，
- * Room 只沿已登记路径升级；缺少迁移路径时显式失败，
- * 不使用破坏性回退，避免账号、签到历史等本地表被静默删除。
- */
+/** 当前唯一受支持的数据库结构；旧结构直接替换为当前模型。 */
 @Database(
     entities = [
         AccountEntity::class,
@@ -47,20 +40,6 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         private const val DATABASE_NAME = "1"
 
-        /** 当前数据库版本；必须与 @Database(version = ...) 保持一致。 */
-        const val SUPPORTED_VERSION = 1
-
-        /**
-         * 已登记的全部跨版本迁移。
-         *
-         * 升级到新版本时在此登记，并运行
-         * `./gradlew :app:connectedDebugAndroidTest` 中的迁移回归测试
-         * （AppDatabaseMigrationTest）验证数据保留。
-         */
-        val MIGRATIONS: Array<Migration> = arrayOf(
-            // 下一个 schema 版本时在此登记，例如 MIGRATION_1_2
-        )
-
         @Volatile private var instance: AppDatabase? = null
 
         fun get(context: Context): AppDatabase =
@@ -70,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
                         context.applicationContext,
                         AppDatabase::class.java,
                         DATABASE_NAME,
-                    ).addMigrations(*MIGRATIONS)
+                    ).fallbackToDestructiveMigration(dropAllTables = true)
                     // 使用 WAL 提升读写并发，减少主线程等待。
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                     .setQueryExecutor(
