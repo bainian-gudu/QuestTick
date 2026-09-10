@@ -60,8 +60,24 @@ class DatabaseTest {
         val records = dao.getAll().map { it.toModel() }
         assertEquals(3, records.size)
         assertEquals("run-3", records.first().runId)
-        assertEquals("ZZZ", records.first().results.first().game)
-        assertEquals("StarRail", dao.getPage(limit = 1, offset = 1).first().toModel().results.first().game)
+        assertEquals(
+            "ZZZ",
+            records
+                .first()
+                .results
+                .first()
+                .game,
+        )
+        assertEquals(
+            "StarRail",
+            dao
+                .getPage(limit = 1, offset = 1)
+                .first()
+                .toModel()
+                .results
+                .first()
+                .game,
+        )
         assertEquals(-1L, dao.insert(SignHistoryEntity.fromModel(first)))
 
         dao.deleteOldest(1)
@@ -83,7 +99,13 @@ class DatabaseTest {
         assertEquals(2, accounts.size)
         assertEquals("id-1", accounts.first().id)
         assertEquals("cipher_a", accounts.first().payloadCipher)
-        assertTrue(accounts.first().payloadCipher.contains("cookie").not())
+        assertTrue(
+            accounts
+                .first()
+                .payloadCipher
+                .contains("cookie")
+                .not(),
+        )
         assertEquals("id-2", dao.getPage(limit = 1, offset = 1).first().id)
 
         dao.delete("id-1")
@@ -91,10 +113,13 @@ class DatabaseTest {
     }
 
     private fun openDatabase(): AppDatabase =
-        Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-        ).allowMainThreadQueries().build().also { database = it }
+        Room
+            .inMemoryDatabaseBuilder(
+                ApplicationProvider.getApplicationContext(),
+                AppDatabase::class.java,
+            ).allowMainThreadQueries()
+            .build()
+            .also { database = it }
 
     private fun record(
         timestamp: Long,

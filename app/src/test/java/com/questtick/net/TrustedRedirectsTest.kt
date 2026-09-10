@@ -22,26 +22,32 @@ class TrustedRedirectsTest {
     }
 
     @Test
-    fun `follows every same-origin hop and returns final response`() = runBlocking {
-        val server = server()
-        server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/second"))
-        server.enqueue(MockResponse().setResponseCode(307).addHeader("Location", "final"))
-        server.enqueue(MockResponse().setResponseCode(200).setBody("done"))
-        val client = OkHttpClient.Builder().followRedirects(true).build()
-        val request = Request.Builder().url(server.url("/first")).get().build()
+    fun `follows every same-origin hop and returns final response`() =
+        runBlocking {
+            val server = server()
+            server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/second"))
+            server.enqueue(MockResponse().setResponseCode(307).addHeader("Location", "final"))
+            server.enqueue(MockResponse().setResponseCode(200).setBody("done"))
+            val client = OkHttpClient.Builder().followRedirects(true).build()
+            val request =
+                Request
+                    .Builder()
+                    .url(server.url("/first"))
+                    .get()
+                    .build()
 
-        val result =
-            TrustedRedirects.executeSnapshotCancellable(
-                client,
-                request,
-                TrustedRedirects.sameOriginForTest,
-            )
+            val result =
+                TrustedRedirects.executeSnapshotCancellable(
+                    client,
+                    request,
+                    TrustedRedirects.sameOriginForTest,
+                )
 
-        assertEquals(200, result.code)
-        assertEquals("done", result.body.toString(Charsets.UTF_8))
-        assertEquals(server.url("/final").toString(), result.finalUrl)
-        assertEquals(listOf("/first", "/second", "/final"), takePaths(server, 3))
-    }
+            assertEquals(200, result.code)
+            assertEquals("done", result.body.toString(Charsets.UTF_8))
+            assertEquals(server.url("/final").toString(), result.finalUrl)
+            assertEquals(listOf("/first", "/second", "/final"), takePaths(server, 3))
+        }
 
     @Test
     fun `rejects cross-origin target before sending next request`() {
@@ -52,7 +58,12 @@ class TrustedRedirectsTest {
                 .setResponseCode(302)
                 .addHeader("Location", target.url("/stolen")),
         )
-        val request = Request.Builder().url(source.url("/start")).get().build()
+        val request =
+            Request
+                .Builder()
+                .url(source.url("/start"))
+                .get()
+                .build()
 
         assertThrows(UntrustedRedirectException::class.java) {
             TrustedRedirects.execute(
@@ -71,7 +82,12 @@ class TrustedRedirectsTest {
         val server = server()
         server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/b"))
         server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/a"))
-        val request = Request.Builder().url(server.url("/a")).get().build()
+        val request =
+            Request
+                .Builder()
+                .url(server.url("/a"))
+                .get()
+                .build()
 
         assertThrows(UntrustedRedirectException::class.java) {
             TrustedRedirects.execute(
@@ -90,7 +106,12 @@ class TrustedRedirectsTest {
         repeat(TrustedRedirects.MAX_REDIRECTS + 1) { index ->
             server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/hop-${index + 1}"))
         }
-        val request = Request.Builder().url(server.url("/start")).get().build()
+        val request =
+            Request
+                .Builder()
+                .url(server.url("/start"))
+                .get()
+                .build()
 
         assertThrows(UntrustedRedirectException::class.java) {
             TrustedRedirects.execute(
@@ -108,7 +129,8 @@ class TrustedRedirectsTest {
         val server = server()
         server.enqueue(MockResponse().setResponseCode(307).addHeader("Location", "/again"))
         val request =
-            Request.Builder()
+            Request
+                .Builder()
                 .url(server.url("/submit"))
                 .post("payload".toRequestBody())
                 .build()
@@ -128,7 +150,12 @@ class TrustedRedirectsTest {
     fun `rejects missing and ambiguous redirect locations`() {
         val missing = server()
         missing.enqueue(MockResponse().setResponseCode(302))
-        val missingRequest = Request.Builder().url(missing.url("/missing")).get().build()
+        val missingRequest =
+            Request
+                .Builder()
+                .url(missing.url("/missing"))
+                .get()
+                .build()
         assertThrows(UntrustedRedirectException::class.java) {
             TrustedRedirects.execute(
                 OkHttpClient.Builder().build(),
@@ -139,7 +166,12 @@ class TrustedRedirectsTest {
 
         val ambiguous = server()
         ambiguous.enqueue(MockResponse().setResponseCode(302).addHeader("Location", "/safe\\evil"))
-        val ambiguousRequest = Request.Builder().url(ambiguous.url("/ambiguous")).get().build()
+        val ambiguousRequest =
+            Request
+                .Builder()
+                .url(ambiguous.url("/ambiguous"))
+                .get()
+                .build()
         assertThrows(UntrustedRedirectException::class.java) {
             TrustedRedirects.execute(
                 OkHttpClient.Builder().build(),
@@ -154,7 +186,8 @@ class TrustedRedirectsTest {
         val source = server().url("/from")
         val target = server().url("/to")
         val request =
-            Request.Builder()
+            Request
+                .Builder()
                 .url(source)
                 .header("Authorization", "Bearer secret")
                 .header("Cookie", "token=secret")
@@ -187,7 +220,8 @@ class TrustedRedirectsTest {
     fun `non idempotent method cannot opt into read retry policy`() {
         val server = server()
         val request =
-            Request.Builder()
+            Request
+                .Builder()
                 .url(server.url("/post"))
                 .post("payload".toRequestBody())
                 .build()

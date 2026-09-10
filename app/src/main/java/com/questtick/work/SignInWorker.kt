@@ -53,8 +53,8 @@ class SignInWorker
         private val scheduler: Scheduler,
         private val appErrorLogger: AppErrorLogger,
     ) : CoroutineWorker(appContext, params) {
-        override suspend fun doWork(): Result {
-            return try {
+        override suspend fun doWork(): Result =
+            try {
                 val result =
                     runCoordinator.tryRun {
                         // 尝试提升为前台服务；被 ROM 拒绝时降级为普通后台执行。
@@ -77,7 +77,6 @@ class SignInWorker
                 // 未形成结构化运行结果时不盲目重放 POST；结束本周期但保留下一业务日调度。
                 Result.success()
             }
-        }
 
         private suspend fun retryBecauseRunLockBusy(): Result {
             val entry =
@@ -185,6 +184,7 @@ class SignInWorker
                     runnerFactory.create(settings.parallelEnabled).runAll(
                         trigger = trigger,
                         allowedTaskIds = allowedTaskIds,
+                        scheduledBusinessDayAt = scheduledTargetAt,
                     )
 
                 if (record.total == 0) {
@@ -305,7 +305,8 @@ class SignInWorker
             }
 
             val notif =
-                NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+                NotificationCompat
+                    .Builder(applicationContext, CHANNEL_ID)
                     .setSmallIcon(R.drawable.ic_stat_signin)
                     .setContentTitle("正在执行米游社签到…")
                     .setContentText("完成后将自动发送结果通知")

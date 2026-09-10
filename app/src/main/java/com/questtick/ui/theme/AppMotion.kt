@@ -13,29 +13,29 @@ import androidx.compose.animation.slideOutVertically
 
 /** 全应用相同用途交互共用的动画规范，避免页面自行硬编码时长和缓动。 */
 object AppMotion {
-    const val ScreenDurationMillis = 280
-    const val ScreenFadeDurationMillis = 200
-    const val ExpandDurationMillis = 220
-    const val ExpandFadeDurationMillis = 180
-    const val ArrowDurationMillis = ExpandDurationMillis
+    const val SCREEN_DURATION_MILLIS = 280
+    const val SCREEN_FADE_DURATION_MILLIS = 200
+    const val EXPAND_DURATION_MILLIS = 220
+    const val EXPAND_FADE_DURATION_MILLIS = 180
+    const val ARROW_DURATION_MILLIS = EXPAND_DURATION_MILLIS
 
     fun screenEnter(): EnterTransition =
         slideInVertically(
-            animationSpec = tween(ScreenDurationMillis, easing = FastOutSlowInEasing),
+            animationSpec = tween(SCREEN_DURATION_MILLIS, easing = FastOutSlowInEasing),
             initialOffsetY = { it },
-        ) + fadeIn(tween(ScreenFadeDurationMillis))
+        ) + fadeIn(tween(SCREEN_FADE_DURATION_MILLIS))
 
     fun screenExit(): ExitTransition =
         slideOutVertically(
-            animationSpec = tween(ScreenDurationMillis, easing = FastOutSlowInEasing),
+            animationSpec = tween(SCREEN_DURATION_MILLIS, easing = FastOutSlowInEasing),
             targetOffsetY = { it },
-        ) + fadeOut(tween(ScreenFadeDurationMillis))
+        ) + fadeOut(tween(SCREEN_FADE_DURATION_MILLIS))
 
     fun expandEnter(): EnterTransition =
-        expandVertically(animationSpec = tween(ExpandDurationMillis, easing = FastOutSlowInEasing)) +
-            fadeIn(tween(ExpandFadeDurationMillis))
+        expandVertically(animationSpec = tween(EXPAND_DURATION_MILLIS, easing = FastOutSlowInEasing)) +
+            fadeIn(tween(EXPAND_FADE_DURATION_MILLIS))
 
     fun expandExit(): ExitTransition =
-        shrinkVertically(animationSpec = tween(ExpandDurationMillis, easing = FastOutSlowInEasing)) +
-            fadeOut(tween(ExpandFadeDurationMillis))
+        shrinkVertically(animationSpec = tween(EXPAND_DURATION_MILLIS, easing = FastOutSlowInEasing)) +
+            fadeOut(tween(EXPAND_FADE_DURATION_MILLIS))
 }

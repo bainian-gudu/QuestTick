@@ -52,8 +52,8 @@ class PostRunActionWorker
             }
         }
 
-        private suspend fun deliver(action: com.questtick.data.db.PostRunActionEntity): Result {
-            return try {
+        private suspend fun deliver(action: com.questtick.data.db.PostRunActionEntity): Result =
+            try {
                 val record = RunRecord.fromJson(JSONObject(action.payloadJson))
                 when (PostRunActionType.valueOf(action.type)) {
                     PostRunActionType.NOTIFICATION -> deliverNotification(action.actionId, record)
@@ -71,7 +71,6 @@ class PostRunActionWorker
                 appErrorLogger.record("运行后动作投递", e)
                 retryOrFinish(action, e.javaClass.simpleName.ifBlank { "delivery-error" })
             }
-        }
 
         private fun deliverNotification(
             actionId: String,
@@ -100,17 +99,20 @@ class PostRunActionWorker
                 return Result.success()
             }
             if (
-                settings.mailTo.isBlank() || settings.smtpServer.isBlank() ||
-                settings.username.isBlank() || settings.password.isBlank()
+                settings.mailTo.isBlank() ||
+                settings.smtpServer.isBlank() ||
+                settings.username.isBlank() ||
+                settings.password.isBlank()
             ) {
                 repository.markCancelled(action.actionId, "mail-configuration-incomplete")
                 return Result.success()
             }
-            val result = Mailer.send(
-                settings,
-                record,
-                AppLocaleController.resolved(applicationContext),
-            )
+            val result =
+                Mailer.send(
+                    settings,
+                    record,
+                    AppLocaleController.resolved(applicationContext),
+                )
             return result.fold(
                 onSuccess = {
                     repository.markDelivered(action.actionId)

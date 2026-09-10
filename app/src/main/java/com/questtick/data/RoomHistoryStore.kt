@@ -1,7 +1,7 @@
 package com.questtick.data
 
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.data.db.AppDatabase
 import com.questtick.data.db.SignHistoryEntity
 
@@ -42,7 +42,7 @@ internal class RoomHistoryStore(
                     entity.toModel()
                 } catch (e: Exception) {
                     brokenIds += entity.id
-                    Log.w(TAG, "Drop broken history row ${entity.id}: ${e.message}")
+                    AppLog.w(TAG, "Drop broken history row ${entity.id}: ${e.message}")
                     null
                 }
             }
@@ -61,6 +61,7 @@ internal class RoomHistoryStore(
     companion object {
         private const val TAG = "RoomHistoryStore"
         private const val HISTORY_RETENTION_MILLIS = 30L * 24 * 60 * 60 * 1000
+
         // 以 30 天为业务保留边界；数量上限只作为异常高频运行时的数据库保护。
         const val DEFAULT_MAX_KEEP = 10_000
     }

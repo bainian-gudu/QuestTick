@@ -8,11 +8,12 @@ import org.junit.Test
 class AppUpdateCheckerTest {
     @Test
     fun `parse releases selects highest stable installable apk`() {
-        val body = releasesJson(
-            release("v1.0.2", asset("MYS_Signin_v1.0.2_signed.apk", sha = SHA_2)),
-            release("v1.0.4", asset("MYS_Signin_v1.0.4_unsigned.apk", sha = SHA_4)),
-            release("v1.0.3", asset("MYS_Signin_v1.0.3_signed.apk", sha = SHA_3)),
-        )
+        val body =
+            releasesJson(
+                release("v1.0.2", asset("MYS_Signin_v1.0.2_signed.apk", sha = SHA_2)),
+                release("v1.0.4", asset("MYS_Signin_v1.0.4_unsigned.apk", sha = SHA_4)),
+                release("v1.0.3", asset("MYS_Signin_v1.0.3_signed.apk", sha = SHA_3)),
+            )
 
         val info = AppUpdateChecker.parseReleasesJsonForTest(body, currentVersion = "1.0.1")
 
@@ -24,10 +25,11 @@ class AppUpdateCheckerTest {
 
     @Test
     fun `parse releases skips apk without digest`() {
-        val body = releasesJson(
-            release("v1.0.5", asset("MYS_Signin_v1.0.5_signed.apk", sha = "")),
-            release("v1.0.4", asset("MYS_Signin_v1.0.4_signed.apk", sha = SHA_4)),
-        )
+        val body =
+            releasesJson(
+                release("v1.0.5", asset("MYS_Signin_v1.0.5_signed.apk", sha = "")),
+                release("v1.0.4", asset("MYS_Signin_v1.0.4_signed.apk", sha = SHA_4)),
+            )
 
         val info = AppUpdateChecker.parseReleasesJsonForTest(body, currentVersion = "1.0.1")
 
@@ -37,10 +39,11 @@ class AppUpdateCheckerTest {
 
     @Test
     fun `parse releases skips pre release suffix even if github flag is false`() {
-        val body = releasesJson(
-            release("v1.1.0-beta1", asset("MYS_Signin_v1.1.0-beta1_signed.apk", sha = SHA_BETA)),
-            release("v1.0.9", asset("MYS_Signin_v1.0.9_signed.apk", sha = SHA_9)),
-        )
+        val body =
+            releasesJson(
+                release("v1.1.0-beta1", asset("MYS_Signin_v1.1.0-beta1_signed.apk", sha = SHA_BETA)),
+                release("v1.0.9", asset("MYS_Signin_v1.0.9_signed.apk", sha = SHA_9)),
+            )
 
         val info = AppUpdateChecker.parseReleasesJsonForTest(body, currentVersion = "1.0.1")
 
@@ -80,11 +83,12 @@ class AppUpdateCheckerTest {
 
     @Test
     fun `parse releases returns no update when no installable release exists`() {
-        val body = releasesJson(
-            release("v1.0.5", asset("MYS_Signin_v1.0.4_signed.apk", sha = SHA_4)),
-            release("v1.0.6", asset("MYS_Signin_v1.0.6_unsigned.apk", sha = SHA_6)),
-            release("v1.0.7", asset("MYS_Signin_v1.0.7_signed.apk", sha = SHA_7), draft = true),
-        )
+        val body =
+            releasesJson(
+                release("v1.0.5", asset("MYS_Signin_v1.0.4_signed.apk", sha = SHA_4)),
+                release("v1.0.6", asset("MYS_Signin_v1.0.6_unsigned.apk", sha = SHA_6)),
+                release("v1.0.7", asset("MYS_Signin_v1.0.7_signed.apk", sha = SHA_7), draft = true),
+            )
 
         val info = AppUpdateChecker.parseReleasesJsonForTest(body, currentVersion = "1.0.1")
 
@@ -120,12 +124,12 @@ class AppUpdateCheckerTest {
     ): String {
         val digest = if (sha.isBlank()) "" else "sha256:$sha"
         return """
-        {
-          "name": "$name",
-          "browser_download_url": "https://github.com/bainian-gudu/QuestTick/releases/download/v1/$name",
-          "digest": "$digest"
-        }
-        """.trimIndent()
+            {
+              "name": "$name",
+              "browser_download_url": "https://github.com/bainian-gudu/QuestTick/releases/download/v1/$name",
+              "digest": "$digest"
+            }
+            """.trimIndent()
     }
 
     private companion object {

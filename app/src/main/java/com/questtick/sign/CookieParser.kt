@@ -19,8 +19,7 @@ object CookieParser {
             .mapNotNull { part ->
                 val pair = part.trim().split('=', limit = 2)
                 if (pair.size == 2 && pair[0].isNotBlank()) pair[0].trim() to pair[1].trim() else null
-            }
-            .toMap()
+            }.toMap()
     }
 
     fun parseSetCookieHeaders(headers: List<String>): Map<String, String> {
@@ -55,16 +54,20 @@ object CookieParser {
                 .ifBlank { cookies["account_mid_v2"].orEmpty() }
                 .ifBlank { cookies["mid"].orEmpty() }
         val cookieToken =
-            cookies["cookie_token_v2"].orEmpty()
+            cookies["cookie_token_v2"]
+                .orEmpty()
                 .ifBlank { cookies["cookie_token"].orEmpty() }
         val ltoken =
-            cookies["ltoken_v2"].orEmpty()
+            cookies["ltoken_v2"]
+                .orEmpty()
                 .ifBlank { cookies["ltoken"].orEmpty() }
         val stoken =
-            cookies["stoken_v2"].orEmpty()
+            cookies["stoken_v2"]
+                .orEmpty()
                 .ifBlank { cookies["stoken"].orEmpty() }
         val loginTicket =
-            cookies["login_ticket"].orEmpty()
+            cookies["login_ticket"]
+                .orEmpty()
                 .ifBlank { cookies["login_ticket_v2"].orEmpty() }
 
         return LoginCookies(

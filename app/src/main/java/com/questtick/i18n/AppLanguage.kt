@@ -3,7 +3,6 @@ package com.questtick.i18n
 import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.runtime.compositionLocalOf
-import com.questtick.BuildConfig
 import java.util.Locale
 
 /** 用户可选语言。SYSTEM 只在未手动指定或用户明确选择“跟随系统”时使用。 */
@@ -20,8 +19,7 @@ enum class AppLanguage(
     ;
 
     companion object {
-        fun fromSetting(value: String): AppLanguage =
-            entries.firstOrNull { it.settingValue == value.uppercase(Locale.ROOT) } ?: SYSTEM
+        fun fromSetting(value: String): AppLanguage = entries.firstOrNull { it.settingValue == value.uppercase(Locale.ROOT) } ?: SYSTEM
 
         fun resolve(
             settingValue: String,
@@ -57,16 +55,14 @@ object AppLocaleController {
     private const val PREFERENCES_FILE = "signin_preferences"
     private const val KEY_LANGUAGE = "appLanguage"
 
-    fun setting(context: Context): String {
-        if (!BuildConfig.DEBUG) return AppLanguage.SYSTEM.settingValue
-        return context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE)
+    fun setting(context: Context): String =
+        context
+            .getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE)
             .getString(KEY_LANGUAGE, AppLanguage.SYSTEM.settingValue)
             .orEmpty()
             .normalizeAppLanguage()
-    }
 
-    fun resolved(context: Context): AppLanguage =
-        AppLanguage.resolve(setting(context), systemLocale(context))
+    fun resolved(context: Context): AppLanguage = AppLanguage.resolve(setting(context), systemLocale(context))
 
     fun wrap(context: Context): Context {
         val language = resolved(context)

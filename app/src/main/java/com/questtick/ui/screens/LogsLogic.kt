@@ -37,7 +37,7 @@ internal fun prepareLogs(
 ): PreparedLogs {
     if (logs.isEmpty()) return PreparedLogs(emptyList(), LogStats())
     val result = ArrayList<ProcessedLogEntry>(logs.size)
-    for (entry in logs) {
+    for (entry in logs.sortedWith(compareBy<com.questtick.data.LogEntry>({ it.timestamp }, { it.level }, { it.message }, { it.detail }))) {
         result.add(
             ProcessedLogEntry(
                 timestamp = entry.timestamp,
@@ -57,7 +57,9 @@ internal fun prepareLogs(
     )
 }
 
-internal enum class LogFilter(val label: String) {
+internal enum class LogFilter(
+    val label: String,
+) {
     ALL("全部"),
     DEBUG("调试"),
     INFO("信息"),
@@ -91,11 +93,9 @@ internal data class LogRunGroup(
     val expansionKeys: List<String>,
 )
 
-internal fun logGroupEntryKey(entry: ProcessedLogEntry): String =
-    "${entry.timestamp}_${entry.level}_${entry.safeMessage.hashCode()}"
+internal fun logGroupEntryKey(entry: ProcessedLogEntry): String = "${entry.timestamp}_${entry.level}_${entry.safeMessage.hashCode()}"
 
-internal fun logGroupExpansionKeys(group: LogRunGroup): List<String> =
-    group.expansionKeys.ifEmpty { listOf(group.id) }
+internal fun logGroupExpansionKeys(group: LogRunGroup): List<String> = group.expansionKeys.ifEmpty { listOf(group.id) }
 
 internal fun isLogGroupExpanded(
     group: LogRunGroup,
@@ -164,10 +164,13 @@ internal fun buildLogGroups(
         currentIsRun = false
     }
 
-    entries.forEach { entry ->
+    entries.sortedWith(compareBy<ProcessedLogEntry>({ it.timestamp }, { it.level }, { it.safeMessage }, { it.safeDetail })).forEach { entry ->
+        if (current.isNotEmpty() && entry.dateKey != current.first().dateKey) {
+            flush()
+        }
         if (isRunStartLog(entry)) {
-            // 开始标记前的预备日志并入下一次签到组，避免单独显示“其它日志”。
-            if (currentIsRun) flush()
+            // 只有首个签到组前的预备日志可以并入该组；已结束签到后的其它日志会阻断合并。
+            if (currentIsRun || groups.isNotEmpty()) flush()
             currentIsRun = true
         }
         current.add(entry)

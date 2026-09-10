@@ -39,10 +39,11 @@ class SignInRunCoordinator
                 current.copy(
                     phase = phase,
                     message = message,
-                    running = phase != RunProgressPhase.FINISHED &&
-                        phase != RunProgressPhase.BLOCKED &&
-                        phase != RunProgressPhase.CANCELLED &&
-                        phase != RunProgressPhase.FAILED,
+                    running =
+                        phase != RunProgressPhase.FINISHED &&
+                            phase != RunProgressPhase.BLOCKED &&
+                            phase != RunProgressPhase.CANCELLED &&
+                            phase != RunProgressPhase.FAILED,
                 )
             }
         }
@@ -73,17 +74,18 @@ class SignInRunCoordinator
                         phase = RunProgressPhase.SIGNING,
                         message = message,
                         currentTaskId = taskId,
-                        tasks = current.tasks.map { task ->
-                            if (task.id == taskId && !task.status.isTerminal) {
-                                task.copy(
-                                    status = RunTaskStatus.RUNNING,
-                                    message = message,
-                                    startedAt = task.startedAt.takeIf { it > 0L } ?: now,
-                                )
-                            } else {
-                                task
-                            }
-                        },
+                        tasks =
+                            current.tasks.map { task ->
+                                if (task.id == taskId && !task.status.isTerminal) {
+                                    task.copy(
+                                        status = RunTaskStatus.RUNNING,
+                                        message = message,
+                                        startedAt = task.startedAt.takeIf { it > 0L } ?: now,
+                                    )
+                                } else {
+                                    task
+                                }
+                            },
                     )
                 }
             }
@@ -104,13 +106,14 @@ class SignInRunCoordinator
                     current.copy(
                         message = message,
                         currentTaskId = current.currentTaskId.takeUnless { it == taskId }.orEmpty(),
-                        tasks = current.tasks.map { task ->
-                            if (task.id == taskId && !task.status.isTerminal) {
-                                task.copy(status = status, message = message, finishedAt = now)
-                            } else {
-                                task
-                            }
-                        },
+                        tasks =
+                            current.tasks.map { task ->
+                                if (task.id == taskId && !task.status.isTerminal) {
+                                    task.copy(status = status, message = message, finishedAt = now)
+                                } else {
+                                    task
+                                }
+                            },
                     )
                 }
             }
@@ -134,13 +137,14 @@ class SignInRunCoordinator
                 current.copy(
                     message = message,
                     currentTaskId = "",
-                    tasks = current.tasks.map { task ->
-                        if (task.status.isTerminal) {
-                            task
-                        } else {
-                            task.copy(status = status, message = message, finishedAt = now)
-                        }
-                    },
+                    tasks =
+                        current.tasks.map { task ->
+                            if (task.status.isTerminal) {
+                                task
+                            } else {
+                                task.copy(status = status, message = message, finishedAt = now)
+                            }
+                        },
                 )
             }
         }
@@ -165,12 +169,13 @@ class SignInRunCoordinator
             val startedAt = System.currentTimeMillis()
             _runningStartedAt.value = startedAt
             _running.value = true
-            _progress.value = RunProgressState(
-                running = true,
-                phase = RunProgressPhase.PREPARING,
-                startedAt = startedAt,
-                message = "正在准备签到任务",
-            )
+            _progress.value =
+                RunProgressState(
+                    running = true,
+                    phase = RunProgressPhase.PREPARING,
+                    startedAt = startedAt,
+                    message = "正在准备签到任务",
+                )
             return try {
                 block()
             } catch (e: CancellationException) {

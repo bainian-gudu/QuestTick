@@ -37,11 +37,15 @@ internal fun AccountEditorSheetHost(
     var displayedIsNew by remember { mutableStateOf(editingIsNew) }
     var displayedSessionKey by remember { mutableStateOf(editingSessionKey) }
     val editorAccounts = remember { mutableStateMapOf<Long, Account>() }
+    // 刷新或退出登录会立即持久化；同步更新基准可避免退出编辑时误报未保存修改。
+    val editorBaselines = remember { mutableStateMapOf<Long, Account>() }
 
     LaunchedEffect(editingAccount, editingIsNew, editingSessionKey) {
         editingAccount?.let {
             editorAccounts[editingSessionKey] = it
+            editorBaselines.putIfAbsent(editingSessionKey, it)
             editorAccounts.keys.filter { key -> key < editingSessionKey - 1 }.forEach(editorAccounts::remove)
+            editorBaselines.keys.filter { key -> key < editingSessionKey - 1 }.forEach(editorBaselines::remove)
             displayedAccount = it
             displayedIsNew = editingIsNew
             displayedSessionKey = editingSessionKey
@@ -52,9 +56,10 @@ internal fun AccountEditorSheetHost(
     val activeIsNew = if (editingAccount != null) editingIsNew else displayedIsNew
     val activeSessionKey = if (editingAccount != null) editingSessionKey else displayedSessionKey
     val closeEditorSheet: () -> Unit = onDismiss
-    val sheetVisibleState = remember {
-        MutableTransitionState(false)
-    }
+    val sheetVisibleState =
+        remember {
+            MutableTransitionState(false)
+        }
     sheetVisibleState.targetState = editingAccount != null
 
     AnimatedVisibility(
@@ -66,6 +71,7 @@ internal fun AccountEditorSheetHost(
             initial = editorAccounts[activeSessionKey] ?: account,
             isNew = activeIsNew,
             editorSessionKey = activeSessionKey,
+            discardBaseline = editorBaselines[activeSessionKey] ?: account,
             onCancel = closeEditorSheet,
             onSave = {
                 vm.saveAccount(it)
@@ -75,12 +81,16 @@ internal fun AccountEditorSheetHost(
             onRefreshCookie = { draft, onFinished ->
                 vm.refreshCookie(
                     draft,
-                    onUpdated = { updated -> onEditingAccountChange(updated) },
+                    onUpdated = { updated ->
+                        editorBaselines[activeSessionKey] = updated
+                        onEditingAccountChange(updated)
+                    },
                     onFinished = onFinished,
                 )
             },
             onLogout = { draft ->
                 vm.logoutAccount(draft, false) { updated ->
+                    editorBaselines[activeSessionKey] = updated
                     onEditingAccountChange(updated)
                 }
             },
@@ -89,12 +99,16 @@ internal fun AccountEditorSheetHost(
                 vm.refreshCloudToken(
                     draft,
                     gameKey,
-                    onUpdated = { updated -> onEditingAccountChange(updated) },
+                    onUpdated = { updated ->
+                        editorBaselines[activeSessionKey] = updated
+                        onEditingAccountChange(updated)
+                    },
                     onFinished = onFinished,
                 )
             },
             onLogoutCloud = { gameKey, draft ->
                 vm.logoutCloudAccount(draft, gameKey) { updated ->
+                    editorBaselines[activeSessionKey] = updated
                     onEditingAccountChange(updated)
                 }
             },
@@ -115,14 +129,15 @@ internal fun MysQrLoginOverlayHost(
         if (visible && targetAccount != null) {
             displayedTargetAccount = targetAccount
         } else if (!visible) {
-            delay(AppMotion.ScreenDurationMillis.toLong())
+            delay(AppMotion.SCREEN_DURATION_MILLIS.toLong())
             displayedTargetAccount = null
         }
     }
     val activeTargetAccount = targetAccount ?: displayedTargetAccount ?: return
     val deviceId =
         remember {
-            vm.effectiveMysDeviceId(forceCreate = false)
+            vm
+                .effectiveMysDeviceId(forceCreate = false)
                 .ifBlank { UUID.randomUUID().toString() }
         }
     QRLoginScreen(
@@ -131,16 +146,18 @@ internal fun MysQrLoginOverlayHost(
         onResult = { result: QRLoginResult ->
             onDismiss()
             vm.persistGeneratedMysDeviceId(deviceId)
-            vm.saveMysQrLogin(
-                account = activeTargetAccount,
-                cookie = result.cookie,
-                uid = result.uid,
-                stoken = result.stoken,
-                stmid = result.stmid,
-                ltoken = result.ltoken,
-                keepLogin = result.keepLogin,
-                nickname = result.nickname,
-                onUpdated = onAccountUpdated,
+            // 扫码凭证只回写当前编辑草稿，账号仓库仍由编辑页“保存”统一提交。
+            onAccountUpdated(
+                vm.buildMysQrLoginDraft(
+                    account = activeTargetAccount,
+                    cookie = result.cookie,
+                    uid = result.uid,
+                    stoken = result.stoken,
+                    stmid = result.stmid,
+                    ltoken = result.ltoken,
+                    keepLogin = result.keepLogin,
+                    nickname = result.nickname,
+                ),
             )
         },
         onCancel = onDismiss,
@@ -164,7 +181,7 @@ internal fun CloudQrLoginOverlayHost(
             displayedTargetAccount = targetAccount
             displayedGameKey = gameKey
         } else if (!visible) {
-            delay(AppMotion.ScreenDurationMillis.toLong())
+            delay(AppMotion.SCREEN_DURATION_MILLIS.toLong())
             displayedTargetAccount = null
         }
     }
@@ -172,7 +189,8 @@ internal fun CloudQrLoginOverlayHost(
     val activeGameKey = if (visible) gameKey else displayedGameKey
     val cloudDeviceId =
         remember {
-            vm.effectiveCloudDeviceId(forceCreate = false)
+            vm
+                .effectiveCloudDeviceId(forceCreate = false)
                 .ifBlank { UUID.randomUUID().toString() }
         }
     CloudQRLoginScreen(
@@ -182,13 +200,15 @@ internal fun CloudQrLoginOverlayHost(
         onResult = { result: CloudQRLoginResult ->
             onDismiss()
             vm.persistGeneratedCloudDeviceId(cloudDeviceId)
-            vm.saveCloudQrLogin(
-                account = activeTargetAccount,
-                gameKey = activeGameKey,
-                comboToken = result.comboToken,
-                webCookie = result.cookieHeader,
-                keepLogin = result.keepLogin,
-                onUpdated = onAccountUpdated,
+            // 扫码凭证只回写当前编辑草稿，账号仓库仍由编辑页“保存”统一提交。
+            onAccountUpdated(
+                vm.buildCloudQrLoginDraft(
+                    account = activeTargetAccount,
+                    gameKey = activeGameKey,
+                    comboToken = result.comboToken,
+                    webCookie = result.cookieHeader,
+                    keepLogin = result.keepLogin,
+                ),
             )
         },
         onCancel = onDismiss,

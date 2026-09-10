@@ -22,12 +22,10 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Cookie
@@ -63,14 +61,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.data.Account
-import com.questtick.data.GameInfo
 import com.questtick.data.Games
 import com.questtick.ui.components.AppDialogActionStyle
 import com.questtick.ui.components.AppMessageDialog
-import com.questtick.ui.components.AnimatedSwitch
 import com.questtick.ui.components.GalaxyBackground
-import com.questtick.ui.components.GameIcon
-import com.questtick.ui.components.PanelCard
 import com.questtick.ui.components.clickableNoRipple
 import com.questtick.ui.components.pager.SyncedHorizontalPager
 import com.questtick.ui.components.pager.pagerSelectionFraction
@@ -79,17 +73,28 @@ import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.AddAccountViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-private enum class EditTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+
+private enum class EditTab(
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
     Basic("米游社", Icons.Filled.Cookie),
     Cloud("云游戏", Icons.Filled.Cloud),
     Games("游戏选择", Icons.Filled.Security),
 }
 
 @Composable
+@Suppress(
+    "detekt:LongMethod",
+    "detekt:CyclomaticComplexMethod",
+    "detekt:FunctionNaming",
+    "detekt:LongParameterList",
+)
 fun AccountEditScreen(
     initial: Account,
     isNew: Boolean,
     editorSessionKey: Long = 0L,
+    discardBaseline: Account = initial,
     onCancel: () -> Unit,
     onSave: (Account) -> Unit,
     /** 打开米游社扫码登录界面；回调参数是当前表单草稿，避免扫码结果覆盖未保存改动。 */
@@ -117,6 +122,7 @@ fun AccountEditScreen(
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val refreshScope = rememberCoroutineScope()
 
+    // 只覆盖表单字段，扫码写入 initial 的刷新凭证继续随草稿传递到最终保存。
     fun currentDraftAccount(): Account =
         initial.copy(
             label = ui.label.trim().ifEmpty { "未命名账号" },
@@ -141,7 +147,7 @@ fun AccountEditScreen(
     var showMysCoinCredentialWarning by rememberSaveable(editorSessionKey, initial.id) { mutableStateOf(false) }
 
     fun requestCancel() {
-        if (ui.hasFormChangesFrom(initial)) {
+        if (ui.hasFormChangesFrom(discardBaseline)) {
             showDiscardDialog = true
         } else {
             onCancel()
@@ -243,12 +249,14 @@ fun AccountEditScreen(
                     ),
                 ),
         ) {
-            // 顶部栏。
             Box(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
                 Box(
-                    Modifier.size(40.dp).clip(CircleShape).clickableNoRipple { requestCancel() }
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickableNoRipple { requestCancel() }
                         .align(Alignment.CenterStart),
                     contentAlignment = Alignment.Center,
                 ) { Icon(Icons.Filled.Close, contentDescription = localizedText("关闭"), tint = MaterialTheme.colorScheme.onBackground) }
@@ -275,8 +283,6 @@ fun AccountEditScreen(
                 }
             }
 
-            // 顶部 Tab。
-            // 使用 EditTabRow 提供滑动指示条动画。
             EditTabRow(
                 visualPosition = visualTabPosition,
                 onSelect = viewModel::setTab,
@@ -304,23 +310,24 @@ fun AccountEditScreen(
                             cookieRefreshDone = cookieRefreshDone,
                             cookieRefreshFailed = cookieRefreshFailed,
                             onStartQRLogin = onStartQRLogin?.let { action -> { action(currentDraftAccount()) } },
-                            onRefreshCookie = onRefreshCookie?.let { action ->
-                                {
-                                    if (!refreshingCookie && !cookieRefreshDone && !cookieRefreshFailed) {
-                                        cookieRefreshDone = false
-                                        cookieRefreshFailed = false
-                                        refreshingCookie = true
-                                        action(currentDraftAccount()) { success ->
-                                            refreshScope.launch {
-                                                delay(300)
-                                                refreshingCookie = false
-                                                cookieRefreshDone = success
-                                                cookieRefreshFailed = !success
+                            onRefreshCookie =
+                                onRefreshCookie?.let { action ->
+                                    {
+                                        if (!refreshingCookie && !cookieRefreshDone && !cookieRefreshFailed) {
+                                            cookieRefreshDone = false
+                                            cookieRefreshFailed = false
+                                            refreshingCookie = true
+                                            action(currentDraftAccount()) { success ->
+                                                refreshScope.launch {
+                                                    delay(300)
+                                                    refreshingCookie = false
+                                                    cookieRefreshDone = success
+                                                    cookieRefreshFailed = !success
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            },
+                                },
                             onLogout = onLogout?.let { action -> { action(currentDraftAccount()) } },
                         )
                     EditTab.Cloud ->
@@ -337,54 +344,57 @@ fun AccountEditScreen(
                             refreshingStarrailToken = refreshingStarrailToken,
                             starrailTokenRefreshDone = starrailTokenRefreshDone,
                             starrailTokenRefreshFailed = starrailTokenRefreshFailed,
-                            onStartCloudQR = onStartCloudQR?.let { action ->
-                                { gameKey -> action(gameKey, currentDraftAccount()) }
-                            },
-                            onRefreshCloudToken = onRefreshCloudToken?.let { action ->
-                                { gameKey ->
-                                    when (gameKey) {
-                                        "CloudYS" -> {
-                                            if (!refreshingGenshinToken &&
-                                                !genshinTokenRefreshDone &&
-                                                !genshinTokenRefreshFailed
-                                            ) {
-                                                genshinTokenRefreshDone = false
-                                                genshinTokenRefreshFailed = false
-                                                refreshingGenshinToken = true
-                                                action(gameKey, currentDraftAccount()) { success ->
-                                                    refreshScope.launch {
-                                                        delay(300)
-                                                        refreshingGenshinToken = false
-                                                        genshinTokenRefreshDone = success
-                                                        genshinTokenRefreshFailed = !success
+                            onStartCloudQR =
+                                onStartCloudQR?.let { action ->
+                                    { gameKey -> action(gameKey, currentDraftAccount()) }
+                                },
+                            onRefreshCloudToken =
+                                onRefreshCloudToken?.let { action ->
+                                    { gameKey ->
+                                        when (gameKey) {
+                                            "CloudYS" -> {
+                                                if (!refreshingGenshinToken &&
+                                                    !genshinTokenRefreshDone &&
+                                                    !genshinTokenRefreshFailed
+                                                ) {
+                                                    genshinTokenRefreshDone = false
+                                                    genshinTokenRefreshFailed = false
+                                                    refreshingGenshinToken = true
+                                                    action(gameKey, currentDraftAccount()) { success ->
+                                                        refreshScope.launch {
+                                                            delay(300)
+                                                            refreshingGenshinToken = false
+                                                            genshinTokenRefreshDone = success
+                                                            genshinTokenRefreshFailed = !success
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
-                                        "CloudSR" -> {
-                                            if (!refreshingStarrailToken &&
-                                                !starrailTokenRefreshDone &&
-                                                !starrailTokenRefreshFailed
-                                            ) {
-                                                starrailTokenRefreshDone = false
-                                                starrailTokenRefreshFailed = false
-                                                refreshingStarrailToken = true
-                                                action(gameKey, currentDraftAccount()) { success ->
-                                                    refreshScope.launch {
-                                                        delay(300)
-                                                        refreshingStarrailToken = false
-                                                        starrailTokenRefreshDone = success
-                                                        starrailTokenRefreshFailed = !success
+                                            "CloudSR" -> {
+                                                if (!refreshingStarrailToken &&
+                                                    !starrailTokenRefreshDone &&
+                                                    !starrailTokenRefreshFailed
+                                                ) {
+                                                    starrailTokenRefreshDone = false
+                                                    starrailTokenRefreshFailed = false
+                                                    refreshingStarrailToken = true
+                                                    action(gameKey, currentDraftAccount()) { success ->
+                                                        refreshScope.launch {
+                                                            delay(300)
+                                                            refreshingStarrailToken = false
+                                                            starrailTokenRefreshDone = success
+                                                            starrailTokenRefreshFailed = !success
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            },
-                            onLogoutCloud = onLogoutCloud?.let { action ->
-                                { gameKey -> action(gameKey, currentDraftAccount()) }
-                            },
+                                },
+                            onLogoutCloud =
+                                onLogoutCloud?.let { action ->
+                                    { gameKey -> action(gameKey, currentDraftAccount()) }
+                                },
                         )
                     EditTab.Games ->
                         GamesTab(
@@ -404,8 +414,6 @@ fun AccountEditScreen(
         }
     }
 }
-
-// Tab 行与共享动画指示条。
 
 /** 编辑浮层的 Tab 行；每个 Tab 内置与底部导航一致的指示条动画。 */
 @Composable
@@ -452,7 +460,6 @@ private fun EditTabButton(
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         )
         Spacer(Modifier.height(6.dp))
-        // 指示条位于文字下方。
         Box(
             Modifier
                 .size(width = indicatorWidth, height = 3.dp)
@@ -507,8 +514,6 @@ private fun LogoutActionButton(
     )
 }
 
-// Tab 1：基本信息。
-
 @Composable
 private fun BasicTab(
     label: String,
@@ -562,7 +567,6 @@ private fun BasicTab(
             }
         }
 
-        // 扫码登录与刷新 Cookie 操作。
         item {
             Row(
                 Modifier.fillMaxWidth(),
@@ -605,7 +609,6 @@ private fun BasicTab(
 
                 LogoutActionButton { showLogoutDialog = true }
 
-                // 退出登录确认弹窗。
                 if (showLogoutDialog) {
                     AppMessageDialog(
                         title = "退出登录",
@@ -626,8 +629,6 @@ private fun BasicTab(
         item { Spacer(Modifier.height(28.dp)) }
     }
 }
-
-// Tab 2：云游戏。
 
 @Composable
 private fun CloudTab(
@@ -666,7 +667,6 @@ private fun CloudTab(
                 singleLine = true,
             )
         }
-        // 扫码登录与刷新 Token 操作。
         if (onStartCloudQR != null || (genshinKeepLogin && onRefreshCloudToken != null)) {
             item {
                 Row(
@@ -716,7 +716,6 @@ private fun CloudTab(
                 singleLine = true,
             )
         }
-        // 扫码登录与刷新 Token 操作。
         if (onStartCloudQR != null || (starrailKeepLogin && onRefreshCloudToken != null)) {
             item {
                 Row(
@@ -784,8 +783,6 @@ private fun CloudLogoutButton(
     }
 }
 
-// 共享小组件。
-
 @Composable
 private fun FieldLabel(text: String) {
     Text(text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
@@ -807,7 +804,9 @@ private fun NoticeBox(
     text: String,
 ) {
     Box(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
             .background(color.copy(alpha = 0.10f))
             .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
             .padding(14.dp),

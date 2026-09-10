@@ -17,10 +17,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.sp
 
 /**
- * Material3 Text 的本地化入口。现有页面统一从这里显示字符串，避免业务层的结构化状态依赖某种语言。
+ * Material3 Text 的统一入口：先解析本地化，再默认左对齐并允许换行。
+ * 标题或特殊布局需要居中时由调用方显式传入 [TextAlign.Center]。
  */
 @Composable
 fun Text(
@@ -52,7 +52,7 @@ fun Text(
         fontFamily = fontFamily,
         letterSpacing = letterSpacing,
         textDecoration = textDecoration,
-        textAlign = textAlign,
+        textAlign = textAlign ?: TextAlign.Start,
         lineHeight = lineHeight,
         overflow = overflow,
         softWrap = softWrap,
@@ -94,7 +94,7 @@ fun Text(
         fontFamily = fontFamily,
         letterSpacing = letterSpacing,
         textDecoration = textDecoration,
-        textAlign = textAlign,
+        textAlign = textAlign ?: TextAlign.Start,
         lineHeight = lineHeight,
         overflow = overflow,
         softWrap = softWrap,
@@ -106,5 +106,4 @@ fun Text(
 }
 
 @Composable
-fun localizedText(text: String): String =
-    localizeText(text, AppLanguage.resolve(LocalAppLanguageSetting.current))
+fun localizedText(text: String): String = localizeText(text, AppLanguage.resolve(LocalAppLanguageSetting.current))

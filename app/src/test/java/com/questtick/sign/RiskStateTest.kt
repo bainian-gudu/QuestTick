@@ -45,8 +45,7 @@ class RiskStateTest {
 
     private fun record(category: FailureCategory): RunRecord = runRecord(listOf(result(category)))
 
-    private fun runRecord(results: List<TaskResult>): RunRecord =
-        RunRecord(timestamp = 1L, runId = "run-1", results = results)
+    private fun runRecord(results: List<TaskResult>): RunRecord = RunRecord(timestamp = 1L, runId = "run-1", results = results)
 
     private fun result(
         category: FailureCategory,

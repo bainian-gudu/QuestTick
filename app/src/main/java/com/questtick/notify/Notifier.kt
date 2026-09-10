@@ -90,18 +90,19 @@ object Notifier {
 
         val language = AppLocaleController.resolved(context)
         val allSkipped = record.total > 0 && record.skipped == record.total && record.failed == 0
-        val title = localizeText(
-            when {
-                record.total == 0 -> "未配置账号，已跳过"
-                record.resultUnknown == record.total -> "签到结果待确认 ⚠️"
-                allSkipped -> "签到已跳过 ⏭"
-                record.failed == 0 && record.resultUnknown == 0 ->
-                    "签到完成 ✅ 成功${record.succeeded} 已签${record.alreadySigned}"
-                else ->
-                    "签到完成 ⚠️ 失败${record.failed} 待确认${record.resultUnknown} 成功${record.succeeded}"
-            },
-            language,
-        )
+        val title =
+            localizeText(
+                when {
+                    record.total == 0 -> "未配置账号，已跳过"
+                    record.resultUnknown == record.total -> "签到结果待确认 ⚠️"
+                    allSkipped -> "签到已跳过 ⏭"
+                    record.failed == 0 && record.resultUnknown == 0 ->
+                        "签到完成 ✅ 成功${record.succeeded} 已签${record.alreadySigned}"
+                    else ->
+                        "签到完成 ⚠️ 失败${record.failed} 待确认${record.resultUnknown} 成功${record.succeeded}"
+                },
+                language,
+            )
 
         val lines =
             record.results.take(8).joinToString("\n") {
@@ -113,15 +114,16 @@ object Notifier {
                         it.success -> "✅"
                         else -> "❌"
                     }
-                // 有奖励文案或跳过/失败原因时追加到通知正文。
+                // 账号名、奖励名和服务端原因可能是用户/服务端原文，只翻译已知游戏和模板。
+                val game = localizeText(it.game, language)
                 val reward = if (it.rewardName.isNotBlank()) " · ${it.rewardName}×${it.rewardCount}" else ""
                 val reason =
                     if ((it.skipped || !it.success) && it.message.isNotBlank()) {
-                        " · ${it.message.take(36)}"
+                        " · ${localizeText(it.message.take(36), language)}"
                     } else {
                         ""
                     }
-                localizeText("$flag ${it.accountLabel} · ${it.game}$reward$reason", language)
+                "$flag ${it.accountLabel} · $game$reward$reason"
             }
 
         // 点击通知时：未配置账号跳转账号页，有结果则跳转记录页。
@@ -141,7 +143,8 @@ object Notifier {
             )
 
         val builder =
-            NotificationCompat.Builder(context, CHANNEL_ID)
+            NotificationCompat
+                .Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_signin)
                 .setContentTitle(title)
                 .setContentText(
@@ -153,8 +156,7 @@ object Notifier {
                         },
                         language,
                     ),
-                )
-                .setStyle(NotificationCompat.BigTextStyle().bigText(lines.ifEmpty { title }))
+                ).setStyle(NotificationCompat.BigTextStyle().bigText(lines.ifEmpty { title }))
                 .setContentIntent(pending)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)

@@ -1,7 +1,7 @@
 package com.questtick.data
 
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.data.db.AccountEntity
 import com.questtick.data.db.AppDatabase
 import org.json.JSONObject
@@ -14,6 +14,7 @@ internal class RoomAccountStore(
     private val lock = Any()
 
     @Volatile private var cache: List<Account>? = null
+
     @Volatile private var recoveryIssuesCache: List<AccountRecoveryIssue> = emptyList()
 
     fun get(): List<Account> =
@@ -81,14 +82,15 @@ internal class RoomAccountStore(
         }
 
     private fun AccountEntity.decode(): DecodedAccount {
-        val plain = CryptoStore.decryptToString(payloadCipher)
-            ?: return DecodedAccount.Invalid(
-                AccountRecoveryIssue(id, label, AccountRecoveryIssue.Reason.DECRYPTION_FAILED),
-            )
+        val plain =
+            CryptoStore.decryptToString(payloadCipher)
+                ?: return DecodedAccount.Invalid(
+                    AccountRecoveryIssue(id, label, AccountRecoveryIssue.Reason.DECRYPTION_FAILED),
+                )
         return try {
             DecodedAccount.Valid(Account.fromJson(JSONObject(plain)))
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse account payload $id: ${e::class.java.simpleName}")
+            AppLog.w(TAG, "Failed to parse account payload $id: ${e::class.java.simpleName}")
             DecodedAccount.Invalid(
                 AccountRecoveryIssue(id, label, AccountRecoveryIssue.Reason.INVALID_FORMAT),
             )
@@ -96,8 +98,13 @@ internal class RoomAccountStore(
     }
 
     private sealed interface DecodedAccount {
-        data class Valid(val account: Account) : DecodedAccount
-        data class Invalid(val issue: AccountRecoveryIssue) : DecodedAccount
+        data class Valid(
+            val account: Account,
+        ) : DecodedAccount
+
+        data class Invalid(
+            val issue: AccountRecoveryIssue,
+        ) : DecodedAccount
     }
 
     private fun Account.toEntity(

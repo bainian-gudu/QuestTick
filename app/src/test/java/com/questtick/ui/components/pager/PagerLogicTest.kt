@@ -23,7 +23,6 @@ class PagerLogicTest {
         assertEquals(1, pagerBeyondViewportCount(warmedPageCount = 9, pageCount = 5))
     }
 
-
     @Test
     fun pagerAnimationStartPageKeepsLongJumpToSingleAnimatedStep() {
         assertEquals(0, pagerAnimationStartPage(currentPage = 0, targetPage = 1, pageCount = 5))

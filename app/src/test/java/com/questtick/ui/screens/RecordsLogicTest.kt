@@ -53,7 +53,7 @@ class RecordsLogicTest {
     }
 
     @Test
-    fun buildRecordsCacheCountsAllFilters() {
+    fun buildRecordsIndexCountsAllFilters() {
         val successA = result("successA", success = true)
         val already = result("already", success = true, alreadySigned = true)
         val failed = result("failed", success = false)
@@ -65,18 +65,18 @@ class RecordsLogicTest {
                 RunRecord(timestamp = 2000L, results = listOf(skipped, successB)),
             )
 
-        val cache = buildRecordsCache(history)
+        val index = buildRecordsIndex(history)
 
-        assertEquals(listOf(successA, already, failed, skipped, successB), cache.allResults)
-        assertEquals(5, cache.count(RecFilter.ALL))
-        assertEquals(2, cache.count(RecFilter.SUCCESS))
-        assertEquals(1, cache.count(RecFilter.ALREADY))
-        assertEquals(1, cache.count(RecFilter.FAILED))
-        assertEquals(1, cache.count(RecFilter.SKIPPED))
+        assertEquals(5, index.allResultCount)
+        assertEquals(5, index.counts.getValue(RecFilter.ALL))
+        assertEquals(2, index.counts.getValue(RecFilter.SUCCESS))
+        assertEquals(1, index.counts.getValue(RecFilter.ALREADY))
+        assertEquals(1, index.counts.getValue(RecFilter.FAILED))
+        assertEquals(1, index.counts.getValue(RecFilter.SKIPPED))
     }
 
     @Test
-    fun buildRecordsCacheFiltersRunsAndDropsEmptyRuns() {
+    fun buildRecordsIndexKeepsOnlyMatchingRunSummaries() {
         val successA = result("successA", success = true)
         val already = result("already", success = true, alreadySigned = true)
         val failed = result("failed", success = false)
@@ -85,26 +85,43 @@ class RecordsLogicTest {
         val firstRun = RunRecord(timestamp = 1000L, results = listOf(successA, already, failed))
         val secondRun = RunRecord(timestamp = 2000L, results = listOf(skipped, successB))
 
-        val cache = buildRecordsCache(listOf(firstRun, secondRun))
+        val index = buildRecordsIndex(listOf(firstRun, secondRun))
 
-        assertEquals(listOf(firstRun.results, secondRun.results), cache.runs(RecFilter.ALL).map { it.results })
-        assertEquals(listOf(listOf(successA), listOf(successB)), cache.runs(RecFilter.SUCCESS).map { it.results })
-        assertEquals(listOf(listOf(already)), cache.runs(RecFilter.ALREADY).map { it.results })
-        assertEquals(listOf(listOf(failed)), cache.runs(RecFilter.FAILED).map { it.results })
-        assertEquals(listOf(listOf(skipped)), cache.runs(RecFilter.SKIPPED).map { it.results })
-        assertEquals("1000", cache.runs(RecFilter.ALL).first().formattedTime)
-        assertEquals(1, cache.runs(RecFilter.ALL).first().succeeded)
-        assertEquals(1, cache.runs(RecFilter.ALL).first().alreadySigned)
-        assertEquals(1, cache.runs(RecFilter.ALL).first().failed)
+        assertEquals(listOf(0, 1), index.runsByFilter.getValue(RecFilter.ALL).map { it.runIndex })
+        assertEquals(listOf(0, 1), index.runsByFilter.getValue(RecFilter.SUCCESS).map { it.runIndex })
+        assertEquals(listOf(0), index.runsByFilter.getValue(RecFilter.ALREADY).map { it.runIndex })
+        assertEquals(listOf(0), index.runsByFilter.getValue(RecFilter.FAILED).map { it.runIndex })
+        assertEquals(listOf(1), index.runsByFilter.getValue(RecFilter.SKIPPED).map { it.runIndex })
+        assertEquals(
+            1,
+            index.runsByFilter
+                .getValue(RecFilter.ALL)
+                .first()
+                .succeeded,
+        )
+        assertEquals(
+            1,
+            index.runsByFilter
+                .getValue(RecFilter.ALL)
+                .first()
+                .alreadySigned,
+        )
+        assertEquals(
+            1,
+            index.runsByFilter
+                .getValue(RecFilter.ALL)
+                .first()
+                .failed,
+        )
     }
 
     @Test
-    fun buildRecordsCacheReturnsEmptyCacheForEmptyHistory() {
-        val cache = buildRecordsCache(emptyList())
+    fun buildRecordsIndexReturnsEmptyIndexForEmptyHistory() {
+        val index = buildRecordsIndex(emptyList())
 
-        assertTrue(cache.allResults.isEmpty())
-        assertTrue(cache.counts.isEmpty())
-        assertTrue(cache.filteredRuns.isEmpty())
+        assertEquals(0, index.allResultCount)
+        assertTrue(index.counts.isEmpty())
+        assertTrue(index.runsByFilter.isEmpty())
     }
 
     @Test
@@ -122,11 +139,6 @@ class RecordsLogicTest {
         assertSame(RecFilter.ALL, RecFilter.entries.first())
         assertEquals(listOf("全部", "成功", "失败", "已签到", "待确认", "跳过"), RecFilter.entries.map { it.label })
     }
-
-    private fun RecordsCache.count(filter: RecFilter): Int = counts.getValue(filter)
-
-    private fun RecordsCache.runs(filter: RecFilter): List<RecordRunGroup> =
-        filteredRuns.getValue(filter)
 
     private fun result(
         label: String,

@@ -19,7 +19,8 @@ object CredentialFieldSanitizer {
     private val CLOUD_SIGNIN_TOKEN_KEYS = setOf("ai", "ci", "oi", "ct", "si", "bi")
 
     fun mysSigninCookie(cookie: String): String =
-        CookieParser.parseCookieHeader(cookie)
+        CookieParser
+            .parseCookieHeader(cookie)
             .filterKeys { it in MYS_SIGNIN_COOKIE_KEYS }
             .entries
             .joinToString("; ") { (key, value) -> "$key=$value" }
@@ -27,14 +28,14 @@ object CredentialFieldSanitizer {
     fun cloudSigninToken(token: String): String {
         var hasKeyValuePart = false
         val filtered =
-            token.split(';')
+            token
+                .split(';')
                 .mapNotNull { part ->
                     val pair = part.trim().split('=', limit = 2)
                     if (pair.size != 2) return@mapNotNull null
                     hasKeyValuePart = true
                     if (pair[0] in CLOUD_SIGNIN_TOKEN_KEYS) pair[0] to pair[1] else null
-                }
-                .joinToString(";") { (key, value) -> "$key=$value" }
+                }.joinToString(";") { (key, value) -> "$key=$value" }
         return if (hasKeyValuePart) filtered else token
     }
 }

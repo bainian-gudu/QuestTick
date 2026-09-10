@@ -291,7 +291,8 @@ object AppUpdateInstaller {
         enforceSha256: Boolean = true,
     ): List<String> {
         if (!TrustedUrlPolicy.isUpdateAssetUrl(url)) return emptyList()
-        return AppUpdateNetwork.buildCandidateUrls(url)
+        return AppUpdateNetwork
+            .buildCandidateUrls(url)
             .filter(TrustedUrlPolicy::isUpdateAssetUrl)
     }
 
@@ -301,7 +302,8 @@ object AppUpdateInstaller {
     ): File {
         val dir = File(context.applicationContext.cacheDir, DIR_NAME)
         val safeName =
-            info.apkName.ifBlank { "MYS_Signin_${info.latestVersion}.apk" }
+            info.apkName
+                .ifBlank { "MYS_Signin_${info.latestVersion}.apk" }
                 .replace(Regex("[^A-Za-z0-9._-]"), "_")
         return File(dir, safeName)
     }
@@ -336,7 +338,8 @@ object AppUpdateInstaller {
         val apkVersion = normalizeVersion(archiveInfo.versionName.orEmpty())
         val expectedVersion = normalizeVersion(info.latestVersion)
         val versionNameCompatible =
-            apkVersion.isBlank() || expectedVersion.isBlank() ||
+            apkVersion.isBlank() ||
+                expectedVersion.isBlank() ||
                 !AppUpdateChecker.isVersionNewer(expectedVersion, apkVersion)
         return versionNameCompatible
     }
@@ -444,9 +447,7 @@ object AppUpdateInstaller {
     /**
      * 判断当前更新信息是否携带有效的 SHA-256 校验值。
      */
-    private fun isSha256Enforced(info: AppUpdateChecker.AppUpdateInfo): Boolean {
-        return info.apkSha256.isNotBlank() && info.apkSha256.matches(Regex("^[a-fA-F0-9]{64}$"))
-    }
+    private fun isSha256Enforced(info: AppUpdateChecker.AppUpdateInfo): Boolean = info.apkSha256.isNotBlank() && info.apkSha256.matches(Regex("^[a-fA-F0-9]{64}$"))
 
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")

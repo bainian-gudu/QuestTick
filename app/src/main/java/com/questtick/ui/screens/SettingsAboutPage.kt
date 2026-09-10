@@ -18,9 +18,6 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
@@ -48,9 +45,6 @@ internal fun AboutDetailPage(
     onCheckUpdate: (onFinished: (AppUpdateInfo?) -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
-    val licenseText = remember(context) {
-        context.resources.openRawResource(R.raw.gpl_3_0).bufferedReader().use { it.readText() }
-    }
     var checkingUpdate by remember { mutableStateOf(false) }
     var showLicenseDialog by remember { mutableStateOf(false) }
 
@@ -128,6 +122,13 @@ internal fun AboutDetailPage(
             }
         }
         SettingsPageOverlay(visible = showLicenseDialog) {
+            val licenseText =
+                remember(context) {
+                    context.resources
+                        .openRawResource(R.raw.gpl_3_0)
+                        .bufferedReader()
+                        .use { it.readText() }
+                }
             LicenseDetailDialog(licenseText = licenseText, onDismiss = { showLicenseDialog = false })
         }
     }

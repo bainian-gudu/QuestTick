@@ -1,7 +1,7 @@
 package com.questtick.sign
 
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.net.HttpTransport
 
 /**
@@ -43,31 +43,33 @@ object MysAppVersionRepository {
     suspend fun refreshIfNeeded(httpTransport: HttpTransport): Result<String> {
         val now = System.currentTimeMillis()
         if (lastFetchTimeMs > 0L && (now - lastFetchTimeMs) < REFRESH_INTERVAL_MS) {
-            Log.d(TAG, "skip fetch: within three days, currentVersion=$currentVersion")
+            AppLog.d(TAG, "skip fetch: within three days, currentVersion=$currentVersion")
             return Result.success(currentVersion)
         }
 
         val result = MysAppVersionFetcher.fetchLatest(httpTransport)
-        return result.onSuccess { version ->
-            update(version)
-            Log.d(TAG, "fetched and stored: $version")
-        }.onFailure { e ->
-            // 失败也计入本轮自动获取，避免每次签到都重复请求版本源。
-            lastFetchTimeMs = now
-            persist(null)
-            Log.w(TAG, "fetch failed", e)
-        }
+        return result
+            .onSuccess { version ->
+                update(version)
+                AppLog.d(TAG, "fetched and stored: $version")
+            }.onFailure { e ->
+                // 失败也计入本轮自动获取，避免每次签到都重复请求版本源。
+                lastFetchTimeMs = now
+                persist(null)
+                AppLog.w(TAG, "fetch failed", e)
+            }
     }
 
     /** 强制立即从 App Store 获取最新版本并更新本地缓存。 */
-    suspend fun forceRefresh(httpTransport: HttpTransport): Result<String> {
-        return MysAppVersionFetcher.fetchLatest(httpTransport).onSuccess { version ->
-            update(version)
-            Log.d(TAG, "force refreshed and stored: $version")
-        }.onFailure { e ->
-            Log.w(TAG, "force refresh failed", e)
-        }
-    }
+    suspend fun forceRefresh(httpTransport: HttpTransport): Result<String> =
+        MysAppVersionFetcher
+            .fetchLatest(httpTransport)
+            .onSuccess { version ->
+                update(version)
+                AppLog.d(TAG, "force refreshed and stored: $version")
+            }.onFailure { e ->
+                AppLog.w(TAG, "force refresh failed", e)
+            }
 
     /** 直接写入缓存版本，并刷新缓存时间。 */
     fun update(
@@ -75,7 +77,7 @@ object MysAppVersionRepository {
         context: Context? = null,
     ) {
         if (!VERSION_PATTERN.matches(version)) {
-            Log.w(TAG, "invalid version, ignore: $version")
+            AppLog.w(TAG, "invalid version, ignore: $version")
             return
         }
         currentVersion = version
@@ -85,7 +87,8 @@ object MysAppVersionRepository {
 
     private fun persist(context: Context?) {
         val ctx = context ?: appContext ?: return
-        ctx.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        ctx
+            .getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_VERSION, currentVersion)
             .putLong(KEY_LAST_FETCH_TIME, lastFetchTimeMs)

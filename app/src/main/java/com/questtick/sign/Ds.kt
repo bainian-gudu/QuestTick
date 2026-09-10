@@ -18,6 +18,7 @@ import kotlin.random.Random
 object Ds {
     private const val CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
     private const val BBS_X6_SALT = "t0qEgfub6cvueAPgR5m9aQWWVciEer7v"
+
     // 普通 luna 网页接口使用独立的 Web DS，不读取米游币 X6 动态配置。
     private const val WEB_SALT = "d9200c84610886e8c874fc33c8f308b"
 
@@ -128,12 +129,15 @@ object Ds {
     /**
      * 将 [JSONObject] 序列化为 key 按字母序排列的 JSON 字符串，供 md5_v2 的 body 使用。
      */
-    fun sortedJsonString(json: JSONObject): String {
-        return serializeJsonObject(json)
-    }
+    fun sortedJsonString(json: JSONObject): String = serializeJsonObject(json)
 
     private fun serializeJsonObject(json: JSONObject): String {
-        val sortedKeys = json.keys().asSequence().sorted().toList()
+        val sortedKeys =
+            json
+                .keys()
+                .asSequence()
+                .sorted()
+                .toList()
         val sb = StringBuilder()
         sb.append("{")
         sortedKeys.forEachIndexed { index, key ->
@@ -150,12 +154,12 @@ object Ds {
      */
     fun sortedQueryString(query: String): String {
         if (query.isBlank()) return ""
-        return query.split("&")
+        return query
+            .split("&")
             .mapNotNull { part ->
                 val idx = part.indexOf('=')
                 if (idx > 0) part.substring(0, idx) to part.substring(idx + 1) else null
-            }
-            .sortedBy { it.first }
+            }.sortedBy { it.first }
             .joinToString("&") { "${it.first}=${it.second}" }
     }
 

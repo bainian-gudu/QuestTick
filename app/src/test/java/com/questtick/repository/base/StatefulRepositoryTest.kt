@@ -8,68 +8,73 @@ import org.junit.Test
 
 class StatefulRepositoryTest {
     @Test
-    fun `successful empty load is distinguishable from initial loading`() = runTest {
-        val repository = TestRepository(emptyList())
+    fun `successful empty load is distinguishable from initial loading`() =
+        runTest {
+            val repository = TestRepository(emptyList())
 
-        assertTrue(repository.loadState.value is RepositoryLoadState.InitialLoading)
-        repository.reload()
+            assertTrue(repository.loadState.value is RepositoryLoadState.InitialLoading)
+            repository.reload()
 
-        assertTrue(repository.loaded.value)
-        assertTrue(repository.loadState.value is RepositoryLoadState.Empty)
-        assertTrue(repository.state.value.isEmpty())
-    }
-
-    @Test
-    fun `successful content load publishes content state`() = runTest {
-        val repository = TestRepository(listOf("saved"))
-
-        repository.reload()
-
-        assertEquals(listOf("saved"), repository.state.value)
-        assertTrue(repository.loadState.value is RepositoryLoadState.Content)
-    }
+            assertTrue(repository.loaded.value)
+            assertTrue(repository.loadState.value is RepositoryLoadState.Empty)
+            assertTrue(repository.state.value.isEmpty())
+        }
 
     @Test
-    fun `failed first load keeps initial value and exposes recoverable error`() = runTest {
-        val repository = TestRepository(emptyList(), failure = IllegalStateException("disk unavailable"))
+    fun `successful content load publishes content state`() =
+        runTest {
+            val repository = TestRepository(listOf("saved"))
 
-        val failure = runCatching { repository.reload() }.exceptionOrNull()
+            repository.reload()
 
-        assertTrue(failure is IllegalStateException)
-        assertFalse(repository.loaded.value)
-        assertEquals(emptyList<String>(), repository.state.value)
-        val state = repository.loadState.value as RepositoryLoadState.Error
-        assertFalse(state.hasContent)
-        assertEquals("IllegalStateException", state.errorType)
-    }
+            assertEquals(listOf("saved"), repository.state.value)
+            assertTrue(repository.loadState.value is RepositoryLoadState.Content)
+        }
 
     @Test
-    fun `failed refresh keeps last successful snapshot`() = runTest {
-        val repository = TestRepository(listOf("saved"))
-        repository.reload()
-        repository.failure = IllegalArgumentException("corrupt")
+    fun `failed first load keeps initial value and exposes recoverable error`() =
+        runTest {
+            val repository = TestRepository(emptyList(), failure = IllegalStateException("disk unavailable"))
 
-        runCatching { repository.reload() }
+            val failure = runCatching { repository.reload() }.exceptionOrNull()
 
-        assertTrue(repository.loaded.value)
-        assertEquals(listOf("saved"), repository.state.value)
-        val state = repository.loadState.value as RepositoryLoadState.Error
-        assertTrue(state.hasContent)
-        assertEquals("IllegalArgumentException", state.errorType)
-    }
+            assertTrue(failure is IllegalStateException)
+            assertFalse(repository.loaded.value)
+            assertEquals(emptyList<String>(), repository.state.value)
+            val state = repository.loadState.value as RepositoryLoadState.Error
+            assertFalse(state.hasContent)
+            assertEquals("IllegalStateException", state.errorType)
+        }
 
     @Test
-    fun `manual retry can recover from read failure`() = runTest {
-        val repository = TestRepository(emptyList(), failure = IllegalStateException("temporary"))
-        runCatching { repository.reload() }
+    fun `failed refresh keeps last successful snapshot`() =
+        runTest {
+            val repository = TestRepository(listOf("saved"))
+            repository.reload()
+            repository.failure = IllegalArgumentException("corrupt")
 
-        repository.failure = null
-        repository.stored = listOf("recovered")
-        repository.reload()
+            runCatching { repository.reload() }
 
-        assertEquals(listOf("recovered"), repository.state.value)
-        assertTrue(repository.loadState.value is RepositoryLoadState.Content)
-    }
+            assertTrue(repository.loaded.value)
+            assertEquals(listOf("saved"), repository.state.value)
+            val state = repository.loadState.value as RepositoryLoadState.Error
+            assertTrue(state.hasContent)
+            assertEquals("IllegalArgumentException", state.errorType)
+        }
+
+    @Test
+    fun `manual retry can recover from read failure`() =
+        runTest {
+            val repository = TestRepository(emptyList(), failure = IllegalStateException("temporary"))
+            runCatching { repository.reload() }
+
+            repository.failure = null
+            repository.stored = listOf("recovered")
+            repository.reload()
+
+            assertEquals(listOf("recovered"), repository.state.value)
+            assertTrue(repository.loadState.value is RepositoryLoadState.Content)
+        }
 
     private class TestRepository(
         var stored: List<String>,

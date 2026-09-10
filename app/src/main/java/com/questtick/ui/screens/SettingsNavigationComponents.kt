@@ -51,9 +51,10 @@ internal fun SettingsPageOverlay(
         exit = AppMotion.screenExit(),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(if (consumeHorizontalGestures) Modifier.consumeHorizontalPageSwipe() else Modifier),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(if (consumeHorizontalGestures) Modifier.consumeHorizontalPageSwipe() else Modifier),
         ) {
             DisposableEffect(Unit) {
                 onDispose { onExitFinished() }

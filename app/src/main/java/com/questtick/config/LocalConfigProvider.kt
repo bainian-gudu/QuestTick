@@ -2,15 +2,16 @@ package com.questtick.config
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
+import com.questtick.log.AppLog
 
 /** 本地 DS 配置来源：Assets → 内置默认值。历史远程缓存不会再参与配置选择。 */
-class LocalConfigProvider(context: Context) {
+class LocalConfigProvider(
+    context: Context,
+) {
     private val appContext = context.applicationContext
     private val prefs: SharedPreferences = appContext.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
-    fun selectedChannel(): DsConfigChannel =
-        DsConfigChannel.parse(prefs.getString(KEY_CHANNEL, DsConfigChannel.STABLE.key))
+    fun selectedChannel(): DsConfigChannel = DsConfigChannel.parse(prefs.getString(KEY_CHANNEL, DsConfigChannel.STABLE.key))
 
     fun setSelectedChannel(channel: DsConfigChannel) {
         prefs.edit().putString(KEY_CHANNEL, channel.key).apply()
@@ -32,7 +33,7 @@ class LocalConfigProvider(context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Load DS config from assets failed: ${e.message}")
+            AppLog.w(TAG, "Load DS config from assets failed: ${e.message}")
             null
         }
 

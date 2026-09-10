@@ -117,12 +117,10 @@ class RunPersistenceRepository
             check(activeRunIds.add(runId)) { "Run is already active in this process: $runId" }
         }
 
-        fun uncertainTaskIdsForDay(timestamp: Long): Set<String> =
-            calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_RESULT_UNKNOWN).toSet()
+        fun uncertainTaskIdsForDay(timestamp: Long): Set<String> = calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_RESULT_UNKNOWN).toSet()
 
         /** 返回当天已经确认成功的任务，供定时签到跳过手动完成的任务。 */
-        fun signedTaskIdsForDay(timestamp: Long): Set<String> =
-            calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_SIGNED).toSet()
+        fun signedTaskIdsForDay(timestamp: Long): Set<String> = calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_SIGNED).toSet()
 
         fun isTaskRunning(
             runId: String,
@@ -403,113 +401,114 @@ class RunPersistenceRepository
             onlyRunId: String?,
             additionalLogs: List<LogEntry>,
             terminationReason: RunTerminationReason,
-        ): RunRecoverySummary = synchronized(lifecycleLock) {
-            var recoveredRuns = 0
-            var uncertainTasks = 0
-            var notStartedTasks = 0
-            val finalizedRunIds = mutableListOf<String>()
-            db.runInTransaction {
-                runDao.getRunsByStatus(RUN_STATUS_RUNNING)
-                    .filter { run ->
-                        if (onlyRunId != null) {
-                            run.runId == onlyRunId
-                        } else {
-                            run.runId !in activeRunIds
-                        }
-                    }
-                    .forEach { run ->
-                    val before = runDao.getTasks(run.runId)
-                    uncertainTasks += before.count { it.status == TASK_STATUS_RUNNING }
-                    notStartedTasks += before.count { it.status == TASK_STATUS_PENDING }
-                    runDao.transitionUnfinishedTasks(
-                        run.runId,
-                        listOf(TASK_STATUS_RUNNING),
-                        TASK_STATUS_RESULT_UNKNOWN,
-                        RESULT_UNKNOWN_MESSAGE,
-                        now,
-                    )
-                    runDao.transitionUnfinishedTasks(
-                        run.runId,
-                        listOf(TASK_STATUS_PENDING),
-                        TASK_STATUS_INTERRUPTED,
-                        if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
-                            "进程中断时任务尚未开始"
-                        } else {
-                            "运行异常时任务尚未开始"
-                        },
-                        now,
-                    )
-                    val interruptedPrefix =
-                        if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) "process-interrupted" else "internal-error"
-                    runDao.transitionUnfinishedAttempts(
-                        runId = run.runId,
-                        expectedStatuses = listOf(ATTEMPT_STATUS_RUNNING),
-                        newStatus = TASK_STATUS_RESULT_UNKNOWN,
-                        failureCategory = FailureCategory.RESULT_UNKNOWN.name,
-                        errorCode = "$interruptedPrefix-result-unknown",
-                        retryable = false,
-                        finishedAt = now,
-                    )
-                    runDao.transitionUnfinishedAttempts(
-                        runId = run.runId,
-                        expectedStatuses = listOf(ATTEMPT_STATUS_PENDING),
-                        newStatus = TASK_STATUS_INTERRUPTED,
-                        failureCategory =
-                            if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
-                                FailureCategory.CANCELLED.name
+        ): RunRecoverySummary =
+            synchronized(lifecycleLock) {
+                var recoveredRuns = 0
+                var uncertainTasks = 0
+                var notStartedTasks = 0
+                val finalizedRunIds = mutableListOf<String>()
+                db.runInTransaction {
+                    runDao
+                        .getRunsByStatus(RUN_STATUS_RUNNING)
+                        .filter { run ->
+                            if (onlyRunId != null) {
+                                run.runId == onlyRunId
                             } else {
-                                FailureCategory.INTERNAL_ERROR.name
-                            },
-                        errorCode = "$interruptedPrefix-before-start",
-                        retryable = true,
-                        finishedAt = now,
-                    )
-                    val tasks = runDao.getTasks(run.runId)
-                    val record = buildAbandonedRecord(run, tasks, now, terminationReason)
-                    historyDao.insert(SignHistoryEntity.fromModel(record))
-                    calendarTaskStatesFromRecord(record.copy(timestamp = run.startedAt)).forEach(::upsertMergedCalendarState)
-                    persistUnknownCalendarStatesLocked(run, now)
-                    appendLogsLocked(
-                        additionalLogs +
-                            LogEntry(
-                                timestamp = now,
-                                level = LogLevel.WARN.name,
-                                message =
-                                    if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
-                                        "检测到上次签到进程异常中断，已安全收尾"
-                                    } else {
-                                        "签到运行发生内部异常，已安全收尾"
-                                    },
-                                detail = "runId=${run.runId}, uncertain=${tasks.count { it.status == TASK_STATUS_RESULT_UNKNOWN }}",
-                            ),
-                        DEFAULT_MAX_LOGS,
-                    )
-                    val completed = runDao.countTerminalTasks(run.runId, TERMINAL_TASK_STATUSES)
-                    runDao.updateRun(
-                        run.copy(
-                            status =
+                                run.runId !in activeRunIds
+                            }
+                        }.forEach { run ->
+                            val before = runDao.getTasks(run.runId)
+                            uncertainTasks += before.count { it.status == TASK_STATUS_RUNNING }
+                            notStartedTasks += before.count { it.status == TASK_STATUS_PENDING }
+                            runDao.transitionUnfinishedTasks(
+                                run.runId,
+                                listOf(TASK_STATUS_RUNNING),
+                                TASK_STATUS_RESULT_UNKNOWN,
+                                RESULT_UNKNOWN_MESSAGE,
+                                now,
+                            )
+                            runDao.transitionUnfinishedTasks(
+                                run.runId,
+                                listOf(TASK_STATUS_PENDING),
+                                TASK_STATUS_INTERRUPTED,
                                 if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
-                                    RUN_STATUS_INTERRUPTED
+                                    "进程中断时任务尚未开始"
                                 } else {
-                                    RUN_STATUS_FAILED
+                                    "运行异常时任务尚未开始"
                                 },
-                            terminationReason = terminationReason.name,
-                            finishedAt = now,
-                            completedTasks = completed,
-                            recordJson = record.toJson().toString(),
-                            updatedAt = now,
-                        ),
-                    )
-                    recoveredRuns++
-                    finalizedRunIds += run.runId
+                                now,
+                            )
+                            val interruptedPrefix =
+                                if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) "process-interrupted" else "internal-error"
+                            runDao.transitionUnfinishedAttempts(
+                                runId = run.runId,
+                                expectedStatuses = listOf(ATTEMPT_STATUS_RUNNING),
+                                newStatus = TASK_STATUS_RESULT_UNKNOWN,
+                                failureCategory = FailureCategory.RESULT_UNKNOWN.name,
+                                errorCode = "$interruptedPrefix-result-unknown",
+                                retryable = false,
+                                finishedAt = now,
+                            )
+                            runDao.transitionUnfinishedAttempts(
+                                runId = run.runId,
+                                expectedStatuses = listOf(ATTEMPT_STATUS_PENDING),
+                                newStatus = TASK_STATUS_INTERRUPTED,
+                                failureCategory =
+                                    if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
+                                        FailureCategory.CANCELLED.name
+                                    } else {
+                                        FailureCategory.INTERNAL_ERROR.name
+                                    },
+                                errorCode = "$interruptedPrefix-before-start",
+                                retryable = true,
+                                finishedAt = now,
+                            )
+                            val tasks = runDao.getTasks(run.runId)
+                            val record = buildAbandonedRecord(run, tasks, now, terminationReason)
+                            historyDao.insert(SignHistoryEntity.fromModel(record))
+                            calendarTaskStatesFromRecord(record.copy(timestamp = run.startedAt)).forEach(::upsertMergedCalendarState)
+                            persistUnknownCalendarStatesLocked(run, now)
+                            appendLogsLocked(
+                                additionalLogs +
+                                    LogEntry(
+                                        timestamp = now,
+                                        level = LogLevel.WARN.name,
+                                        message =
+                                            if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
+                                                "检测到上次签到进程异常中断，已安全收尾"
+                                            } else {
+                                                "签到运行发生内部异常，已安全收尾"
+                                            },
+                                        detail = "runId=${run.runId}, uncertain=${tasks.count { it.status == TASK_STATUS_RESULT_UNKNOWN }}",
+                                    ),
+                                DEFAULT_MAX_LOGS,
+                            )
+                            val completed = runDao.countTerminalTasks(run.runId, TERMINAL_TASK_STATUSES)
+                            runDao.updateRun(
+                                run.copy(
+                                    status =
+                                        if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
+                                            RUN_STATUS_INTERRUPTED
+                                        } else {
+                                            RUN_STATUS_FAILED
+                                        },
+                                    terminationReason = terminationReason.name,
+                                    finishedAt = now,
+                                    completedTasks = completed,
+                                    recordJson = record.toJson().toString(),
+                                    updatedAt = now,
+                                ),
+                            )
+                            recoveredRuns++
+                            finalizedRunIds += run.runId
+                        }
+                    trimHistoryLocked(now, DEFAULT_MAX_HISTORY)
+                    trimCalendarLocked(now)
+                    trimRunsLocked()
                 }
-                trimHistoryLocked(now, DEFAULT_MAX_HISTORY)
-                trimCalendarLocked(now)
-                trimRunsLocked()
+                activeRunIds.removeAll(finalizedRunIds.toSet())
+                RunRecoverySummary(recoveredRuns, uncertainTasks, notStartedTasks)
             }
-            activeRunIds.removeAll(finalizedRunIds.toSet())
-            RunRecoverySummary(recoveredRuns, uncertainTasks, notStartedTasks)
-        }
 
         private fun buildAbandonedRecord(
             run: SignRunEntity,
@@ -577,13 +576,14 @@ class RunPersistenceRepository
         ) {
             val businessDay = dayKey(run.startedAt)
             runDao.getTasks(run.runId).forEach { task ->
-                val result = task.resultJson.takeIf { it.isNotBlank() }?.let { raw ->
-                    try {
-                        TaskResult.fromJson(JSONObject(raw))
-                    } catch (_: Exception) {
-                        null
-                    }
-                } ?: return@forEach
+                val result =
+                    task.resultJson.takeIf { it.isNotBlank() }?.let { raw ->
+                        try {
+                            TaskResult.fromJson(JSONObject(raw))
+                        } catch (_: Exception) {
+                            null
+                        }
+                    } ?: return@forEach
                 if (result.skipped) return@forEach
                 upsertMergedCalendarState(
                     CalendarTaskStateEntity(
@@ -605,7 +605,8 @@ class RunPersistenceRepository
             now: Long,
         ) {
             val businessDay = dayKey(run.startedAt)
-            runDao.getTasks(run.runId)
+            runDao
+                .getTasks(run.runId)
                 .filter { it.status == TASK_STATUS_RESULT_UNKNOWN }
                 .forEach { task ->
                     upsertMergedCalendarState(
@@ -641,7 +642,8 @@ class RunPersistenceRepository
         ) {
             val cutoff = System.currentTimeMillis() - LOG_RETENTION_MILLIS
             val normalized =
-                entries.asSequence()
+                entries
+                    .asSequence()
                     .filter { it.timestamp <= 0L || it.timestamp >= cutoff }
                     .map {
                         LogEntity.fromModel(
@@ -651,8 +653,7 @@ class RunPersistenceRepository
                                 detail = Mask.sensitive(it.detail),
                             ),
                         )
-                    }
-                    .toList()
+                    }.toList()
             if (normalized.isNotEmpty()) logDao.insertAll(normalized)
             logDao.deleteOlderThan(cutoff)
             val overflow = logDao.count() - maxKeep.coerceAtLeast(1)

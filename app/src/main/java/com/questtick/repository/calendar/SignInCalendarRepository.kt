@@ -18,12 +18,9 @@ class SignInCalendarRepository
     ) : StatefulRepository<List<SignInCalendarDay>>(emptyList(), List<SignInCalendarDay>::isEmpty) {
         val days: StateFlow<List<SignInCalendarDay>> = state
 
-        override suspend fun loadFromStore(): List<SignInCalendarDay> =
-            withContext(kotlinx.coroutines.Dispatchers.IO) { store.getSignInCalendarDays() }
+        override suspend fun loadFromStore(): List<SignInCalendarDay> = withContext(kotlinx.coroutines.Dispatchers.IO) { store.getSignInCalendarDays() }
 
-        override suspend fun saveToStore(data: List<SignInCalendarDay>) {
-            throw UnsupportedOperationException("SignInCalendarRepository saves incrementally; use updateFromRecord()")
-        }
+        override suspend fun saveToStore(data: List<SignInCalendarDay>): Unit = throw UnsupportedOperationException("SignInCalendarRepository saves incrementally; use updateFromRecord()")
 
         suspend fun updateFromRecord(record: RunRecord) {
             withContext(kotlinx.coroutines.Dispatchers.IO) { store.updateSignInCalendar(record) }

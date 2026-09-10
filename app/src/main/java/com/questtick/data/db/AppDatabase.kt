@@ -39,20 +39,23 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         private const val DATABASE_NAME = "1"
+
         @Volatile private var instance: AppDatabase? = null
 
         fun get(context: Context): AppDatabase =
             instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    DATABASE_NAME,
-                )
-                    .fallbackToDestructiveMigration(dropAllTables = true)
+                instance ?: Room
+                    .databaseBuilder(
+                        context.applicationContext,
+                        AppDatabase::class.java,
+                        DATABASE_NAME,
+                    ).fallbackToDestructiveMigration(dropAllTables = true)
                     // 使用 WAL 提升读写并发，减少主线程等待。
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .setQueryExecutor(java.util.concurrent.Executors.newFixedThreadPool(2))
-                    .addCallback(
+                    .setQueryExecutor(
+                        java.util.concurrent.Executors
+                            .newFixedThreadPool(2),
+                    ).addCallback(
                         object : RoomDatabase.Callback() {
                             override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                                 super.onOpen(db)
@@ -62,8 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 db.execSQL("PRAGMA temp_store = MEMORY")
                             }
                         },
-                    )
-                    .build()
+                    ).build()
                     .also { instance = it }
             }
     }

@@ -9,43 +9,45 @@ import org.junit.Test
 
 class MailerTemplateTest {
     @Test
-    fun htmlUsesUpstreamGroupedTitleAndBlueWhiteTheme() {
-        val html = Mailer.buildHtml(
-            RunRecord(
-                timestamp = 1L,
-                results = listOf(
-                    TaskResult(
-                        game = "原神-米游社",
-                        gameKey = "Genshin",
-                        accountLabel = "主号",
-                        success = true,
-                        skipped = false,
-                        message = "签到成功",
-                        rewardName = "原石",
-                        rewardCount = "20",
-                        totalSignDay = 1,
-                    ),
-                    TaskResult(
-                        game = "云原神",
-                        gameKey = "CloudYS",
-                        accountLabel = "主号",
-                        success = true,
-                        skipped = false,
-                        message = "领取完成 · 本次+15分钟 · 当前1小时15分钟",
-                    ),
-                    TaskResult(
-                        game = "原神社区米游币打卡",
-                        gameKey = "MysCoin",
-                        accountLabel = "主号",
-                        success = true,
-                        skipped = false,
-                        message = "原神社区打卡成功",
-                        coinBalance = 130,
-                        coinGained = 30,
-                    ),
+    fun htmlUsesGroupedTitleAndFixedDefaultPalette() {
+        val html =
+            Mailer.buildHtml(
+                RunRecord(
+                    timestamp = 1L,
+                    results =
+                        listOf(
+                            TaskResult(
+                                game = "原神-米游社",
+                                gameKey = "Genshin",
+                                accountLabel = "主号",
+                                success = true,
+                                skipped = false,
+                                message = "签到成功",
+                                rewardName = "原石",
+                                rewardCount = "20",
+                                totalSignDay = 1,
+                            ),
+                            TaskResult(
+                                game = "云原神",
+                                gameKey = "CloudYS",
+                                accountLabel = "主号",
+                                success = true,
+                                skipped = false,
+                                message = "领取完成 · 本次+15分钟 · 当前1小时15分钟",
+                            ),
+                            TaskResult(
+                                game = "原神社区米游币打卡",
+                                gameKey = "MysCoin",
+                                accountLabel = "主号",
+                                success = true,
+                                skipped = false,
+                                message = "原神社区打卡成功",
+                                coinBalance = 130,
+                                coinGained = 30,
+                            ),
+                        ),
                 ),
-            ),
-        )
+            )
 
         assertTrue(html.contains("米游社和云游戏签到结果总结"))
         assertTrue(html.contains("签到明细"))
@@ -53,6 +55,7 @@ class MailerTemplateTest {
         assertTrue(html.contains("米游社结果"))
         assertTrue(html.contains("云游戏结果"))
         assertTrue(html.contains("#2563EB"))
+        assertTrue(html.contains("#60A5FA"))
         assertTrue(html.contains("#EFF6FF"))
         assertTrue(html.contains("原石"))
         assertTrue(html.contains("15分钟"))
@@ -62,22 +65,24 @@ class MailerTemplateTest {
 
     @Test
     fun htmlUsesSelectedLanguageAndKeepsAccountLabel() {
-        val html = Mailer.buildHtml(
-            RunRecord(
-                timestamp = 1L,
-                results = listOf(
-                    TaskResult(
-                        game = "原神-米游社",
-                        gameKey = "Genshin",
-                        accountLabel = "开发号",
-                        success = true,
-                        skipped = false,
-                        message = "签到成功",
-                    ),
+        val html =
+            Mailer.buildHtml(
+                RunRecord(
+                    timestamp = 1L,
+                    results =
+                        listOf(
+                            TaskResult(
+                                game = "原神-米游社",
+                                gameKey = "Genshin",
+                                accountLabel = "开发号",
+                                success = true,
+                                skipped = false,
+                                message = "签到成功",
+                            ),
+                        ),
                 ),
-            ),
-            AppLanguage.ENGLISH,
-        )
+                AppLanguage.ENGLISH,
+            )
 
         assertTrue(html.contains("Miyoushe sign-in summary"))
         assertTrue(html.contains("Genshin Impact"))
@@ -98,10 +103,11 @@ class MailerTemplateTest {
                 rewardName = "原石",
                 rewardIcon = "https://upload-bbs.miyoushe.com/upload/trusted.png",
             )
-        val untrusted = trusted.copy(
-            rewardName = "伪造奖励",
-            rewardIcon = "https://evil.example/tracker.png",
-        )
+        val untrusted =
+            trusted.copy(
+                rewardName = "伪造奖励",
+                rewardIcon = "https://evil.example/tracker.png",
+            )
 
         val html = Mailer.buildHtml(RunRecord(timestamp = 1L, results = listOf(trusted, untrusted)))
 
@@ -111,21 +117,23 @@ class MailerTemplateTest {
 
     @Test
     fun htmlEscapesSensitiveLookingHtml() {
-        val html = Mailer.buildHtml(
-            RunRecord(
-                timestamp = 1L,
-                results = listOf(
-                    TaskResult(
-                        game = "原神<script>",
-                        gameKey = "Genshin",
-                        accountLabel = "<主号>",
-                        success = false,
-                        skipped = false,
-                        message = "失败<script>",
-                    ),
+        val html =
+            Mailer.buildHtml(
+                RunRecord(
+                    timestamp = 1L,
+                    results =
+                        listOf(
+                            TaskResult(
+                                game = "原神<script>",
+                                gameKey = "Genshin",
+                                accountLabel = "<主号>",
+                                success = false,
+                                skipped = false,
+                                message = "失败<script>",
+                            ),
+                        ),
                 ),
-            ),
-        )
+            )
 
         assertTrue(html.contains("&lt;主号&gt;"))
         assertTrue(html.contains("原神&lt;script&gt;"))

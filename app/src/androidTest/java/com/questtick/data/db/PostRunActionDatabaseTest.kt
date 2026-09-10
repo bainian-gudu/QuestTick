@@ -19,10 +19,12 @@ class PostRunActionDatabaseTest {
     @Before
     fun setUp() {
         database =
-            Room.inMemoryDatabaseBuilder(
-                ApplicationProvider.getApplicationContext(),
-                AppDatabase::class.java,
-            ).allowMainThreadQueries().build()
+            Room
+                .inMemoryDatabaseBuilder(
+                    ApplicationProvider.getApplicationContext(),
+                    AppDatabase::class.java,
+                ).allowMainThreadQueries()
+                .build()
         repository = PostRunActionRepository(database)
     }
 
@@ -54,10 +56,11 @@ class PostRunActionDatabaseTest {
         insertAction(actionId = "run-mail-unknown:EMAIL", runId = "run-mail-unknown", type = "EMAIL", now = 1_000L)
         repository.claim("run-mail-unknown:EMAIL", now = 1_000L)
 
-        val expired = repository.claim(
-            "run-mail-unknown:EMAIL",
-            now = 1_000L + PostRunActionRepository.LEASE_MILLIS,
-        )
+        val expired =
+            repository.claim(
+                "run-mail-unknown:EMAIL",
+                now = 1_000L + PostRunActionRepository.LEASE_MILLIS,
+            )
 
         assertTrue(expired is PostRunActionRepository.ClaimResult.Terminal)
         val unknown = requireNotNull(database.postRunActionDao().getById("run-mail-unknown:EMAIL"))

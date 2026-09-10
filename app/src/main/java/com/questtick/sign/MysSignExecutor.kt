@@ -41,9 +41,10 @@ internal class MysSignExecutor(
         onTaskStarted: (String, String) -> Boolean,
         onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -> Unit,
     ): Account {
-        val games = acc.selectedMysGames().filter { game ->
-            shouldExecuteTask(progressTaskId(acc, RunTaskType.MYS, game.key))
-        }
+        val games =
+            acc.selectedMysGames().filter { game ->
+                shouldExecuteTask(progressTaskId(acc, RunTaskType.MYS, game.key))
+            }
         if (games.isEmpty() && !(MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled)) {
             log("INFO", "[${acc.label}] 未选择或未配置可执行的米游社签到任务，跳过米游社签到", "")
             return acc
@@ -55,6 +56,7 @@ internal class MysSignExecutor(
                 "[${acc.label}] 米游社签到: ${games.size} 款游戏",
                 "games=${games.joinToString { "${it.key}(act_id=${actIdCache[it.key] ?: it.actId})" }}",
             )
+            log("DEBUG", "米游社请求画像：mobile_web，client_type=5，DS=web_md5_v1", "")
         }
 
         val mys =
@@ -176,6 +178,7 @@ internal class MysSignExecutor(
             val startedAt = System.currentTimeMillis()
             val taskId = progressTaskId(acc, RunTaskType.MYS, MysCoinCheckIn.GAME_KEY)
             onProgress("${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}", done.get(), total)
+            log("DEBUG", "米游币请求画像：android_app，client_type=2，DS=x6_md5_v2", "")
             val outcome =
                 try {
                     limitedRequest("${acc.label} · 原神社区米游币打卡") {
@@ -210,6 +213,12 @@ internal class MysSignExecutor(
                 detail = outcome.detail,
                 elapsedMs = System.currentTimeMillis() - startedAt,
             )
+            if (outcome.warning.isNotBlank()) {
+                log("WARN", "[${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}] ${outcome.warning}", "")
+            }
+            if (!outcome.success) {
+                recordError?.invoke("米游币签到", outcome.detail.ifBlank { outcome.message })
+            }
             onTaskCompleted(
                 taskId,
                 buildMysCoinTaskResult(acc, outcome),
@@ -225,13 +234,14 @@ internal class MysSignExecutor(
         games: List<MysSignIn.GameConfig>,
         onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -> Unit,
     ) {
-        val outcome = MysSignIn.Outcome(
-            success = false,
-            skipped = false,
-            message = "Cookie 自动刷新失败，请重新扫码登录",
-            detail = "keepLoginRefreshFailed=true",
-            failure = TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED),
-        )
+        val outcome =
+            MysSignIn.Outcome(
+                success = false,
+                skipped = false,
+                message = "Cookie 自动刷新失败，请重新扫码登录",
+                detail = "keepLoginRefreshFailed=true",
+                failure = TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED),
+            )
         games.forEach { game ->
             val result = buildMysTaskResult(game.name, game.key, account, outcome)
             logOutcome(

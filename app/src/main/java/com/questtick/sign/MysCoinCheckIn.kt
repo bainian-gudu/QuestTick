@@ -27,6 +27,8 @@ internal object MysCoinCheckIn {
         val coinBalance: Int = -1,
         val coinGained: Int = -1,
         val signDay: Int = 0,
+        /** 任务结果不变时的附加诊断警告，例如余额查询失败。 */
+        val warning: String = "",
     )
 
     private data class CoinState(
@@ -53,13 +55,14 @@ internal object MysCoinCheckIn {
         val bodyText = body.toString()
         // 米游币 App 接口使用独立的 SToken Cookie；不要把普通 cookie_token/ltoken 混入，
         // 否则部分服务端会按冲突的登录态返回 -100。
-        val coinCookie = appAuthCookie(cookie, stoken, mid, uid)
+        val cookieResult = appAuthCookie(cookie, stoken, mid, uid)
+        val coinCookie = cookieResult.cookie
         if (coinCookie.isNullOrBlank()) {
             return Outcome(
                 success = false,
                 alreadyDone = false,
                 message = "米游币打卡凭证不完整，无法形成一致的 Cookie 组合",
-                detail = "缺少完整 V2 或 V1 认证字段；未发送签到请求",
+                detail = "${cookieResult.detail}；未发送签到请求",
             )
         }
         return try {
@@ -94,6 +97,11 @@ internal object MysCoinCheckIn {
                 "beforeBalance=${before?.balance ?: "unknown"}, beforeReceived=${before?.receivedToday ?: "unknown"}, " +
                     "afterBalance=${after?.balance ?: "unknown"}, afterReceived=${after?.receivedToday ?: "unknown"}, " +
                     "beforeState=${beforeRead.detail.ifBlank { "ok" }}, afterState=${afterRead.detail.ifBlank { "ok" }}"
+            val stateWarning =
+                listOf(
+                    beforeRead.detail.takeIf { it.isNotBlank() }?.let { "签到前余额查询失败：$it" },
+                    afterRead.detail.takeIf { it.isNotBlank() }?.let { "签到后余额查询失败：$it" },
+                ).filterNotNull().joinToString("；")
             when {
                 httpSuccess && retcode == 0 ->
                     Outcome(
@@ -104,6 +112,7 @@ internal object MysCoinCheckIn {
                         coinBalance = balance,
                         coinGained = gained,
                         signDay = after?.signDay ?: 0,
+                        warning = stateWarning,
                     )
                 already ->
                     Outcome(
@@ -114,6 +123,7 @@ internal object MysCoinCheckIn {
                         coinBalance = balance,
                         coinGained = if (gained >= 0) gained else 0,
                         signDay = after?.signDay ?: 0,
+                        warning = stateWarning,
                     )
                 else ->
                     Outcome(
@@ -124,6 +134,7 @@ internal object MysCoinCheckIn {
                         coinBalance = balance,
                         coinGained = gained,
                         signDay = after?.signDay ?: 0,
+                        warning = stateWarning,
                     )
             }
         } catch (e: Exception) {
@@ -164,18 +175,30 @@ internal object MysCoinCheckIn {
             }
         } catch (e: Exception) {
             e.throwIfCancellation()
-                StateRead(null, ErrorText.detailOf(e))
+            StateRead(null, ErrorText.detailOf(e))
         }
 
-    private fun detail(httpCode: Int, retcode: Int, message: String): String =
-        "miyoubi check-in http=$httpCode, retcode=$retcode, message=$message, gids=$GENSHIN_GIDS"
+    private fun detail(
+        httpCode: Int,
+        retcode: Int,
+        message: String,
+    ): String = "miyoubi check-in http=$httpCode, retcode=$retcode, message=$message, gids=$GENSHIN_GIDS"
 
-    private fun firstPositiveInt(json: JSONObject, vararg keys: String): Int? =
-        keys.firstNotNullOfOrNull { key -> findInt(json, key)?.takeIf { it > 0 } }
+    private fun firstPositiveInt(
+        json: JSONObject,
+        vararg keys: String,
+    ): Int? = keys.firstNotNullOfOrNull { key -> findInt(json, key)?.takeIf { it > 0 } }
 
-    private fun findInt(json: JSONObject, vararg keys: String): Int? {
+    private fun findInt(
+        json: JSONObject,
+        vararg keys: String,
+    ): Int? {
         val wanted = keys.toSet()
-        fun scan(value: Any?, depth: Int): Int? {
+
+        fun scan(
+            value: Any?,
+            depth: Int,
+        ): Int? {
             if (depth > 3 || value == null) return null
             if (value is JSONObject) {
                 wanted.forEach { key ->
@@ -195,14 +218,14 @@ internal object MysCoinCheckIn {
 
     /**
      * 构造单一版本的 App Cookie。V2/V1 不做字段级混合，也不带网页 cookie_token。
-     * 完整 V2 优先，其次完整 V1；无法形成完整组合时返回 null。
+     * 完整 V2 优先，其次完整 V1；无法形成完整组合时返回带缺失字段诊断的失败结果。
      */
     private fun appAuthCookie(
         cookie: String,
         stoken: String,
         mid: String,
         uid: String,
-    ): String? {
+    ): CookieBuildResult {
         val source = linkedMapOf<String, String>()
         cookie.split(';').forEach { part ->
             val separator = part.indexOf('=')
@@ -210,8 +233,13 @@ internal object MysCoinCheckIn {
                 source[part.substring(0, separator).trim().lowercase()] = part.substring(separator + 1).trim()
             }
         }
+
         fun value(vararg names: String): String = names.firstNotNullOfOrNull { source[it] }.orEmpty()
-        fun sameIdentity(first: String, second: String): Boolean = first.isBlank() || second.isBlank() || first == second
+
+        fun sameIdentity(
+            first: String,
+            second: String,
+        ): Boolean = first.isBlank() || second.isBlank() || first == second
 
         val v2Stoken = value("stoken_v2").ifBlank { stoken.trim() }
         val v2Mid = value("mid", "stmid_v2").ifBlank { mid.trim() }
@@ -219,17 +247,24 @@ internal object MysCoinCheckIn {
         val v2Ltmid = value("ltmid_v2")
         val v2Account = value("account_id_v2").ifBlank { uid.trim() }
         val v2Complete =
-            v2Stoken.isNotBlank() && v2Mid.isNotBlank() && v2Ltoken.isNotBlank() &&
-                v2Ltmid.isNotBlank() && v2Account.isNotBlank() &&
+            v2Stoken.isNotBlank() &&
+                v2Mid.isNotBlank() &&
+                v2Ltoken.isNotBlank() &&
+                v2Ltmid.isNotBlank() &&
+                v2Account.isNotBlank() &&
                 sameIdentity(v2Account, uid.trim())
         if (v2Complete) {
-            return listOf(
-                "stoken_v2=$v2Stoken",
-                "mid=$v2Mid",
-                "ltoken_v2=$v2Ltoken",
-                "ltmid_v2=$v2Ltmid",
-                "account_id_v2=$v2Account",
-            ).joinToString("; ")
+            return CookieBuildResult(
+                cookie =
+                    listOf(
+                        "stoken_v2=$v2Stoken",
+                        "mid=$v2Mid",
+                        "ltoken_v2=$v2Ltoken",
+                        "ltmid_v2=$v2Ltmid",
+                        "account_id_v2=$v2Account",
+                    ).joinToString("; "),
+                detail = "",
+            )
         }
 
         val v1Stoken = value("stoken").ifBlank { stoken.trim() }
@@ -238,18 +273,65 @@ internal object MysCoinCheckIn {
         val v1Stuid = value("stuid").ifBlank { uid.trim() }
         val v1Account = value("account_id").ifBlank { uid.trim() }
         val v1Complete =
-            v1Stoken.isNotBlank() && v1Mid.isNotBlank() && v1Ltoken.isNotBlank() &&
-                v1Stuid.isNotBlank() && v1Account.isNotBlank() &&
-                sameIdentity(v1Stuid, v1Account) && sameIdentity(v1Account, uid.trim())
+            v1Stoken.isNotBlank() &&
+                v1Mid.isNotBlank() &&
+                v1Ltoken.isNotBlank() &&
+                v1Stuid.isNotBlank() &&
+                v1Account.isNotBlank() &&
+                sameIdentity(v1Stuid, v1Account) &&
+                sameIdentity(v1Account, uid.trim())
         if (v1Complete) {
-            return listOf(
-                "stoken=$v1Stoken",
-                "mid=$v1Mid",
-                "stuid=$v1Stuid",
-                "ltoken=$v1Ltoken",
-                "account_id=$v1Account",
-            ).joinToString("; ")
+            return CookieBuildResult(
+                cookie =
+                    listOf(
+                        "stoken=$v1Stoken",
+                        "mid=$v1Mid",
+                        "stuid=$v1Stuid",
+                        "ltoken=$v1Ltoken",
+                        "account_id=$v1Account",
+                    ).joinToString("; "),
+                detail = "",
+            )
         }
-        return null
+        val v2Missing =
+            buildList {
+                if (v2Stoken.isBlank()) add("stoken_v2")
+                if (v2Mid.isBlank()) add("mid")
+                if (v2Ltoken.isBlank()) add("ltoken_v2")
+                if (v2Ltmid.isBlank()) add("ltmid_v2")
+                if (v2Account.isBlank()) add("account_id_v2")
+            }
+        val v1Missing =
+            buildList {
+                if (v1Stoken.isBlank()) add("stoken")
+                if (v1Mid.isBlank()) add("mid")
+                if (v1Ltoken.isBlank()) add("ltoken")
+                if (v1Stuid.isBlank()) add("stuid")
+                if (v1Account.isBlank()) add("account_id")
+            }
+        val conflicts =
+            buildList {
+                if (v1Stuid.isNotBlank() && v1Account.isNotBlank() && v1Stuid != v1Account) {
+                    add("V1 stuid 与 account_id 不一致")
+                }
+                if (uid.isNotBlank() && v2Account.isNotBlank() && uid.trim() != v2Account) {
+                    add("V2 account_id_v2 与保存 UID 不一致")
+                }
+                if (uid.isNotBlank() && v1Account.isNotBlank() && uid.trim() != v1Account) {
+                    add("V1 account_id 与保存 UID 不一致")
+                }
+            }
+        return CookieBuildResult(
+            cookie = null,
+            detail =
+                "V2 Cookie 不完整：missing=[${v2Missing.joinToString(", ")}]; " +
+                    "尝试回退 V1；V1 Cookie 不完整：missing=[${v1Missing.joinToString(", ")}]" +
+                    conflicts.takeIf { it.isNotEmpty() }?.let { "；身份冲突：${it.joinToString("、")}" }.orEmpty(),
+        )
     }
+
+    private data class CookieBuildResult(
+        val cookie: String?,
+        val detail: String,
+    )
 }

@@ -1,5 +1,6 @@
 package com.questtick.repository.base
 
+import com.questtick.log.AppLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -113,12 +114,14 @@ abstract class StatefulRepository<T>(
         }
     }
 
-    private fun stateFor(value: T): RepositoryLoadState =
-        if (isEmpty(value)) RepositoryLoadState.Empty else RepositoryLoadState.Content
+    private fun stateFor(value: T): RepositoryLoadState = if (isEmpty(value)) RepositoryLoadState.Empty else RepositoryLoadState.Content
 
-    private fun logError(message: String, error: Throwable) {
+    private fun logError(
+        message: String,
+        error: Throwable,
+    ) {
         try {
-            android.util.Log.e("StatefulRepository", message, error)
+            AppLog.e("StatefulRepository", message, error)
         } catch (_: RuntimeException) {
             // Android local unit tests use stubbed android.util.Log; logging must never replace the storage error.
         }

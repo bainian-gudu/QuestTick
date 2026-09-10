@@ -26,7 +26,10 @@ class HttpResponseStream internal constructor(
         private set
 
     fun headerValues(name: String): List<String> =
-        rawHeaders.entries.firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }?.value.orEmpty()
+        rawHeaders.entries
+            .firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }
+            ?.value
+            .orEmpty()
 
     fun read(buffer: ByteArray): Int = read(buffer, 0, buffer.size)
 
@@ -74,8 +77,7 @@ class HttpResponseStream internal constructor(
         return bytesRead
     }
 
-    override fun toString(): String =
-        "HttpResponseStream(code=$code, contentLength=$contentLength, bytesRead=$bytesRead, sensitiveFields=redacted)"
+    override fun toString(): String = "HttpResponseStream(code=$code, contentLength=$contentLength, bytesRead=$bytesRead, sensitiveFields=redacted)"
 }
 
 /** 大响应的可注入流式传输边界；响应流不会逃逸出回调作用域。 */

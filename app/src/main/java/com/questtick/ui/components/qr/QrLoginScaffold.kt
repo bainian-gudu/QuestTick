@@ -97,8 +97,7 @@ internal fun QrLoginScaffold(
                                     WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
                                 ),
                             ),
-                        )
-                        .padding(24.dp),
+                        ).padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     QrLoginTopBar(title, onCancelRequest)

@@ -31,5 +31,4 @@ object DsConfigRepository {
         local.setSelectedChannel(channel)
         currentRef.set(local.load(channel))
     }
-
 }

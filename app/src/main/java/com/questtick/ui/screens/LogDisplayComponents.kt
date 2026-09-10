@@ -54,7 +54,11 @@ import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 
 @Composable
-internal fun LogSearchField(value: String, onValueChange: (String) -> Unit, onClear: () -> Unit) {
+internal fun LogSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -74,7 +78,12 @@ internal fun LogSearchField(value: String, onValueChange: (String) -> Unit, onCl
 }
 
 @Composable
-internal fun LogStatChip(text: String, color: Color, selected: Boolean, onClick: () -> Unit) {
+internal fun LogStatChip(
+    text: String,
+    color: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     StatusBadge(
         text = text,
         color = color,
@@ -100,10 +109,16 @@ internal fun DateDivider(date: String) {
 }
 
 @Composable
-internal fun LogRunGroupCard(group: LogRunGroup, expanded: Boolean, onExpandedChange: (Boolean) -> Unit, verbose: Boolean, searchQuery: String) {
+internal fun LogRunGroupCard(
+    group: LogRunGroup,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    verbose: Boolean,
+    searchQuery: String,
+) {
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(AppMotion.ArrowDurationMillis),
+        animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
         label = "logGroupArrowRotation",
     )
     PanelCard(modifier = Modifier.fillMaxWidth()) {
@@ -111,14 +126,23 @@ internal fun LogRunGroupCard(group: LogRunGroup, expanded: Boolean, onExpandedCh
             Row(Modifier.fillMaxWidth().clickableNoRipple { onExpandedChange(!expanded) }, verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(group.title, modifier = Modifier.weight(1f, fill = false), color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        // 分组标题包含动态时间，必须通过同一套模板本地化，避免繁体页面标题与卡片标题不一致。
+                        Text(
+                            localizedText(group.title),
+                            modifier = Modifier.weight(1f, fill = false),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            softWrap = true,
+                        )
                         if (group.running) {
                             Spacer(Modifier.width(6.dp))
                             StatusBadge(text = "进行中", color = WarnAmber, shape = RoundedCornerShape(999.dp), horizontalPadding = 7.dp, verticalPadding = 2.dp, backgroundAlpha = 0.14f, borderAlpha = 0.18f, leadingDotColor = WarnAmber, leadingDotSize = 5.dp, leadingDotSpacing = 4.dp)
                         }
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text(group.subtitle, color = TextSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(group.subtitle, color = TextSecondary, fontSize = 11.sp, softWrap = true)
                 }
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText(if (expanded) "收起" else "展开"), tint = TextSecondary, modifier = Modifier.size(22.dp).rotate(arrowRotation))
@@ -143,51 +167,121 @@ internal fun LogRunGroupCard(group: LogRunGroup, expanded: Boolean, onExpandedCh
 }
 
 @Composable
-private fun LogEntryRows(entries: List<ProcessedLogEntry>, verbose: Boolean, searchQuery: String) {
+private fun LogEntryRows(
+    entries: List<ProcessedLogEntry>,
+    verbose: Boolean,
+    searchQuery: String,
+) {
     Column { entries.forEachIndexed { index, entry -> LogEntryRowWithDivider(entry, verbose, searchQuery, index < entries.lastIndex) } }
 }
 
 @Composable
-private fun LogEntryRowWithDivider(entry: ProcessedLogEntry, verbose: Boolean, searchQuery: String, showDivider: Boolean) {
+private fun LogEntryRowWithDivider(
+    entry: ProcessedLogEntry,
+    verbose: Boolean,
+    searchQuery: String,
+    showDivider: Boolean,
+) {
     ProcessedLogRow(entry, verbose, searchQuery)
     if (showDivider) HorizontalDivider(Modifier.padding(start = 62.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
 }
 
 @Composable
-private fun ProcessedLogRow(entry: ProcessedLogEntry, verbose: Boolean, searchQuery: String) {
-    val color = remember(entry.level) {
-        when (entry.level) {
-            "DEBUG" -> TextSecondary.copy(alpha = 0.85f)
-            "OK" -> SuccessGreen
-            "WARN" -> WarnAmber
-            "ERROR" -> DangerRed
-            else -> TextSecondary
+@Suppress("detekt:LongMethod", "detekt:FunctionNaming")
+private fun ProcessedLogRow(
+    entry: ProcessedLogEntry,
+    verbose: Boolean,
+    searchQuery: String,
+) {
+    val color =
+        remember(entry.level) {
+            when (entry.level) {
+                "DEBUG" -> TextSecondary.copy(alpha = 0.85f)
+                "OK" -> SuccessGreen
+                "WARN" -> WarnAmber
+                "ERROR" -> DangerRed
+                else -> TextSecondary
+            }
         }
-    }
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Text(entry.formattedTime, fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = TextSecondary.copy(alpha = 0.7f), modifier = Modifier.width(62.dp).padding(top = 2.dp), maxLines = 1)
-            StatusBadge(text = entry.level, color = color, modifier = Modifier.padding(end = 8.dp, top = 1.dp), shape = RoundedCornerShape(4.dp), horizontalPadding = 6.dp, verticalPadding = 2.dp, fontSize = 10.sp, fontWeight = FontWeight.Bold, backgroundAlpha = 0.15f)
+            Text(
+                entry.formattedTime,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                color = TextSecondary.copy(alpha = 0.7f),
+                modifier = Modifier.width(62.dp).padding(top = 2.dp),
+                maxLines = 1,
+            )
+            StatusBadge(
+                text = entry.level,
+                color = color,
+                modifier = Modifier.padding(end = 8.dp, top = 1.dp),
+                shape = RoundedCornerShape(4.dp),
+                horizontalPadding = 6.dp,
+                verticalPadding = 2.dp,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                backgroundAlpha = 0.15f,
+            )
             Column(Modifier.weight(1f)) {
-                HighlightedLogText(entry.safeMessage, searchQuery, fontSize = 12.sp, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = if (verbose) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
+                // 日志写入时保留中文源文案；显示时按当前语言翻译，未知服务端文本由本地化入口原样返回。
+                HighlightedLogText(
+                    localizedText(entry.safeMessage),
+                    searchQuery,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = if (verbose) Int.MAX_VALUE else 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         AnimatedVisibility(visible = verbose && entry.safeDetail.isNotBlank(), enter = AppMotion.expandEnter(), exit = AppMotion.expandExit()) {
-            Box(Modifier.padding(start = 62.dp, top = 6.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(color.copy(alpha = 0.06f)).border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 6.dp)) {
-                HighlightedLogText(entry.safeDetail, searchQuery, fontFamily = FontFamily.Monospace, fontSize = 10.sp, lineHeight = 15.sp, color = TextSecondary)
+            Box(
+                Modifier
+                    .padding(start = 62.dp, top = 6.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(color.copy(alpha = 0.06f))
+                    .border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            ) {
+                HighlightedLogText(
+                    localizedText(entry.safeDetail),
+                    searchQuery,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp,
+                    color = TextSecondary,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HighlightedLogText(text: String, query: String, modifier: Modifier = Modifier, fontFamily: FontFamily? = null, fontSize: TextUnit, lineHeight: TextUnit, color: Color, maxLines: Int = Int.MAX_VALUE, overflow: TextOverflow = TextOverflow.Clip) {
+private fun HighlightedLogText(
+    text: String,
+    query: String,
+    modifier: Modifier = Modifier,
+    fontFamily: FontFamily? = null,
+    fontSize: TextUnit,
+    lineHeight: TextUnit,
+    color: Color,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+) {
     val highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
     val annotated = remember(text, query, highlightColor) { highlightedLogText(text, query, highlightColor) }
     Text(annotated, modifier = modifier, fontFamily = fontFamily, fontSize = fontSize, lineHeight = lineHeight, color = color, maxLines = maxLines, overflow = overflow)
 }
 
-private fun highlightedLogText(text: String, query: String, highlightColor: Color): AnnotatedString {
+private fun highlightedLogText(
+    text: String,
+    query: String,
+    highlightColor: Color,
+): AnnotatedString {
     val ranges = logSearchRanges(text, query)
     if (ranges.isEmpty()) return AnnotatedString(text)
     return buildAnnotatedString {

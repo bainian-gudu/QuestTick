@@ -4,7 +4,9 @@ import com.questtick.BuildConfig
 import org.json.JSONObject
 
 /** DS 配置发布通道，用于稳定 / 灰度 / 开发配置隔离。 */
-enum class DsConfigChannel(val key: String) {
+enum class DsConfigChannel(
+    val key: String,
+) {
     STABLE("stable"),
     BETA("beta"),
     DEV("dev"),
@@ -57,6 +59,7 @@ data class DsConfig(
     companion object {
         const val DEFAULT_VERSION = "2026.06.24-default"
         const val DEFAULT_MIN_VERSION = "1.0.0"
+
         // Salt 不再硬编码在源码中，通过 BuildConfig 注入并做简单反混淆
         // 可通过 gradle -PdsSalt=xxx 或环境变量 DS_SALT 覆盖
         val DEFAULT_SALT: String by lazy {
@@ -74,13 +77,13 @@ data class DsConfig(
         const val DEFAULT_UPDATE_TIME = 1_782_230_400_000L
         const val DEFAULT_RSA_SIGNATURE =
             "aeYf655BVkL7U8iU1Myqkeqn4rPaJtSgJYMSS16LuZRU6thZedH+YuE6b5I+vYPcQI6OW3lw7FyzBAwo6aU3SqJYuRXRlo1L" +
-            "kHH734NWmE2FUp+Naz11vXo0eoz2VM6pCosybN0cy9aI5zq5gMdhS/wKp2Kq/m/8KmyjYbjzcYn4LMRY+bRFBwYhz5wjGdid" +
-            "Tttj0ZskwKRt1QDqB3s/ABuxfDVBhHaEUUkhAJqbM1daLdu3/czTVRS5X3nNGKhfj/VSjOds+BsoaPPn2wVCpg/Y55du+659" +
-            "Grz4mWTgbw38PPgBKHXNMdvCIxKyz/FepkoTqAXQwXoXGTejOeVKEvziOuBiwqAjLg/iP/URRt18IuZNLCLjsAqbsNfyS8GO" +
-            "bI1v2OoZ2X76UGeJos3qBFWRsCU7TUArsjjfppeWcxNKwjw/mo4Haxbe/1NFRcCuzeVtOAZePWdaZOp5xDnczH3DKhjvKp/7" +
-            "57lHfvJ2SftAQgOMmvzObPbz38idB/+9ZQlnwm023NI5RE9PSaiesWFqNhmzpJVCI+bfkUfCEHxDcPykqsY4s/uOUukbDDCn" +
-            "2QnuZmkFjNlie+/FfTOKwDjqRCeqoYyDfubRw1OVRreU1kEfxTW9K+isNM1OfY0ts89DiBgkOmu/n19W7HkERqTSlPtCKKlT" +
-            "sIfCIgOqbWs="
+                "kHH734NWmE2FUp+Naz11vXo0eoz2VM6pCosybN0cy9aI5zq5gMdhS/wKp2Kq/m/8KmyjYbjzcYn4LMRY+bRFBwYhz5wjGdid" +
+                "Tttj0ZskwKRt1QDqB3s/ABuxfDVBhHaEUUkhAJqbM1daLdu3/czTVRS5X3nNGKhfj/VSjOds+BsoaPPn2wVCpg/Y55du+659" +
+                "Grz4mWTgbw38PPgBKHXNMdvCIxKyz/FepkoTqAXQwXoXGTejOeVKEvziOuBiwqAjLg/iP/URRt18IuZNLCLjsAqbsNfyS8GO" +
+                "bI1v2OoZ2X76UGeJos3qBFWRsCU7TUArsjjfppeWcxNKwjw/mo4Haxbe/1NFRcCuzeVtOAZePWdaZOp5xDnczH3DKhjvKp/7" +
+                "57lHfvJ2SftAQgOMmvzObPbz38idB/+9ZQlnwm023NI5RE9PSaiesWFqNhmzpJVCI+bfkUfCEHxDcPykqsY4s/uOUukbDDCn" +
+                "2QnuZmkFjNlie+/FfTOKwDjqRCeqoYyDfubRw1OVRreU1kEfxTW9K+isNM1OfY0ts89DiBgkOmu/n19W7HkERqTSlPtCKKlT" +
+                "sIfCIgOqbWs="
         val Default =
             DsConfig(
                 version = DEFAULT_VERSION,

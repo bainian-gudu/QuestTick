@@ -30,7 +30,9 @@ object NetworkModule {
     fun provideOkHttpClient(
         cache: Cache,
         certificatePinner: CertificatePinner,
-    ): OkHttpClient = com.questtick.net.OkHttpClientFactory.provideOkHttpClient(cache, certificatePinner)
+    ): OkHttpClient =
+        com.questtick.net.OkHttpClientFactory
+            .provideOkHttpClient(cache, certificatePinner)
 
     @Provides
     @Singleton

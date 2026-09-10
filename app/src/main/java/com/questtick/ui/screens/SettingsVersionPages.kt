@@ -16,13 +16,13 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.MaterialTheme
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,10 +35,19 @@ import com.questtick.sign.MysAppVersionRepository
 import com.questtick.ui.components.GalaxyBackground
 import com.questtick.ui.components.PanelCard
 import com.questtick.ui.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 /** 米游社与云游戏客户端版本设置页面。 */
 
+private const val VERSION_FETCHING_MIN_MILLIS = 1500L
+private const val VERSION_FETCHED_VISIBLE_MILLIS = 1500L
+
+private enum class VersionFetchState { IDLE, FETCHING, COMPLETED }
+
 @Composable
+@Suppress("detekt:LongMethod", "detekt:FunctionNaming")
 internal fun MysVersionDetailPage(
     settings: AppSettings,
     onSave: (AppSettings) -> Unit,
@@ -47,7 +56,8 @@ internal fun MysVersionDetailPage(
 ) {
     var autoFetchVersion by remember { mutableStateOf(settings.mysAppVersionAutoFetch) }
     var version by remember { mutableStateOf(settings.mysAppVersion) }
-    var fetchingVersion by remember { mutableStateOf(false) }
+    var fetchState by remember { mutableStateOf(VersionFetchState.IDLE) }
+    val feedbackScope = rememberCoroutineScope()
     val currentVersion = settings.mysAppVersion.ifBlank { MysAppVersionRepository.currentVersion }
 
     LaunchedEffect(settings.mysAppVersionAutoFetch) {
@@ -73,11 +83,19 @@ internal fun MysVersionDetailPage(
                 item(key = "mys_version_custom") {
                     PanelCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
-                            VersionSectionHeader(fetchingVersion) {
-                                fetchingVersion = true
+                            VersionSectionHeader(fetchState) {
+                                fetchState = VersionFetchState.FETCHING
+                                val startedAt = System.nanoTime()
                                 onFetchMysVersion { latest ->
-                                    if (!latest.isNullOrBlank()) version = latest
-                                    fetchingVersion = false
+                                    feedbackScope.launch {
+                                        delay(remainingFetchingMillis(startedAt))
+                                        if (!latest.isNullOrBlank()) {
+                                            version = latest
+                                            fetchState = VersionFetchState.COMPLETED
+                                            delay(VERSION_FETCHED_VISIBLE_MILLIS)
+                                        }
+                                        fetchState = VersionFetchState.IDLE
+                                    }
                                 }
                             }
                             Spacer(Modifier.height(14.dp))
@@ -110,7 +128,8 @@ internal fun CloudVersionDetailPage(
     var autoFetch by remember { mutableStateOf(settings.cloudVersionAutoFetch) }
     var ysVersion by remember { mutableStateOf(settings.cloudYsVersion) }
     var srVersion by remember { mutableStateOf(settings.cloudSrVersion) }
-    var fetching by remember { mutableStateOf(false) }
+    var fetchState by remember { mutableStateOf(VersionFetchState.IDLE) }
+    val feedbackScope = rememberCoroutineScope()
     val currentYs = settings.cloudYsVersion.ifBlank { CloudVersionRepository.effectiveYs() }
     val currentSr = settings.cloudSrVersion.ifBlank { CloudVersionRepository.effectiveSr() }
 
@@ -136,13 +155,19 @@ internal fun CloudVersionDetailPage(
                 item(key = "cloud_custom") {
                     PanelCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
-                            VersionSectionHeader(fetching) {
-                                fetching = true
+                            VersionSectionHeader(fetchState) {
+                                fetchState = VersionFetchState.FETCHING
+                                val startedAt = System.nanoTime()
                                 onFetchCloudVersion { versions ->
-                                    fetching = false
-                                    if (versions != null) {
-                                        ysVersion = versions.cloudYs
-                                        srVersion = versions.cloudSr
+                                    feedbackScope.launch {
+                                        delay(remainingFetchingMillis(startedAt))
+                                        if (versions != null) {
+                                            ysVersion = versions.cloudYs
+                                            srVersion = versions.cloudSr
+                                            fetchState = VersionFetchState.COMPLETED
+                                            delay(VERSION_FETCHED_VISIBLE_MILLIS)
+                                        }
+                                        fetchState = VersionFetchState.IDLE
                                     }
                                 }
                             }
@@ -173,13 +198,26 @@ internal fun CloudVersionDetailPage(
 }
 
 @Composable
-private fun VersionSectionHeader(fetching: Boolean, onFetch: () -> Unit) {
+@Suppress("detekt:FunctionNaming")
+private fun VersionSectionHeader(
+    state: VersionFetchState,
+    onFetch: () -> Unit,
+) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         SettingsSectionTitle("自定义版本")
-        SettingsFetchButton(fetching = fetching, onClick = onFetch)
+        SettingsFetchButton(
+            fetching = state == VersionFetchState.FETCHING,
+            completed = state == VersionFetchState.COMPLETED,
+            onClick = onFetch,
+        )
     }
 }
 
+private fun remainingFetchingMillis(startedAtNanos: Long): Long {
+    // 快速请求也保留最短获取状态，随后完成提示再单独展示固定时长。
+    val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos)
+    return (VERSION_FETCHING_MIN_MILLIS - elapsedMillis).coerceAtLeast(0L)
+}
+
 @Composable
-private fun settingsPageInsets() =
-    WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
+private fun settingsPageInsets() = WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))

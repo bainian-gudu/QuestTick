@@ -1,0 +1,15 @@
+# Detekt 规则配置：默认规则集 + 收紧项，存量问题由 baseline.xml 冻结。
+# 裸 Log / println / printStackTrace 由 verifyCodeRedLines 任务守护。
+build:
+  maxIssues: 0
+
+style:
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - value: 'kotlin.io.println'
+      - value: 'kotlin.io.print'
+
+potential-bugs:
+  UnsafeCallOnNullableType:
+    active: true

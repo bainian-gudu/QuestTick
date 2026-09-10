@@ -1,7 +1,7 @@
 package com.questtick.ui.vm
 
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.SingletonImageLoader
@@ -22,13 +22,13 @@ import com.questtick.sign.AppUpdateChecker
 import com.questtick.sign.AppUpdateChecker.AppUpdateInfo
 import com.questtick.sign.AppUpdateInstaller
 import com.questtick.sign.CloudAppVersionFetcher
-import com.questtick.sign.CloudVersionRepository
 import com.questtick.sign.ErrorText
 import com.questtick.sign.MysAppVersionFetcher
-import com.questtick.sign.MysAppVersionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.net.SocketTimeoutException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import okhttp3.Cache
@@ -57,15 +58,33 @@ data class AppUpdateDownloadProgress(
 
 enum class CacheCategory { REWARD_IMAGES, NETWORK_RESPONSES, APP_UPDATES, LOG_EXPORTS, OTHER_TEMP }
 
-data class CacheStorageItem(val category: CacheCategory, val sizeBytes: Long)
+data class CacheStorageItem(
+    val category: CacheCategory,
+    val sizeBytes: Long,
+)
 
 data class CacheStorageState(
     val items: List<CacheStorageItem> = emptyList(),
     val loading: Boolean = true,
     val clearing: CacheCategory? = null,
     val clearingAll: Boolean = false,
+    val scanCompleted: Boolean = false,
+    val clearedCategory: CacheCategory? = null,
+    val clearAllCompleted: Boolean = false,
 ) {
     val totalBytes: Long get() = items.sumOf { it.sizeBytes }
+
+    /** 完成提示显示期间继续锁定按钮，避免状态文字尚未复位时启动下一次操作。 */
+    val busy: Boolean
+        get() =
+            loading ||
+                clearing != null ||
+                clearingAll ||
+                scanCompleted ||
+                clearedCategory != null ||
+                clearAllCompleted
+    val blocksRefresh: Boolean
+        get() = clearing != null || clearingAll || clearedCategory != null || clearAllCompleted
 }
 
 @HiltViewModel
@@ -84,6 +103,8 @@ class SettingsViewModel
             const val TAG = "SettingsViewModel"
             const val AUTO_CHECK_TIMEOUT_MS = 4000L
             const val MANUAL_CHECK_TIMEOUT_MS = 10000L
+            const val CACHE_ACTION_RUNNING_MIN_MILLIS = 1500L
+            const val CACHE_ACTION_COMPLETED_MILLIS = 1500L
             const val REWARD_ICON_DIR = "reward_icons"
             const val COIL_CACHE_DIR = "coil_images"
             const val HTTP_CACHE_DIR = "http_cache"
@@ -95,6 +116,7 @@ class SettingsViewModel
         val settings: StateFlow<AppSettings> = settingsRepository.settings
         val mail: StateFlow<MailSettings> = settingsRepository.mail
         val mailLoaded: StateFlow<Boolean> = settingsRepository.mailLoaded
+
         fun reloadSettings() {
             viewModelScope.launch(Dispatchers.IO) {
                 runCatching { settingsRepository.reloadSettings() }
@@ -109,10 +131,11 @@ class SettingsViewModel
 
         private val _cacheStorageState = MutableStateFlow(CacheStorageState())
         val cacheStorageState: StateFlow<CacheStorageState> = _cacheStorageState.asStateFlow()
+        private var cacheStorageLoaded = false
+        private var cacheStorageRefreshJob: Job? = null
 
         init {
             viewModelScope.launch(Dispatchers.IO) { settingsRepository.reloadMail() }
-            refreshCacheStorage()
         }
 
         private val manualUpdateCheckGeneration = AtomicInteger(0)
@@ -132,7 +155,7 @@ class SettingsViewModel
             appSettings: AppSettings,
             language: String,
         ) {
-            if (!BuildConfig.DEBUG) return
+            // 语言设置与其他设置走同一持久化通道，正式版和 Debug 版行为保持一致。
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     settingsRepository.saveSettings(appSettings.copy(appLanguage = language))
@@ -155,94 +178,164 @@ class SettingsViewModel
 
         fun sendTestMail(mailSettings: MailSettings) {
             viewModelScope.launch(Dispatchers.IO) {
-                Mailer.send(
-                    mailSettings.copy(enabled = true),
-                    RunRecord(System.currentTimeMillis(), emptyList()),
-                    AppLocaleController.resolved(context),
-                ).onFailure {
-                    appErrorLogger.record("测试邮件发送", it)
-                    appStateRepository.triggerToast("发送失败: ${friendlyActionError(it)}")
-                }
+                Mailer
+                    .send(
+                        mailSettings.copy(enabled = true),
+                        RunRecord(System.currentTimeMillis(), emptyList()),
+                        AppLocaleController.resolved(context),
+                    ).onFailure {
+                        appErrorLogger.record("测试邮件发送", it)
+                        appStateRepository.triggerToast("发送失败: ${friendlyActionError(it)}")
+                    }
             }
+        }
+
+        fun ensureCacheStorageLoaded() {
+            if (!cacheStorageLoaded) launchCacheStorageRefresh(showCompletion = false)
         }
 
         fun refreshCacheStorage() {
-            viewModelScope.launch {
-                _cacheStorageState.value = _cacheStorageState.value.copy(loading = true)
-                try {
-                    val items = withContext(Dispatchers.IO) { scanCacheStorage() }
-                    _cacheStorageState.value = _cacheStorageState.value.copy(items = items, loading = false)
-                } catch (e: Exception) {
-                    appErrorLogger.record("缓存扫描", e)
-                    e.throwIfCancellation()
-                    Log.e(TAG, "Failed to scan cache storage", e)
-                    _cacheStorageState.value = _cacheStorageState.value.copy(loading = false)
-                    appStateRepository.triggerToast("扫描缓存失败：${friendlyActionError(e)}")
-                }
+            launchCacheStorageRefresh(showCompletion = true)
+        }
+
+        private fun launchCacheStorageRefresh(showCompletion: Boolean) {
+            val state = _cacheStorageState.value
+            if (cacheStorageRefreshJob?.isActive == true || state.blocksRefresh) {
+                return
             }
+            cacheStorageRefreshJob =
+                viewModelScope.launch {
+                    val startedAtNanos = System.nanoTime()
+                    _cacheStorageState.value =
+                        _cacheStorageState.value.copy(
+                            loading = true,
+                            scanCompleted = false,
+                        )
+                    val scanResult =
+                        runCatching {
+                            withContext(Dispatchers.IO) { scanCacheStorage() }
+                        }
+                    scanResult.exceptionOrNull()?.let { e ->
+                        e.throwIfCancellation()
+                        appErrorLogger.record("缓存扫描", e)
+                        AppLog.e(TAG, "Failed to scan cache storage", e)
+                        _cacheStorageState.value = _cacheStorageState.value.copy(loading = false)
+                        appStateRepository.triggerToast("扫描缓存失败：${friendlyActionError(e)}")
+                    }
+                    scanResult.getOrNull()?.let { items ->
+                        if (showCompletion) delay(remainingCacheActionMillis(startedAtNanos))
+                        _cacheStorageState.value =
+                            _cacheStorageState.value.copy(
+                                items = items,
+                                loading = false,
+                                scanCompleted = showCompletion,
+                            )
+                        cacheStorageLoaded = true
+                        if (showCompletion) {
+                            delay(CACHE_ACTION_COMPLETED_MILLIS)
+                            _cacheStorageState.value = _cacheStorageState.value.copy(scanCompleted = false)
+                        }
+                    }
+                }
         }
 
         fun clearCacheCategory(category: CacheCategory) {
-            if (_cacheStorageState.value.clearing != null || _cacheStorageState.value.clearingAll) return
+            if (_cacheStorageState.value.busy) return
             viewModelScope.launch {
-                _cacheStorageState.value = _cacheStorageState.value.copy(clearing = category)
-                try {
-                    withContext(Dispatchers.IO) { clearCacheCategoryOnDisk(category) }
-                    val items = withContext(Dispatchers.IO) { scanCacheStorage() }
-                    _cacheStorageState.value = _cacheStorageState.value.copy(items = items, clearing = null)
-                    appStateRepository.triggerToast("清理成功")
-                } catch (e: Exception) {
-                    appErrorLogger.record("缓存分类清理", e, "清理 $category 失败")
+                val startedAtNanos = System.nanoTime()
+                _cacheStorageState.value = _cacheStorageState.value.copy(clearing = category, clearedCategory = null)
+                val clearResult =
+                    runCatching {
+                        withContext(Dispatchers.IO) { clearCacheCategoryOnDisk(category) }
+                        withContext(Dispatchers.IO) { scanCacheStorage() }
+                    }
+                clearResult.exceptionOrNull()?.let { e ->
                     e.throwIfCancellation()
-                    Log.e(TAG, "Failed to clear cache category: $category", e)
+                    appErrorLogger.record("缓存分类清理", e, "清理 $category 失败")
+                    AppLog.e(TAG, "Failed to clear cache category: $category", e)
                     _cacheStorageState.value = _cacheStorageState.value.copy(clearing = null)
                     appStateRepository.triggerToast("清理失败：${friendlyActionError(e)}")
+                }
+                clearResult.getOrNull()?.let { items ->
+                    delay(remainingCacheActionMillis(startedAtNanos))
+                    _cacheStorageState.value =
+                        _cacheStorageState.value.copy(
+                            items = items,
+                            clearing = null,
+                            clearedCategory = category,
+                        )
+                    cacheStorageLoaded = true
+                    delay(CACHE_ACTION_COMPLETED_MILLIS)
+                    if (_cacheStorageState.value.clearedCategory == category) {
+                        _cacheStorageState.value = _cacheStorageState.value.copy(clearedCategory = null)
+                    }
                 }
             }
         }
 
         fun clearAllCaches() {
-            if (_cacheStorageState.value.clearing != null || _cacheStorageState.value.clearingAll) return
+            if (_cacheStorageState.value.busy) return
             viewModelScope.launch {
-                _cacheStorageState.value = _cacheStorageState.value.copy(clearingAll = true)
-                try {
-                    withContext(Dispatchers.IO) { CacheCategory.entries.forEach(::clearCacheCategoryOnDisk) }
-                    val items = withContext(Dispatchers.IO) { scanCacheStorage() }
-                    _cacheStorageState.value = _cacheStorageState.value.copy(items = items, clearingAll = false)
-                    appStateRepository.triggerToast("全部缓存已清理")
-                } catch (e: Exception) {
-                    appErrorLogger.record("缓存全部清理", e)
+                val startedAtNanos = System.nanoTime()
+                _cacheStorageState.value = _cacheStorageState.value.copy(clearingAll = true, clearAllCompleted = false)
+                val clearResult =
+                    runCatching {
+                        withContext(Dispatchers.IO) { CacheCategory.entries.forEach(::clearCacheCategoryOnDisk) }
+                        withContext(Dispatchers.IO) { scanCacheStorage() }
+                    }
+                clearResult.exceptionOrNull()?.let { e ->
                     e.throwIfCancellation()
-                    Log.e(TAG, "Failed to clear all caches", e)
+                    appErrorLogger.record("缓存全部清理", e)
+                    AppLog.e(TAG, "Failed to clear all caches", e)
                     _cacheStorageState.value = _cacheStorageState.value.copy(clearingAll = false)
                     appStateRepository.triggerToast("清理失败：${friendlyActionError(e)}")
                 }
+                clearResult.getOrNull()?.let { items ->
+                    delay(remainingCacheActionMillis(startedAtNanos))
+                    _cacheStorageState.value =
+                        _cacheStorageState.value.copy(
+                            items = items,
+                            clearingAll = false,
+                            clearAllCompleted = true,
+                        )
+                    cacheStorageLoaded = true
+                    delay(CACHE_ACTION_COMPLETED_MILLIS)
+                    _cacheStorageState.value = _cacheStorageState.value.copy(clearAllCompleted = false)
+                }
             }
+        }
+
+        private fun remainingCacheActionMillis(startedAtNanos: Long): Long {
+            // 快速磁盘操作也保留最短进行中状态，避免按钮文案一闪而过。
+            val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos)
+            return (CACHE_ACTION_RUNNING_MIN_MILLIS - elapsedMillis).coerceAtLeast(0L)
         }
 
         fun fetchLatestMysVersion(onFinished: (String?) -> Unit) {
             viewModelScope.launch {
                 val result = withContext(Dispatchers.IO) { MysAppVersionFetcher.fetchLatest(httpTransport) }
-                result.onSuccess { version ->
-                    onFinished(version)
-                }.onFailure { e ->
-                    appErrorLogger.record("米游社版本手动获取", e)
-                    appStateRepository.triggerToast("获取失败：${friendlyActionError(e)}")
-                    onFinished(null)
-                }
+                result
+                    .onSuccess { version ->
+                        onFinished(version)
+                    }.onFailure { e ->
+                        appErrorLogger.record("米游社版本手动获取", e)
+                        appStateRepository.triggerToast("获取失败：${friendlyActionError(e)}")
+                        onFinished(null)
+                    }
             }
         }
 
         fun fetchLatestCloudVersion(onFinished: (CloudAppVersionFetcher.CloudVersions?) -> Unit) {
             viewModelScope.launch {
                 val result = withContext(Dispatchers.IO) { CloudAppVersionFetcher.fetchAll(httpTransport) }
-                result.onSuccess { versions ->
-                    onFinished(versions)
-                }.onFailure { e ->
-                    appErrorLogger.record("云游戏版本手动获取", e)
-                    appStateRepository.triggerToast("获取失败：${friendlyActionError(e)}")
-                    onFinished(null)
-                }
+                result
+                    .onSuccess { versions ->
+                        onFinished(versions)
+                    }.onFailure { e ->
+                        appErrorLogger.record("云游戏版本手动获取", e)
+                        appStateRepository.triggerToast("获取失败：${friendlyActionError(e)}")
+                        onFinished(null)
+                    }
             }
         }
 
@@ -268,7 +361,7 @@ class SettingsViewModel
                 }
             viewModelScope.launch {
                 val currentVersion = BuildConfig.VERSION_NAME
-                Log.d(TAG, "checkAppUpdate start: mode=$mode, currentVersion=$currentVersion")
+                AppLog.d(TAG, "checkAppUpdate start: mode=$mode, currentVersion=$currentVersion")
 
                 val cache = readUpdateCache(currentVersion)
                 val isStartupSilent = mode == UpdateCheckMode.StartupSilent
@@ -277,7 +370,7 @@ class SettingsViewModel
                 val timeoutMs = if (isStartupSilent) AUTO_CHECK_TIMEOUT_MS else MANUAL_CHECK_TIMEOUT_MS
                 val cachedUpdate = cache?.info?.takeIf(::isUsableUpdateInfo)
                 if (cachedUpdate != null && !cacheOnlyWarmUp && canTouchUpdatePrompt(manualGeneration)) {
-                    Log.d(TAG, "cache hit has update -> prompt first")
+                    AppLog.d(TAG, "cache hit has update -> prompt first")
                     showUpdatePrompt(cachedUpdate, automatic = isStartupSilent)
                     onFinished(cachedUpdate)
                     refreshCachedUpdatePrompt(
@@ -291,14 +384,14 @@ class SettingsViewModel
                 }
 
                 try {
-                    Log.d(TAG, "fresh update check start")
+                    AppLog.d(TAG, "fresh update check start")
                     val info =
                         withContext(Dispatchers.IO) {
                             kotlinx.coroutines.withTimeoutOrNull(timeoutMs) {
                                 AppUpdateChecker.checkFresh(context, currentVersion, httpTransport)
                             } ?: throw SocketTimeoutException("update check timeout")
                         }
-                    Log.d(TAG, "fresh update check done: latestVersion=${info.latestVersion}, hasUpdate=${info.hasUpdate}")
+                    AppLog.d(TAG, "fresh update check done: latestVersion=${info.latestVersion}, hasUpdate=${info.hasUpdate}")
                     val canTouchPrompt = canTouchUpdatePrompt(manualGeneration)
 
                     if (info.hasUpdate && !cacheOnlyWarmUp && canTouchPrompt) {
@@ -310,12 +403,12 @@ class SettingsViewModel
                 } catch (e: Exception) {
                     e.throwIfCancellation()
                     appErrorLogger.record("应用更新检查", e, "检查更新失败")
-                    Log.w(TAG, "fresh update check failed: mode=$mode", e)
+                    AppLog.w(TAG, "fresh update check failed: mode=$mode", e)
                     val canTouchPrompt = canTouchUpdatePrompt(manualGeneration)
 
                     val fallback = cache?.info?.takeIf(::isUsableUpdateInfo)
                     if (isStartupSilent && fallback != null && canTouchPrompt) {
-                        Log.d(TAG, "startup fallback cache has update -> prompt")
+                        AppLog.d(TAG, "startup fallback cache has update -> prompt")
                         showUpdatePrompt(fallback, automatic = true)
                         onFinished(fallback)
                         return@launch
@@ -329,8 +422,7 @@ class SettingsViewModel
             }
         }
 
-        private fun canTouchUpdatePrompt(manualGeneration: Int): Boolean =
-            manualGeneration == manualUpdateCheckGeneration.get()
+        private fun canTouchUpdatePrompt(manualGeneration: Int): Boolean = manualGeneration == manualUpdateCheckGeneration.get()
 
         private fun isUsableUpdateInfo(info: AppUpdateInfo): Boolean =
             info.hasUpdate &&
@@ -360,7 +452,7 @@ class SettingsViewModel
                     }
                 } catch (e: Exception) {
                     e.throwIfCancellation()
-                    Log.w(TAG, "refresh cached update prompt failed", e)
+                    AppLog.w(TAG, "refresh cached update prompt failed", e)
                 }
             }
         }
@@ -369,7 +461,7 @@ class SettingsViewModel
             withContext(Dispatchers.IO) {
                 try {
                     AppUpdateCache.getFast(context, currentVersion).also {
-                        Log.d(
+                        AppLog.d(
                             TAG,
                             buildString {
                                 append("cache: ")
@@ -381,7 +473,7 @@ class SettingsViewModel
                         )
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "cache read failed", e)
+                    AppLog.w(TAG, "cache read failed", e)
                     null
                 }
             }
@@ -435,7 +527,8 @@ class SettingsViewModel
                     AppUpdateInstaller.cachedApk(context, info)
                 }
             if (cachedApk != null) {
-                AppUpdateInstaller.openInstaller(context, cachedApk)
+                AppUpdateInstaller
+                    .openInstaller(context, cachedApk)
                     .onFailure {
                         appErrorLogger.record("应用安装器", it, "打开安装器失败")
                         appStateRepository.triggerToast("打开安装器失败：${friendlyActionError(it)}")
@@ -474,32 +567,35 @@ class SettingsViewModel
                             )
                     }
                 }
-            downloadResult.onSuccess { apk ->
-                _updateDownloadProgress.value = null
-                AppUpdateInstaller.openInstaller(context, apk)
-                    .onFailure {
-                        appErrorLogger.record("应用安装器", it, "打开安装器失败")
-                        appStateRepository.triggerToast("打开安装器失败：${friendlyActionError(it)}")
-                    }
-            }.onFailure { e ->
-                _updateDownloadProgress.value = null
-                appErrorLogger.record("应用更新下载", e, "下载更新失败")
-                appStateRepository.triggerToast("下载更新失败：${friendlyActionError(e)}")
-            }
+            downloadResult
+                .onSuccess { apk ->
+                    _updateDownloadProgress.value = null
+                    AppUpdateInstaller
+                        .openInstaller(context, apk)
+                        .onFailure {
+                            appErrorLogger.record("应用安装器", it, "打开安装器失败")
+                            appStateRepository.triggerToast("打开安装器失败：${friendlyActionError(it)}")
+                        }
+                }.onFailure { e ->
+                    _updateDownloadProgress.value = null
+                    appErrorLogger.record("应用更新下载", e, "下载更新失败")
+                    appStateRepository.triggerToast("下载更新失败：${friendlyActionError(e)}")
+                }
         }
 
         private fun scanCacheStorage(): List<CacheStorageItem> {
             val imageLoader = SingletonImageLoader.get(context)
             return CacheCategory.entries.map { category ->
-                val size = when (category) {
-                    CacheCategory.REWARD_IMAGES ->
-                        directorySize(File(context.filesDir, REWARD_ICON_DIR)) +
-                            (imageLoader.diskCache?.size ?: directorySize(File(context.cacheDir, COIL_CACHE_DIR)))
-                    CacheCategory.NETWORK_RESPONSES -> networkCache.size()
-                    CacheCategory.APP_UPDATES -> directorySize(File(context.cacheDir, APK_UPDATE_DIR))
-                    CacheCategory.LOG_EXPORTS -> directorySize(File(context.cacheDir, LOG_EXPORT_DIR))
-                    CacheCategory.OTHER_TEMP -> otherCacheTargets().sumOf(::directorySize)
-                }
+                val size =
+                    when (category) {
+                        CacheCategory.REWARD_IMAGES ->
+                            directorySize(File(context.filesDir, REWARD_ICON_DIR)) +
+                                (imageLoader.diskCache?.size ?: directorySize(File(context.cacheDir, COIL_CACHE_DIR)))
+                        CacheCategory.NETWORK_RESPONSES -> networkCache.size()
+                        CacheCategory.APP_UPDATES -> directorySize(File(context.cacheDir, APK_UPDATE_DIR))
+                        CacheCategory.LOG_EXPORTS -> directorySize(File(context.cacheDir, LOG_EXPORT_DIR))
+                        CacheCategory.OTHER_TEMP -> otherCacheTargets().sumOf(::directorySize)
+                    }
                 CacheStorageItem(category, size)
             }
         }
@@ -523,12 +619,14 @@ class SettingsViewModel
             }
         }
 
-        private fun otherCacheTargets(): List<File> = buildList {
-            context.cacheDir.listFiles()
-                ?.filterNot { it.name in MANAGED_CACHE_DIRS }
-                ?.let(::addAll)
-            context.externalCacheDir?.let(::add)
-        }
+        private fun otherCacheTargets(): List<File> =
+            buildList {
+                context.cacheDir
+                    .listFiles()
+                    ?.filterNot { it.name in MANAGED_CACHE_DIRS }
+                    ?.let(::addAll)
+                context.externalCacheDir?.let(::add)
+            }
 
         private fun directorySize(file: File): Long {
             if (!file.exists()) return 0L
@@ -547,8 +645,11 @@ class SettingsViewModel
 
         private fun clearTarget(file: File) {
             if (!file.exists()) return
-            if (file.isDirectory) clearDirectory(file)
-            else if (!file.delete() && file.exists()) throw IOException("无法删除缓存：${file.absolutePath}")
+            if (file.isDirectory) {
+                clearDirectory(file)
+            } else if (!file.delete() && file.exists()) {
+                throw IOException("无法删除缓存：${file.absolutePath}")
+            }
         }
 
         private fun friendlyActionError(e: Throwable?): String =
@@ -557,5 +658,4 @@ class SettingsViewModel
                 e is IllegalStateException && !e.message.isNullOrBlank() -> e.message.orEmpty()
                 else -> ErrorText.fromException(e)
             }
-
     }

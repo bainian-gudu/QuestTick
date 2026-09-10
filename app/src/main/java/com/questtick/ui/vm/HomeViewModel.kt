@@ -16,7 +16,6 @@ import com.questtick.repository.log.AppErrorLogger
 import com.questtick.repository.run.ExecutionStateRepository
 import com.questtick.repository.settings.SettingsRepository
 import com.questtick.security.RootBlockingPolicy
-import com.questtick.security.RootDetectorV2
 import com.questtick.security.RootEnvironmentChecker
 import com.questtick.sign.ErrorText
 import com.questtick.sign.RootBlockMessages
@@ -95,9 +94,12 @@ class HomeViewModel
             }
             val hasRunnableTask =
                 enabledAccounts.any { account ->
-                    account.mysCookie.isNotBlank() || account.hasMysKeepLogin ||
-                        account.genshinToken.isNotBlank() || account.hasGenshinCloudKeepLogin ||
-                        account.starrailToken.isNotBlank() || account.hasStarrailCloudKeepLogin
+                    account.mysCookie.isNotBlank() ||
+                        account.hasMysKeepLogin ||
+                        account.genshinToken.isNotBlank() ||
+                        account.hasGenshinCloudKeepLogin ||
+                        account.starrailToken.isNotBlank() ||
+                        account.hasStarrailCloudKeepLogin
                 }
             if (!hasRunnableTask) {
                 appStateRepository.triggerToast("启用账号未配置 Cookie 或 Token，请先完善账号信息")
@@ -178,13 +180,13 @@ class HomeViewModel
         private fun rootBlockWarning(decision: RootBlockingPolicy.Decision): RootBlockWarningUiState =
             if (decision == RootBlockingPolicy.Decision.BLOCK_CHECK_FAILED) {
                 RootBlockWarningUiState(
-                    title = RootBlockMessages.CheckFailedTitle,
-                    message = RootBlockMessages.CheckFailedContent,
+                    title = RootBlockMessages.CHECK_FAILED_TITLE,
+                    message = RootBlockMessages.CHECK_FAILED_CONTENT,
                 )
             } else {
                 RootBlockWarningUiState(
-                    title = RootBlockMessages.DetectedTitle,
-                    message = RootBlockMessages.DetectedContent,
+                    title = RootBlockMessages.DETECTED_TITLE,
+                    message = RootBlockMessages.DETECTED_CONTENT,
                 )
             }
 

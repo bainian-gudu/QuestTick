@@ -46,7 +46,8 @@ internal class SettingsStore(
 
     fun save(settings: AppSettings) {
         val success =
-            prefs.edit()
+            prefs
+                .edit()
                 .putBoolean("scheduleEnabled", settings.scheduleEnabled)
                 .putInt("scheduleHour", settings.scheduleHour)
                 .putInt("scheduleMinute", settings.scheduleMinute)
@@ -87,7 +88,6 @@ internal class SettingsStore(
                 "LIGHT", "DARK" -> uppercase()
                 else -> "SYSTEM"
             }
-
     }
 
     private fun parseThemePresets(raw: String): List<SavedThemePreset> =
@@ -105,16 +105,18 @@ internal class SettingsStore(
         }.getOrDefault(emptyList())
 
     private fun serializeThemePresets(presets: List<SavedThemePreset>): String =
-        org.json.JSONArray().apply {
-            presets.forEach { preset ->
-                put(
-                    org.json.JSONObject().apply {
-                        put("name", preset.name)
-                        put("primary", preset.primary)
-                        put("secondary", preset.secondary)
-                        put("tertiary", preset.tertiary)
-                    },
-                )
-            }
-        }.toString()
+        org.json
+            .JSONArray()
+            .apply {
+                presets.forEach { preset ->
+                    put(
+                        org.json.JSONObject().apply {
+                            put("name", preset.name)
+                            put("primary", preset.primary)
+                            put("secondary", preset.secondary)
+                            put("tertiary", preset.tertiary)
+                        },
+                    )
+                }
+            }.toString()
 }

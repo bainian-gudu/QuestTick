@@ -35,9 +35,10 @@ internal class CloudSignExecutor(
     ): Account {
         var currentAccount = acc
         val cloud = CloudSignIn(cloudDeviceId, httpTransport)
-        val bindings = acc.selectedCloudBindings(cloudGameBindings).filter { binding ->
-            shouldExecuteTask(progressTaskId(acc, RunTaskType.CLOUD, binding.game.key))
-        }
+        val bindings =
+            acc.selectedCloudBindings(cloudGameBindings).filter { binding ->
+                shouldExecuteTask(progressTaskId(acc, RunTaskType.CLOUD, binding.game.key))
+            }
 
         for ((idx, binding) in bindings.withIndex()) {
             val game = binding.game
@@ -77,6 +78,7 @@ internal class CloudSignExecutor(
             }
 
             log("INFO", "[${currentAccount.label} · ${game.name}] 开始领取云游戏时长…", "tokenLength=${token.length}")
+            log("DEBUG", "云游戏请求画像：cloud_web，client_type=17，认证=combo_token", "")
             var outcome =
                 limitedRequest("${currentAccount.label} · ${game.name} 云游戏签到") {
                     check(onTaskStarted(taskId, "${currentAccount.label} · ${game.name}")) {

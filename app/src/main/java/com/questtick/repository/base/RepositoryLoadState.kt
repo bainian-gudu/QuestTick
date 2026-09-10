@@ -6,7 +6,9 @@ sealed interface RepositoryLoadState {
     data object InitialLoading : RepositoryLoadState
 
     /** 已有可展示快照，正在后台刷新。 */
-    data class Refreshing(val hasContent: Boolean) : RepositoryLoadState
+    data class Refreshing(
+        val hasContent: Boolean,
+    ) : RepositoryLoadState
 
     /** 持久化读取成功且存在内容。 */
     data object Content : RepositoryLoadState

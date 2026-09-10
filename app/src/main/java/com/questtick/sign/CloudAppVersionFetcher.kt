@@ -1,7 +1,7 @@
 package com.questtick.sign
 
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import com.questtick.core.runCatchingCancellable
 import com.questtick.net.HttpTransport
 import com.questtick.net.getIdempotent
@@ -33,33 +33,39 @@ object CloudAppVersionFetcher {
             CloudVersions(ys, sr)
         }
 
-    suspend fun fetchCloudYs(httpTransport: HttpTransport): Result<String> =
-        fetchAppStoreVersion(CLOUD_YS_APP_ID, httpTransport)
+    suspend fun fetchCloudYs(httpTransport: HttpTransport): Result<String> = fetchAppStoreVersion(CLOUD_YS_APP_ID, httpTransport)
 
-    suspend fun fetchCloudSr(httpTransport: HttpTransport): Result<String> =
-        fetchAppStoreVersion(CLOUD_SR_APP_ID, httpTransport)
+    suspend fun fetchCloudSr(httpTransport: HttpTransport): Result<String> = fetchAppStoreVersion(CLOUD_SR_APP_ID, httpTransport)
 
     private suspend fun fetchAppStoreVersion(
         appId: String,
         httpTransport: HttpTransport,
-    ): Result<String> = withContext(Dispatchers.IO) {
-        runCatchingCancellable {
-            val response =
-                httpTransport.getIdempotent(
-                    "$LOOKUP_BASE_URL$appId",
-                    headers = mapOf(
-                        "User-Agent" to Endpoints.effectiveUserAgent(""),
-                        "Accept" to "application/json, text/plain, */*",
-                        "Accept-Language" to "zh-CN,zh;q=0.9",
-                    ),
-                )
-            if (response.code !in 200..299) error("HTTP ${response.code}")
-            val version = response.json().optJSONArray("results")
-                ?.optJSONObject(0)?.optString("version").orEmpty().trim()
-            if (!VERSION_PATTERN.matches(version)) error("未解析到有效版本号")
-            version
+    ): Result<String> =
+        withContext(Dispatchers.IO) {
+            runCatchingCancellable {
+                val response =
+                    httpTransport.getIdempotent(
+                        "$LOOKUP_BASE_URL$appId",
+                        headers =
+                            mapOf(
+                                "User-Agent" to Endpoints.effectiveUserAgent(""),
+                                "Accept" to "application/json, text/plain, */*",
+                                "Accept-Language" to "zh-CN,zh;q=0.9",
+                            ),
+                    )
+                if (response.code !in 200..299) error("HTTP ${response.code}")
+                val version =
+                    response
+                        .json()
+                        .optJSONArray("results")
+                        ?.optJSONObject(0)
+                        ?.optString("version")
+                        .orEmpty()
+                        .trim()
+                if (!VERSION_PATTERN.matches(version)) error("未解析到有效版本号")
+                version
+            }
         }
-    }
 }
 
 /**
@@ -159,7 +165,8 @@ object CloudVersionRepository {
 
     private fun persist(context: Context?) {
         val ctx = context ?: appContext ?: return
-        ctx.getSharedPreferences("signin_cloud_version", Context.MODE_PRIVATE)
+        ctx
+            .getSharedPreferences("signin_cloud_version", Context.MODE_PRIVATE)
             .edit()
             .putString("cloud_ys_version", currentYs)
             .putString("cloud_sr_version", currentSr)
@@ -175,17 +182,19 @@ object CloudVersionRepository {
     suspend fun refreshYs(httpTransport: HttpTransport): Result<String> {
         val ctx = appContext ?: return Result.failure(IllegalStateException("CloudVersionRepository not initialized"))
         if (isWithinRefreshInterval(lastFetchTimeMsYs)) {
-            Log.d(TAG, "skip ys refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentYs=$currentYs")
+            AppLog.d(TAG, "skip ys refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentYs=$currentYs")
             return Result.success(currentYs)
         }
-        Log.d(TAG, "refresh ys: currentYs=$currentYs")
-        return CloudAppVersionFetcher.fetchCloudYs(httpTransport).onSuccess { v ->
-            update(v, null, ctx)
-            Log.d(TAG, "ys refreshed: $v")
-        }.onFailure { e ->
-            recordFetchAttempt(ys = true, timestampMs = System.currentTimeMillis(), context = ctx)
-            Log.w(TAG, "ys refresh failed", e)
-        }
+        AppLog.d(TAG, "refresh ys: currentYs=$currentYs")
+        return CloudAppVersionFetcher
+            .fetchCloudYs(httpTransport)
+            .onSuccess { v ->
+                update(v, null, ctx)
+                AppLog.d(TAG, "ys refreshed: $v")
+            }.onFailure { e ->
+                recordFetchAttempt(ys = true, timestampMs = System.currentTimeMillis(), context = ctx)
+                AppLog.w(TAG, "ys refresh failed", e)
+            }
     }
 
     /**
@@ -195,17 +204,19 @@ object CloudVersionRepository {
     suspend fun refreshSr(httpTransport: HttpTransport): Result<String> {
         val ctx = appContext ?: return Result.failure(IllegalStateException("CloudVersionRepository not initialized"))
         if (isWithinRefreshInterval(lastFetchTimeMsSr)) {
-            Log.d(TAG, "skip sr refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentSr=$currentSr")
+            AppLog.d(TAG, "skip sr refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentSr=$currentSr")
             return Result.success(currentSr)
         }
-        Log.d(TAG, "refresh sr: currentSr=$currentSr")
-        return CloudAppVersionFetcher.fetchCloudSr(httpTransport).onSuccess { v ->
-            update(null, v, ctx)
-            Log.d(TAG, "sr refreshed: $v")
-        }.onFailure { e ->
-            recordFetchAttempt(ys = false, timestampMs = System.currentTimeMillis(), context = ctx)
-            Log.w(TAG, "sr refresh failed", e)
-        }
+        AppLog.d(TAG, "refresh sr: currentSr=$currentSr")
+        return CloudAppVersionFetcher
+            .fetchCloudSr(httpTransport)
+            .onSuccess { v ->
+                update(null, v, ctx)
+                AppLog.d(TAG, "sr refreshed: $v")
+            }.onFailure { e ->
+                recordFetchAttempt(ys = false, timestampMs = System.currentTimeMillis(), context = ctx)
+                AppLog.w(TAG, "sr refresh failed", e)
+            }
     }
 
     /**

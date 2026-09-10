@@ -67,6 +67,8 @@ internal object TaskFailureClassifier {
                 "token expired",
                 "combo_token",
             ) -> return TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED)
+            containsAny(lower, "凭证不完整", "cookie 组合", "cookie组合", "认证字段", "身份冲突") ->
+                return TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED, "credential_incomplete")
             containsAny(lower, "请求超时", "连接超时", "timeout", "timed out") ->
                 return TaskFailureDescriptor(FailureCategory.NETWORK_TIMEOUT, retryable = true)
             containsAny(lower, "无法解析服务器", "无法连接", "网络不可达", "network unavailable") ->
@@ -117,28 +119,31 @@ internal object TaskFailureClassifier {
             is TransportFailureException -> fromTransportFailure(error)
             is SocketTimeoutException,
             is InterruptedIOException,
-            -> TaskFailureDescriptor(
-                FailureCategory.NETWORK_TIMEOUT,
-                errorCode = error.javaClass.simpleName,
-                retryable = true,
-            )
+            ->
+                TaskFailureDescriptor(
+                    FailureCategory.NETWORK_TIMEOUT,
+                    errorCode = error.javaClass.simpleName,
+                    retryable = true,
+                )
             is UnknownHostException,
             is ConnectException,
             is NoRouteToHostException,
             is SocketException,
-            -> TaskFailureDescriptor(
-                FailureCategory.NETWORK_UNAVAILABLE,
-                errorCode = error.javaClass.simpleName,
-                retryable = true,
-            )
+            ->
+                TaskFailureDescriptor(
+                    FailureCategory.NETWORK_UNAVAILABLE,
+                    errorCode = error.javaClass.simpleName,
+                    retryable = true,
+                )
             is SSLException -> TaskFailureDescriptor(FailureCategory.NETWORK_UNAVAILABLE, "SSLException")
             is JSONException -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "JSONException", retryable = true)
             is ResponseTooLargeException ->
                 TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "response-too-large", retryable = true)
-            else -> TaskFailureDescriptor(
-                FailureCategory.INTERNAL_ERROR,
-                errorCode = error?.javaClass?.simpleName.orEmpty(),
-            )
+            else ->
+                TaskFailureDescriptor(
+                    FailureCategory.INTERNAL_ERROR,
+                    errorCode = error?.javaClass?.simpleName.orEmpty(),
+                )
         }
 
     private fun fromHttpFailure(error: HttpTransportException): TaskFailureDescriptor {
@@ -195,13 +200,15 @@ internal object TaskFailureClassifier {
             }
         val retryable =
             error.retryableForIdempotentRead ||
-                (!error.phase.requestMayHaveBeenSent &&
-                    error.kind in
-                    setOf(
-                        com.questtick.net.TransportFailureKind.DNS,
-                        com.questtick.net.TransportFailureKind.CONNECT,
-                        com.questtick.net.TransportFailureKind.CONNECT_TIMEOUT,
-                    ))
+                (
+                    !error.phase.requestMayHaveBeenSent &&
+                        error.kind in
+                        setOf(
+                            com.questtick.net.TransportFailureKind.DNS,
+                            com.questtick.net.TransportFailureKind.CONNECT,
+                            com.questtick.net.TransportFailureKind.CONNECT_TIMEOUT,
+                        )
+                )
         return TaskFailureDescriptor(
             category,
             errorCode = "transport:${error.kind.name.lowercase()}:${error.phase.name.lowercase()}",
@@ -210,10 +217,18 @@ internal object TaskFailureClassifier {
     }
 
     private fun extractRetcode(text: String): Int? =
-        RETCODE_PATTERN.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        RETCODE_PATTERN
+            .find(text)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
 
     private fun extractHttpCode(text: String): Int? =
-        HTTP_PATTERN.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        HTTP_PATTERN
+            .find(text)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
 
     private fun containsAny(
         text: String,

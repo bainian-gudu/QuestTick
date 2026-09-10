@@ -8,10 +8,12 @@ object Endpoints {
 
     // 米游社请求使用的默认版本；实际请求优先使用本地获取的版本。
     const val APP_VERSION = "2.109.0"
+
     /** 米游社 App 接口使用的校验密钥。 */
     const val VERIFY_KEY = "bll8iq97cem8"
 
     const val CHANNEL = "miyousheluodi"
+
     /** 普通米游社网页接口使用的 mobile-web 请求画像。 */
     const val WEB_USER_AGENT_PREFIX =
         "Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 " +
@@ -21,8 +23,7 @@ object Endpoints {
     fun effectiveAppVersion(customVersion: String): String = customVersion.ifBlank { APP_VERSION }
 
     /** 根据当前接口版本生成 mobile-web User-Agent。 */
-    fun effectiveUserAgent(customVersion: String): String =
-        WEB_USER_AGENT_PREFIX + effectiveAppVersion(customVersion)
+    fun effectiveUserAgent(customVersion: String): String = WEB_USER_AGENT_PREFIX + effectiveAppVersion(customVersion)
 
     /** 兼容不带版本参数的网页请求。 */
     val USER_AGENT: String

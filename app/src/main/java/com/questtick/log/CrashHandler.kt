@@ -92,7 +92,11 @@ class CrashHandler private constructor(
 
     private fun writeCrashFile(report: String) {
         val dir = File(context.filesDir, CRASH_DIR).apply { mkdirs() }
-        dir.listFiles()?.sortedByDescending { it.lastModified() }?.drop(MAX_CRASH_FILES - 1)?.forEach { it.delete() }
+        dir
+            .listFiles()
+            ?.sortedByDescending { it.lastModified() }
+            ?.drop(MAX_CRASH_FILES - 1)
+            ?.forEach { it.delete() }
         File(dir, "crash_${fileNameFmt.format(Date())}.txt").writeText(report)
     }
 

@@ -67,6 +67,59 @@ class LogsLogicTest {
     }
 
     @Test
+    fun buildLogGroupsDoesNotMergeAcrossDates() {
+        val start = entry(86_400_000L - 2_000L, "INFO", message = "开始执行签到", dateKey = "2026-07-03")
+        val end = entry(86_400_000L + 1_000L, "INFO", message = "签到结束", dateKey = "2026-07-04")
+
+        val groups = buildLogGroups(listOf(start, end))
+
+        assertEquals(2, groups.size)
+        assertEquals(listOf(start), groups[0].entries)
+        assertEquals(listOf(end), groups[1].entries)
+    }
+
+    @Test
+    fun buildLogGroupsDoesNotMergeRunAfterInterveningOtherLog() {
+        val firstStart = entry(1_000, "INFO", message = "开始执行签到")
+        val firstEnd = entry(2_000, "INFO", message = "签到结束")
+        val other = entry(3_000, "WARN", message = "应用功能异常")
+        val secondStart = entry(4_000, "INFO", message = "开始执行签到")
+        val secondEnd = entry(5_000, "INFO", message = "签到结束")
+
+        val groups = buildLogGroups(listOf(firstStart, firstEnd, other, secondStart, secondEnd))
+
+        assertEquals(3, groups.size)
+        assertEquals(listOf(firstStart, firstEnd), groups[0].entries)
+        assertEquals(listOf(other), groups[1].entries)
+        assertEquals(listOf(secondStart, secondEnd), groups[2].entries)
+    }
+
+    @Test
+    fun buildLogGroupsDoesNotMergeSameTypeStartsAcrossAnInterveningLog() {
+        val firstStart = entry(1_000, "INFO", message = "开始执行签到")
+        val other = entry(2_000, "WARN", message = "网络状态发生变化")
+        val secondStart = entry(3_000, "INFO", message = "开始执行签到")
+        val secondEnd = entry(4_000, "INFO", message = "签到结束")
+
+        val groups = buildLogGroups(listOf(firstStart, other, secondStart, secondEnd))
+
+        assertEquals(2, groups.size)
+        assertEquals(listOf(firstStart, other), groups[0].entries)
+        assertEquals(listOf(secondStart, secondEnd), groups[1].entries)
+    }
+
+    @Test
+    fun buildLogGroupsSortsEntriesByTimestampBeforeGrouping() {
+        val end = entry(3_000, "INFO", message = "签到结束")
+        val start = entry(1_000, "INFO", message = "开始执行签到")
+        val ok = entry(2_000, "OK", message = "签到成功")
+
+        val group = buildLogGroups(listOf(end, ok, start)).single()
+
+        assertEquals(listOf(start, ok, end), group.entries)
+    }
+
+    @Test
     fun buildLogGroupsMarksUnfinishedRunAsRunning() {
         val start = entry(1000, "INFO", message = "开始执行签到")
         val warn = entry(2000, "WARN", message = "等待接口响应")
@@ -237,7 +290,6 @@ class LogsLogicTest {
         assertTrue(isLogGroupExpanded(initialGroup, expandedKeys.toSet()))
         assertTrue(isLogGroupExpanded(mergedGroup, expandedKeys.toSet()))
     }
-
 
     @Test
     fun updateExpandedLogGroupKeysKeepsExpandedWhenPartialGroupBecomesComplete() {

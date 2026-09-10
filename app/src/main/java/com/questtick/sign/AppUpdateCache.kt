@@ -122,22 +122,23 @@ object AppUpdateCache {
         memoryCache.set(MemoryEntry(info, now, etag))
         // 磁盘侧只做轻量落盘，避免影响界面线程。
         try {
-            prefs(context).edit()
+            prefs(context)
+                .edit()
                 .putString(
                     KEY_JSON,
-                    JSONObject().apply {
-                        put("latestVersion", info.latestVersion)
-                        put("tagName", info.tagName)
-                        put("releaseUrl", info.releaseUrl)
-                        put("releaseNotes", info.releaseNotes)
-                        put("publishedAt", info.publishedAt)
-                        put("apkName", info.apkName)
-                        put("apkUrl", info.apkUrl)
-                        put("apkSha256", info.apkSha256)
-                        put("hasUpdate", info.hasUpdate)
-                    }.toString(),
-                )
-                .putLong(KEY_TIMESTAMP, now)
+                    JSONObject()
+                        .apply {
+                            put("latestVersion", info.latestVersion)
+                            put("tagName", info.tagName)
+                            put("releaseUrl", info.releaseUrl)
+                            put("releaseNotes", info.releaseNotes)
+                            put("publishedAt", info.publishedAt)
+                            put("apkName", info.apkName)
+                            put("apkUrl", info.apkUrl)
+                            put("apkSha256", info.apkSha256)
+                            put("hasUpdate", info.hasUpdate)
+                        }.toString(),
+                ).putLong(KEY_TIMESTAMP, now)
                 .putString(KEY_ETAG, etag)
                 .putString(KEY_CURRENT_VERSION, info.currentVersion)
                 .apply()
@@ -155,8 +156,7 @@ object AppUpdateCache {
         return prefs(context).getString(KEY_ETAG, "").orEmpty()
     }
 
-    private fun prefs(context: Context): SharedPreferences =
-        context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private fun prefs(context: Context): SharedPreferences = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
     // 轻量版本比较，避免为简单比较引入额外对象分配。
     private fun isVersionNewerFast(
@@ -185,5 +185,4 @@ object AppUpdateCache {
         }
         return 0
     }
-
 }

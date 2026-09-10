@@ -50,6 +50,7 @@ import com.questtick.ui.vm.CacheStorageState
 /** 设置页中与缓存和许可证相关的独立页面。 */
 
 @Composable
+@Suppress("detekt:LongMethod", "detekt:FunctionNaming")
 internal fun CacheDetailPage(
     state: CacheStorageState,
     onRefresh: () -> Unit,
@@ -57,7 +58,7 @@ internal fun CacheDetailPage(
     onClearAll: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val busy = state.loading || state.clearing != null || state.clearingAll
+    val busy = state.busy
     GalaxyBackground {
         Column(
             Modifier.fillMaxSize().windowInsetsPadding(
@@ -72,7 +73,12 @@ internal fun CacheDetailPage(
                 item(key = "cache_summary") {
                     SettingsActionCard(
                         title = "总占用 ${formatCacheSize(state.totalBytes)}",
-                        value = if (state.loading) "扫描中…" else "重新扫描",
+                        value =
+                            when {
+                                state.loading -> "扫描中…"
+                                state.scanCompleted -> "扫描完成"
+                                else -> "重新扫描"
+                            },
                         enabled = !busy,
                     ) { onRefresh() }
                 }
@@ -82,6 +88,7 @@ internal fun CacheDetailPage(
                 ) { index ->
                     val item = state.items[index]
                     val clearingThis = state.clearing == item.category || state.clearingAll
+                    val clearedThis = state.clearedCategory == item.category
                     val canClear = item.sizeBytes > 0L && !busy
                     SettingsCard {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -94,7 +101,13 @@ internal fun CacheDetailPage(
                             }
                             Spacer(Modifier.width(8.dp))
                             TextButton(onClick = { onClearCategory(item.category) }, enabled = canClear) {
-                                Text(if (clearingThis) "清理中…" else "清理")
+                                Text(
+                                    when {
+                                        clearingThis -> "清理中…"
+                                        clearedThis -> "清理完成"
+                                        else -> "清理"
+                                    },
+                                )
                             }
                         }
                     }
@@ -104,7 +117,12 @@ internal fun CacheDetailPage(
                 }
                 item(key = "cache_clear_all") {
                     PrimaryButton(
-                        text = if (state.clearingAll) "清理中…" else "清理全部缓存",
+                        text =
+                            when {
+                                state.clearingAll -> "清理中…"
+                                state.clearAllCompleted -> "清理完成"
+                                else -> "清理全部缓存"
+                            },
                         enabled = state.totalBytes > 0L && !busy,
                         onClick = onClearAll,
                     )
@@ -156,7 +174,10 @@ internal fun LicenseDetailDialog(
                     textAlign = TextAlign.Center,
                 )
                 Box(
-                    Modifier.align(Alignment.CenterEnd).size(40.dp).clip(CircleShape)
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(40.dp)
+                        .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.18f))
                         .clickableNoRipple(onDismiss),
                     contentAlignment = Alignment.Center,

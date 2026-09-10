@@ -53,9 +53,11 @@ object ConfigVerifier {
     private fun decodeBase64(value: String): ByteArray {
         val normalized = value.trim()
         return try {
-            val decoder = Class.forName("java.util.Base64")
-                .getMethod("getDecoder")
-                .invoke(null)
+            val decoder =
+                Class
+                    .forName("java.util.Base64")
+                    .getMethod("getDecoder")
+                    .invoke(null)
             decoder.javaClass
                 .getMethod("decode", String::class.java)
                 .invoke(decoder, normalized) as ByteArray
@@ -80,16 +82,20 @@ object ConfigVerifier {
     }
 
     private fun String.versionParts(): List<Int> =
-        Regex("\\d+").findAll(this).map { it.value.toIntOrNull() ?: 0 }.toList().ifEmpty { listOf(0) }
+        Regex("\\d+")
+            .findAll(this)
+            .map { it.value.toIntOrNull() ?: 0 }
+            .toList()
+            .ifEmpty { listOf(0) }
 
     /** App 内置 DS 配置公钥，仅用于验签；私钥不随应用发布。 */
     private const val PUBLIC_KEY_DER_BASE64 =
         "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnenIhi2RUN7q1hLvwBQn08gEMDl0IAq9ar8QPIi+BPP3VKFJjWbc" +
-        "h9xPj+3o/KvMILYulTagfvIecrz8abDHLANnV/tTICbRbCMIrXsfg8V0piqPiSQGN72MX+e9DcQyhBHNM+woWjiV1CK122qE" +
-        "XkvKwQ3vZOAF5dLtKyfR8iFzyxG3tSwa/xzowkw+cGc9flcdYjAx1ODi7+NbAbabZ06Ikbl/4NY5VHuVAEGflj/GCakkzwMd" +
-        "IASNf9xlQj0tIvVtEvL85RhohE/aelx24QSxRLrl/Pv8Z184gkg76Edw1F0BfsMr416NjwyQz0Sk7m7b5F+PWU/GKhg2xkRR" +
-        "2d2wDRw30rq+nsKyupJ9XizE2aIBLjmcv2XCC8cS5XqRu205OLzzA4b1ohoYYDlpZ2NRFGFSg3lqNW1m8RINGV8tET1AJv8/" +
-        "lI4KEnFuebtTvyYszx39YXHK0g2fKzg5AWKZcHwY1sgrk/M7WcJBZmIMJJA4zIUJVNpY48qc3RU70TEpaM/27yqX7nAIwBLJ" +
-        "GiDH/7EPPIv22ImVRLFHpGbI9mZYXeHqRaX5dn4RIs1fI6sEVU44N4h4DwY5O7+IkziCb6oQpQCT+q9JlWSoqLKgu+/R1JO/" +
-        "h5bm6Pj6+MWdnf2SegxfH/cSsXfzkc4vRRMPoFMOnUnj3WwGamhB/ucCAwEAAQ=="
+            "h9xPj+3o/KvMILYulTagfvIecrz8abDHLANnV/tTICbRbCMIrXsfg8V0piqPiSQGN72MX+e9DcQyhBHNM+woWjiV1CK122qE" +
+            "XkvKwQ3vZOAF5dLtKyfR8iFzyxG3tSwa/xzowkw+cGc9flcdYjAx1ODi7+NbAbabZ06Ikbl/4NY5VHuVAEGflj/GCakkzwMd" +
+            "IASNf9xlQj0tIvVtEvL85RhohE/aelx24QSxRLrl/Pv8Z184gkg76Edw1F0BfsMr416NjwyQz0Sk7m7b5F+PWU/GKhg2xkRR" +
+            "2d2wDRw30rq+nsKyupJ9XizE2aIBLjmcv2XCC8cS5XqRu205OLzzA4b1ohoYYDlpZ2NRFGFSg3lqNW1m8RINGV8tET1AJv8/" +
+            "lI4KEnFuebtTvyYszx39YXHK0g2fKzg5AWKZcHwY1sgrk/M7WcJBZmIMJJA4zIUJVNpY48qc3RU70TEpaM/27yqX7nAIwBLJ" +
+            "GiDH/7EPPIv22ImVRLFHpGbI9mZYXeHqRaX5dn4RIs1fI6sEVU44N4h4DwY5O7+IkziCb6oQpQCT+q9JlWSoqLKgu+/R1JO/" +
+            "h5bm6Pj6+MWdnf2SegxfH/cSsXfzkc4vRRMPoFMOnUnj3WwGamhB/ucCAwEAAQ=="
 }

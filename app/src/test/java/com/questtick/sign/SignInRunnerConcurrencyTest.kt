@@ -1,7 +1,6 @@
 package com.questtick.sign
 
 import android.content.Context
-import com.questtick.data.Account
 import com.questtick.data.AppSettings
 import com.questtick.data.SecureStore
 import com.questtick.repository.account.AccountRepository
@@ -23,7 +22,6 @@ import org.junit.Test
  * SignInRunner 基础测试
  */
 class SignInRunnerConcurrencyTest {
-
     private lateinit var context: Context
     private lateinit var store: SecureStore
     private lateinit var accountRepo: AccountRepository
@@ -55,20 +53,21 @@ class SignInRunnerConcurrencyTest {
 
     @Test
     fun `SignInRunner can be instantiated`() {
-        val runner = SignInRunner(
-            context = context,
-            store = store,
-            accountRepository = accountRepo,
-            historyRepository = historyRepo,
-            signInCalendarRepository = calendarRepo,
-            logRepository = logRepo,
-            runPersistenceRepository = runPersistenceRepo,
-            rootEnvironmentChecker = rootEnvironmentChecker,
-            httpTransport = HttpTransport { error("network not expected") },
-            authRepository = authRepo,
-            postRunActionScheduler = postRunActionScheduler,
-            parallel = true
-        )
+        val runner =
+            SignInRunner(
+                context = context,
+                store = store,
+                accountRepository = accountRepo,
+                historyRepository = historyRepo,
+                signInCalendarRepository = calendarRepo,
+                logRepository = logRepo,
+                runPersistenceRepository = runPersistenceRepo,
+                rootEnvironmentChecker = rootEnvironmentChecker,
+                httpTransport = HttpTransport { error("network not expected") },
+                authRepository = authRepo,
+                postRunActionScheduler = postRunActionScheduler,
+                parallel = true,
+            )
         assertNotNull(runner)
     }
 }

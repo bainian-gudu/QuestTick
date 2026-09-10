@@ -89,7 +89,11 @@ internal fun buildMysCoinTaskResult(
         alreadySigned = outcome.alreadyDone,
         message = Mask.sensitive(outcome.message),
         rewardName = if (outcome.coinGained >= 0) "米游币" else "",
-        rewardCount = outcome.coinGained.takeIf { it >= 0 }?.toString().orEmpty(),
+        rewardCount =
+            outcome.coinGained
+                .takeIf { it >= 0 }
+                ?.toString()
+                .orEmpty(),
         // 米游币使用应用内置图标，避免记录展开时访问远程图片地址。
         rewardIcon = "",
         totalSignDay = outcome.signDay,

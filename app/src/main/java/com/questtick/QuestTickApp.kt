@@ -2,7 +2,7 @@ package com.questtick
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
+import com.questtick.log.AppLog
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil3.ImageLoader
@@ -29,7 +29,10 @@ import okio.Path.Companion.toOkioPath
 import javax.inject.Inject
 
 @HiltAndroidApp
-class QuestTickApp : Application(), SingletonImageLoader.Factory, Configuration.Provider {
+class QuestTickApp :
+    Application(),
+    SingletonImageLoader.Factory,
+    Configuration.Provider {
     private companion object {
         const val TAG = "QuestTickApp"
     }
@@ -48,7 +51,8 @@ class QuestTickApp : Application(), SingletonImageLoader.Factory, Configuration.
 
     override val workManagerConfiguration: Configuration
         get() =
-            Configuration.Builder()
+            Configuration
+                .Builder()
                 // WorkManager 复用受限执行器，避免后台任务占满 IO 线程。
                 .setExecutor(initDispatcher.asExecutor())
                 .setWorkerFactory(workerFactory)
@@ -61,20 +65,21 @@ class QuestTickApp : Application(), SingletonImageLoader.Factory, Configuration.
 
     // 全局 Coil ImageLoader：面向小尺寸奖励图标控制缓存占用。
     override fun newImageLoader(context: Context): ImageLoader =
-        ImageLoader.Builder(context)
+        ImageLoader
+            .Builder(context)
             .memoryCache {
-                MemoryCache.Builder()
+                MemoryCache
+                    .Builder()
                     .maxSizePercent(context, 0.18)
                     .strongReferencesEnabled(true)
                     .build()
-            }
-            .diskCache {
-                DiskCache.Builder()
+            }.diskCache {
+                DiskCache
+                    .Builder()
                     .directory(context.cacheDir.resolve("coil_images").toOkioPath())
                     .maxSizeBytes(20L * 1024 * 1024)
                     .build()
-            }
-            .build()
+            }.build()
 
     override fun onCreate() {
         super.onCreate()
@@ -91,14 +96,14 @@ class QuestTickApp : Application(), SingletonImageLoader.Factory, Configuration.
                 secureStore.getAppSettings().cloudSrVersion,
             )
         } catch (t: Throwable) {
-            Log.w(TAG, "CloudVersionRepository 初始化失败", t)
+            AppLog.w(TAG, "CloudVersionRepository 初始化失败", t)
             appErrorLogger.record("云游戏版本初始化", t)
         }
         // 初始化米游社版本缓存
         try {
             MysAppVersionRepository.initialize(this)
         } catch (t: Throwable) {
-            Log.w(TAG, "MysAppVersionRepository 初始化失败", t)
+            AppLog.w(TAG, "MysAppVersionRepository 初始化失败", t)
             appErrorLogger.record("米游社版本初始化", t)
         }
 
@@ -107,7 +112,7 @@ class QuestTickApp : Application(), SingletonImageLoader.Factory, Configuration.
                 // 先恢复上次进程遗留的运行会话，再加载历史与日历，避免 UI 短暂展示不一致状态。
                 val recovery = runPersistenceRepository.recoverInterruptedRuns()
                 if (recovery.recoveredRuns > 0) {
-                    Log.w(
+                    AppLog.w(
                         TAG,
                         "已恢复 ${recovery.recoveredRuns} 个中断运行，" +
                             "结果不确定任务 ${recovery.uncertainTasks} 个，未开始任务 ${recovery.notStartedTasks} 个",
@@ -124,19 +129,17 @@ class QuestTickApp : Application(), SingletonImageLoader.Factory, Configuration.
                 secureStore.warmUp()
                 // 米游社和云游戏版本只允许在实际签到流程中按 3 天间隔自动获取。
             } catch (t: Throwable) {
-                Log.w(TAG, "启动后台预热任务失败", t)
+                AppLog.w(TAG, "启动后台预热任务失败", t)
                 appErrorLogger.record("应用启动预热", t)
             }
         }
         initScope.launch {
             try {
-                // 次级缓存延后执行，避免抢占首帧资源。
-                kotlinx.coroutines.delay(2000)
-                secureStore.warmSecondaryCaches()
+                // 安装包清理独立于业务数据预热，避免启动后再次读取整份历史和日志。
                 AppUpdateInstaller.cleanupInstalledApks(this@QuestTickApp, BuildConfig.VERSION_NAME)
             } catch (t: Throwable) {
-                Log.w(TAG, "启动次级缓存清理任务失败", t)
-                appErrorLogger.record("启动缓存清理", t)
+                AppLog.w(TAG, "启动安装包清理任务失败", t)
+                appErrorLogger.record("启动安装包清理", t)
             }
         }
         // 通知渠道延后到 MainActivity 创建，避免 Application 启动阶段阻塞。

@@ -77,8 +77,9 @@ fun CloudQRLoginScreen(
         }
     }
 
-    // 生成二维码。
-    LaunchedEffect(refreshKey) {
+    // 退出动画仍保留组合；不可见时不创建二维码，也不启动后续轮询与凭证兑换。
+    LaunchedEffect(visible, refreshKey) {
+        if (!visible) return@LaunchedEffect
         loading = true
         errorMsg = ""
         exchangeError = ""
@@ -108,10 +109,10 @@ fun CloudQRLoginScreen(
         loading = false
     }
 
-    // 轮询扫码状态。
-    LaunchedEffect(ticket) {
-        if (ticket.isBlank()) return@LaunchedEffect
-        CloudQRLogin.pollStatus(gameKey, ticket, deviceId, httpTransport, recordError = onError)
+    LaunchedEffect(visible, ticket) {
+        if (!visible || ticket.isBlank()) return@LaunchedEffect
+        CloudQRLogin
+            .pollStatus(gameKey, ticket, deviceId, httpTransport, recordError = onError)
             .flowOn(Dispatchers.IO)
             .collect { s ->
                 status = s
@@ -126,7 +127,8 @@ fun CloudQRLoginScreen(
     }
 
     // 扫码确认后使用网页登录态调用 SDK webLogin，换取 x-rpc-combo_token。
-    LaunchedEffect(confirmed) {
+    LaunchedEffect(visible, confirmed) {
+        if (!visible) return@LaunchedEffect
         val c = confirmed ?: return@LaunchedEffect
         exchanging = true
         exchangeError = ""
@@ -147,21 +149,23 @@ fun CloudQRLoginScreen(
 
     QrLoginScaffold(
         title = "${gameName}扫码登录",
-        visualState = cloudVisualState(
-            loading = loading,
-            errorMsg = errorMsg,
-            comboToken = comboToken,
-            exchangeError = exchangeError,
-            exchanging = exchanging,
-            status = status,
-        ),
+        visualState =
+            cloudVisualState(
+                loading = loading,
+                errorMsg = errorMsg,
+                comboToken = comboToken,
+                exchangeError = exchangeError,
+                exchanging = exchanging,
+                status = status,
+            ),
         qrBitmap = qrBitmap,
-        statusMessage = cloudStatusMessage(
-            comboToken = comboToken,
-            exchangeError = exchangeError,
-            exchanging = exchanging,
-            status = status,
-        ),
+        statusMessage =
+            cloudStatusMessage(
+                comboToken = comboToken,
+                exchangeError = exchangeError,
+                exchanging = exchanging,
+                status = status,
+            ),
         instructionTargetName = gameName,
         refreshEnabled = !loading && !exchanging,
         showSuccessContent = comboToken.isNotBlank(),

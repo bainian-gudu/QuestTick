@@ -8,12 +8,13 @@ import org.junit.Test
 import java.util.zip.ZipInputStream
 
 class LogExporterTest {
-    private val logs = listOf(
-        LogEntry(1L, "DEBUG", "debug token=secret", "cookie_token=secret"),
-        LogEntry(2L, "INFO", "info", ""),
-        LogEntry(3L, "WARN", "warn", ""),
-        LogEntry(4L, "ERROR", "error", ""),
-    )
+    private val logs =
+        listOf(
+            LogEntry(1L, "DEBUG", "debug token=secret", "cookie_token=secret"),
+            LogEntry(2L, "INFO", "info", ""),
+            LogEntry(3L, "WARN", "warn", ""),
+            LogEntry(4L, "ERROR", "error", ""),
+        )
 
     @Test
     fun txtExportIsSanitized() {

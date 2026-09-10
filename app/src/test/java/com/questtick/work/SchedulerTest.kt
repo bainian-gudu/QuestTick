@@ -110,12 +110,13 @@ class SchedulerTest {
     @Test
     fun computeScheduleInitialDelayUsesProvidedDeviceTimezone() {
         val now = Instant.parse("2026-07-08T06:00:00Z").toEpochMilli()
-        val delay = computeScheduleInitialDelayMillis(
-            hour = 8,
-            minute = 0,
-            nowMillis = now,
-            timeZone = TimeZone.getTimeZone("Asia/Tokyo"),
-        )
+        val delay =
+            computeScheduleInitialDelayMillis(
+                hour = 8,
+                minute = 0,
+                nowMillis = now,
+                timeZone = TimeZone.getTimeZone("Asia/Tokyo"),
+            )
 
         assertEquals(17 * 60 * 60_000L, delay)
     }
@@ -124,12 +125,13 @@ class SchedulerTest {
     fun computeScheduleInitialDelayPreservesWallClockAcrossDstStart() {
         val zone = TimeZone.getTimeZone("America/New_York")
         val now = Instant.parse("2026-03-08T06:30:00Z").toEpochMilli()
-        val delay = computeScheduleInitialDelayMillis(
-            hour = 8,
-            minute = 0,
-            nowMillis = now,
-            timeZone = zone,
-        )
+        val delay =
+            computeScheduleInitialDelayMillis(
+                hour = 8,
+                minute = 0,
+                nowMillis = now,
+                timeZone = zone,
+            )
 
         assertEquals(5 * 60 * 60_000L + 30 * 60_000L, delay)
     }
@@ -139,9 +141,11 @@ class SchedulerTest {
         minute: Int,
         second: Int = 0,
     ): Long =
-        Calendar.getInstance().apply {
-            clear()
-            set(2026, Calendar.JULY, 8, hour, minute, second)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        Calendar
+            .getInstance()
+            .apply {
+                clear()
+                set(2026, Calendar.JULY, 8, hour, minute, second)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
 }

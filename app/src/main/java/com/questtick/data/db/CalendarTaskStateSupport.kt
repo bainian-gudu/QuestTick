@@ -61,13 +61,15 @@ internal fun mergeCalendarTaskState(
 }
 
 internal fun calendarDaysFromTaskStates(states: List<CalendarTaskStateEntity>): List<SignInCalendarDay> =
-    states.groupBy { it.dayKey }
+    states
+        .groupBy { it.dayKey }
         .mapNotNull { (dayKey, items) ->
             if (items.isEmpty()) return@mapNotNull null
             val signed = items.count { it.status == CALENDAR_TASK_STATUS_SIGNED }
-            val failed = items.count {
-                it.status == CALENDAR_TASK_STATUS_FAILED || it.status == CALENDAR_TASK_STATUS_RESULT_UNKNOWN
-            }
+            val failed =
+                items.count {
+                    it.status == CALENDAR_TASK_STATUS_FAILED || it.status == CALENDAR_TASK_STATUS_RESULT_UNKNOWN
+                }
             val status =
                 when {
                     signed > 0 && failed > 0 -> SignInCalendarDay.STATUS_PARTIAL
@@ -81,5 +83,4 @@ internal fun calendarDaysFromTaskStates(states: List<CalendarTaskStateEntity>): 
                 taskCount = items.size,
                 updatedAt = items.maxOf { it.updatedAt },
             )
-        }
-        .sortedBy { it.dayKey }
+        }.sortedBy { it.dayKey }

@@ -196,11 +196,15 @@ class AddAccountViewModel
                 val starrailTrimmed = state.starrail.trim()
                 val selectedSet = state.selectedGames
 
-                val hasPreservedKeepLogin = latestAccount.hasMysKeepLogin ||
-                    latestAccount.hasGenshinCloudKeepLogin || latestAccount.hasStarrailCloudKeepLogin
+                val hasPreservedKeepLogin =
+                    latestAccount.hasMysKeepLogin ||
+                        latestAccount.hasGenshinCloudKeepLogin ||
+                        latestAccount.hasStarrailCloudKeepLogin
 
                 // 表单验证。
-                if (cookieTrimmed.isBlank() && genshinTrimmed.isBlank() && starrailTrimmed.isBlank() &&
+                if (cookieTrimmed.isBlank() &&
+                    genshinTrimmed.isBlank() &&
+                    starrailTrimmed.isBlank() &&
                     !hasPreservedKeepLogin
                 ) {
                     _uiState.update { it.copy(saveError = "请至少填写米游社 Cookie、云游戏 Token 或保留扫码登录凭证中的一项") }

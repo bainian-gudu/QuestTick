@@ -27,6 +27,7 @@ import com.questtick.i18n.formatLocalizedFullDate
 import com.questtick.i18n.formatLocalizedSecond
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +55,6 @@ import com.questtick.ui.components.SkeletonCard
 import com.questtick.ui.components.home.HomeAccountCard
 import com.questtick.ui.components.home.LatestRunCard
 import com.questtick.ui.components.home.buildHomeDashboardStats
-import com.questtick.ui.components.home.latestRunOrNull
 import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.vm.HomeViewModel
 import kotlinx.coroutines.isActive
@@ -77,8 +77,10 @@ fun HomeScreen(
     onGoAccounts: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val accounts by viewModel.accounts.collectAsStateWithLifecycle()
-    val history by viewModel.history.collectAsStateWithLifecycle()
+    val accountsState = viewModel.accounts.collectAsStateWithLifecycle()
+    val historyState = viewModel.history.collectAsStateWithLifecycle()
+    val accounts by accountsState
+    val history by historyState
     val historyLoaded by viewModel.historyLoaded.collectAsStateWithLifecycle()
     val calendarDays by viewModel.calendarDays.collectAsStateWithLifecycle()
     val calendarLoaded by viewModel.calendarLoaded.collectAsStateWithLifecycle()
@@ -86,8 +88,11 @@ fun HomeScreen(
     val progress by viewModel.progress.collectAsStateWithLifecycle()
     val rootBlockWarning by viewModel.rootBlockWarning.collectAsStateWithLifecycle()
 
-    val dashboardStats = remember(accounts, history) { buildHomeDashboardStats(accounts, history) }
-    val last = remember(history) { latestRunOrNull(history) }
+    val dashboardStats by
+        remember(accountsState, historyState) {
+            derivedStateOf { buildHomeDashboardStats(accountsState.value, historyState.value) }
+        }
+    val last = remember(historyState) { derivedStateOf { historyState.value.firstOrNull() } }.value
     val listState = rememberLazyListState()
 
     LaunchedEffect(isVisible) {
@@ -119,7 +124,9 @@ fun HomeScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 28.dp),
+            contentPadding =
+                androidx.compose.foundation.layout
+                    .PaddingValues(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item(key = "home_dashboard", contentType = "dashboard") {
@@ -277,7 +284,9 @@ private fun EmptyAccountsCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                Modifier.size(64.dp).clip(RoundedCornerShape(20.dp))
+                Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center,
             ) {

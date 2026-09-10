@@ -40,6 +40,10 @@ import com.questtick.ui.theme.TextSecondary
 
 /** 账号编辑页的游戏选择展示组件。 */
 
+private val mysGames = Games.ALL.filter { !it.cloud && !it.preview }
+private val previewGames = Games.ALL.filter { it.preview }
+private val cloudGames = Games.ALL.filter { it.cloud }
+
 @Composable
 internal fun GamesTab(
     selected: Set<String>,
@@ -47,25 +51,34 @@ internal fun GamesTab(
     mysCoinEnabled: Boolean,
     onMysCoinEnabledChange: (Boolean) -> Unit,
 ) {
-    val mys = Games.ALL.filter { !it.cloud && !it.preview }
-    val preview = Games.ALL.filter { it.preview }
-    val cloud = Games.ALL.filter { it.cloud }
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Spacer(Modifier.height(8.dp)) }
-        if (MysCoinCheckIn.featureEnabled) item {
-            Row(Modifier.fillMaxWidth().padding(start = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                GroupLabel("米游社")
-                Spacer(Modifier.weight(1f))
-                Text("米游币打卡", fontSize = 12.sp, color = TextSecondary)
-                Spacer(Modifier.size(8.dp))
-                AnimatedSwitch(checked = mysCoinEnabled, onCheckedChange = onMysCoinEnabledChange, offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+        if (MysCoinCheckIn.featureEnabled) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(start = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    GroupLabel("米游社")
+                    Spacer(Modifier.weight(1f))
+                    Text("米游币打卡", fontSize = 12.sp, color = TextSecondary)
+                    Spacer(Modifier.size(8.dp))
+                    AnimatedSwitch(checked = mysCoinEnabled, onCheckedChange = onMysCoinEnabledChange, offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+                }
             }
         }
-        items(mys, key = { it.key }) { game -> GameSelectRow(game, selected.contains(game.key)) { onToggle(game.key) } }
-        item { Spacer(Modifier.height(4.dp)); GroupLabel("预支持游戏") }
-        items(preview, key = { it.key }) { game -> GameSelectRow(game, checked = false, enabled = false) {} }
-        item { Spacer(Modifier.height(4.dp)); GroupLabel("云游戏") }
-        items(cloud, key = { it.key }) { game -> GameSelectRow(game, selected.contains(game.key)) { onToggle(game.key) } }
+        items(mysGames, key = { it.key }) { game ->
+            GameSelectRow(game, selected.contains(game.key)) { onToggle(game.key) }
+        }
+        item {
+            Spacer(Modifier.height(4.dp))
+            GroupLabel("预支持游戏")
+        }
+        items(previewGames, key = { it.key }) { game -> GameSelectRow(game, checked = false, enabled = false) {} }
+        item {
+            Spacer(Modifier.height(4.dp))
+            GroupLabel("云游戏")
+        }
+        items(cloudGames, key = { it.key }) { game ->
+            GameSelectRow(game, selected.contains(game.key)) { onToggle(game.key) }
+        }
         item { Spacer(Modifier.height(28.dp)) }
     }
 }
@@ -87,16 +100,22 @@ internal fun hasMysCoinCredential(
     val stoken = field("stoken_v2").ifBlank { field("stoken") }.ifBlank { savedStoken.trim() }
     if (stoken.isBlank()) return false
     val v2 = stoken.startsWith("v2_", ignoreCase = true)
-    val identity = if (v2) {
-        field("mid").ifBlank { field("stmid") }.ifBlank { field("account_mid_v2") }.ifBlank { savedMid.trim() }
-    } else {
-        field("stuid").ifBlank { field("account_id") }.ifBlank { savedUid.trim() }
-    }
+    val identity =
+        if (v2) {
+            field("mid").ifBlank { field("stmid") }.ifBlank { field("account_mid_v2") }.ifBlank { savedMid.trim() }
+        } else {
+            field("stuid").ifBlank { field("account_id") }.ifBlank { savedUid.trim() }
+        }
     return identity.isNotBlank()
 }
 
 @Composable
-private fun GameSelectRow(game: GameInfo, checked: Boolean, enabled: Boolean = true, onToggle: () -> Unit) {
+private fun GameSelectRow(
+    game: GameInfo,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onToggle: () -> Unit,
+) {
     val border = if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     val rowModifier = Modifier.fillMaxWidth().border(1.5.dp, border, RoundedCornerShape(18.dp)).then(if (enabled) Modifier.clickableNoRipple(onToggle) else Modifier)
     PanelCard(modifier = rowModifier) {
