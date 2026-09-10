@@ -18,6 +18,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +30,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.ui.theme.LocalAppUiTheme
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * 主分页器会预组合相邻页面；隐藏页面保留最后一次 UI 快照，
+ * 但不持续订阅状态流，避免后台数据变化反复触发不可见页面重组。
+ */
+@Composable
+fun <T> StateFlow<T>.collectAsStateWhenVisible(isVisible: Boolean): State<T> =
+    if (isVisible) {
+        collectAsStateWithLifecycle()
+    } else {
+        remember(this) { mutableStateOf(value) }
+    }
 
 /** 全屏纯白应用背景容器。 */
 @Composable

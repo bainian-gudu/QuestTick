@@ -65,7 +65,6 @@ class SettingsRepository
             _mailLoaded.value = true
         }
 
-        // 强制重新加载邮件配置（用于设置页刷新）
         suspend fun forceReloadMail() {
             reloadMail()
         }

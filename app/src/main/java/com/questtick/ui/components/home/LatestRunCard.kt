@@ -58,9 +58,7 @@ fun LatestRunCard(
 ) {
     val formattedTime = remember(record.timestamp) { formatTime(record.timestamp) }
 
-    // 最近签到详情默认折叠。
     var expanded by rememberSaveable(record.timestamp) { mutableStateOf(false) }
-    // 展开箭头旋转动画。
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
         animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
@@ -69,7 +67,6 @@ fun LatestRunCard(
 
     PanelCard(modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            // 头部区域始终可见，点击可展开或收起。
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -102,7 +99,6 @@ fun LatestRunCard(
                     }
                 }
                 Spacer(Modifier.size(8.dp))
-                // 展开 / 收起箭头。
                 Icon(
                     Icons.Filled.KeyboardArrowDown,
                     contentDescription = localizedText(if (expanded) "收起" else "展开"),
@@ -114,7 +110,6 @@ fun LatestRunCard(
                 )
             }
 
-            // 详情区域带折叠动画。
             AnimatedVisibility(
                 visible = expanded,
                 enter = AppMotion.expandEnter(),
@@ -123,10 +118,8 @@ fun LatestRunCard(
                 val summary = remember(record) { buildLatestRunSummary(record) }
                 Column {
                     Spacer(Modifier.height(10.dp))
-                    // 分隔线。
                     Box(Modifier.fillMaxWidth().height(0.5.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)))
                     Spacer(Modifier.height(8.dp))
-                    // 结果列表。
                     summary.topResults.forEachIndexed { index, result ->
                         ResultRow(result, loadRewardImage = expanded)
                         if (index < summary.topResults.lastIndex) {
@@ -148,7 +141,6 @@ fun LatestRunCard(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-                    // 收起按钮。
                     Spacer(Modifier.height(8.dp))
                     Row(
                         Modifier.fillMaxWidth().clickableNoRipple { expanded = false },

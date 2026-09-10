@@ -92,7 +92,6 @@ object AppUpdateChecker {
         currentVersion: String,
         httpTransport: HttpTransport,
     ): AppUpdateInfo {
-        // 先尝试读取内存或磁盘缓存。
         val cache = AppUpdateCache.getFast(context, currentVersion)
         if (cache.info != null && cache.isStrong) {
             // 强缓存命中时直接返回，并在后台静默刷新。

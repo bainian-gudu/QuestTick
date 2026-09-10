@@ -42,7 +42,6 @@ object CookieRefresher {
                 }
             }
 
-        // 获取新的 cookie_token。
         val cookieToken =
             try {
                 val headers = mapOf("Cookie" to stokenCookie)
@@ -72,7 +71,6 @@ object CookieRefresher {
 
         if (cookieToken.isBlank()) return null
 
-        // 获取新的 ltoken。
         val ltoken =
             try {
                 val headers = mapOf("Cookie" to stokenCookie)

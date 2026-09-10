@@ -58,9 +58,7 @@ fun QRLoginScreen(
     var status by remember { mutableStateOf<QRLoginManager.ScanStatus>(QRLoginManager.ScanStatus.Created) }
     var loading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf("") }
-    // 扫码成功后的保持登录选择弹窗。
     var confirmedData by remember { mutableStateOf<QRLoginManager.ScanStatus.Confirmed?>(null) }
-    // 刷新二维码时递增的 key。
     var refreshKey by remember { mutableStateOf(0) }
     var showPendingCancelDialog by remember { mutableStateOf(false) }
 

@@ -52,7 +52,6 @@ import com.questtick.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,7 +66,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.data.AppSettings
 import com.questtick.notify.Notifier
 import com.questtick.sign.AppUpdateChecker.AppUpdateInfo
@@ -75,23 +73,15 @@ import com.questtick.ui.components.GalaxyBackground
 import com.questtick.ui.components.PageTitle
 import com.questtick.ui.components.PanelCard
 import com.questtick.ui.components.clickableNoRipple
+import com.questtick.ui.components.collectAsStateWhenVisible
 import com.questtick.ui.theme.AppMotion
 import com.questtick.ui.theme.InfoBlue
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.SettingsViewModel
-import kotlinx.coroutines.flow.StateFlow
 
 private enum class SettingsPage { None, Schedule, Mail, Device, ActId, Experiment, MysVersion, CloudVersion, Security, Appearance, Language, Cache, About }
-
-@Composable
-private fun <T> StateFlow<T>.collectAsStateWhenVisible(isVisible: Boolean): State<T> =
-    if (isVisible) {
-        collectAsStateWithLifecycle()
-    } else {
-        remember(this) { mutableStateOf(value) }
-    }
 
 @Composable
 fun SettingsScreen(
@@ -600,7 +590,6 @@ private fun ExperimentDetailPage(
                 Modifier.fillMaxSize().padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                // 并行签到。
                 item(key = "exp_parallel") {
                     SettingsSwitchCard(
                         title = "并行签到",
@@ -766,7 +755,6 @@ private fun KeepAliveCard(visibleKey: Int) {
 
     PanelCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            // 电池优化状态。
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     if (exempted) Icons.Filled.CheckCircle else Icons.Filled.BatteryAlert,
@@ -801,7 +789,6 @@ private fun KeepAliveCard(visibleKey: Int) {
                 }
             }
 
-            // ROM 自启动指引。
             if (romHint != null) {
                 Spacer(Modifier.height(14.dp))
                 val romHintText =

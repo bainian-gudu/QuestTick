@@ -557,7 +557,6 @@ private fun BasicTab(
             )
         }
 
-        // Cookie 校验提示，展示 ViewModel 异步校验结果。
         if (cookieWarning != null) {
             item {
                 NoticeBox(
