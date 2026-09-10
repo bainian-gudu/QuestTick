@@ -80,8 +80,6 @@ class SecureStore
             maxEntries: Int = 20,
         ) = actIdStore.save(cache, maxEntries)
 
-        // 设备 ID。
-
         fun effectiveMysDeviceId(forceCreate: Boolean = true): String {
             val user = plainPrefs.getString("mysDeviceIdUser", "").orEmpty()
             if (user.isNotBlank()) return user
@@ -174,8 +172,6 @@ class SecureStore
         fun updateSignInCalendar(record: RunRecord) = signInCalendarStore.updateFromRecord(record)
 
         fun clearSignInCalendar() = signInCalendarStore.clear()
-
-        // 后台签到保护状态。
 
         fun getConsecutiveSignInFailures(): Int = signInGuardStore.getConsecutiveFailures()
 

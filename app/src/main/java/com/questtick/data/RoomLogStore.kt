@@ -56,11 +56,9 @@ internal class RoomLogStore(
         }
 
     private fun trimLocked(maxKeep: Int = DEFAULT_MAX_KEEP) {
-        // 按日期删除超过 30 天的旧日志
         val thirtyDaysAgo = System.currentTimeMillis() - LOG_RETENTION_MILLIS
         dao.deleteOlderThan(thirtyDaysAgo)
 
-        // 按数量裁剪（保留最新 maxKeep 条）
         val overflow = dao.count() - maxKeep.coerceAtLeast(1)
         if (overflow > 0) dao.deleteOldest(overflow)
     }

@@ -58,8 +58,6 @@ class MainViewModel
             appErrorLogger.record(feature, IllegalStateException(detail), detail)
         }
 
-        // 账号操作。
-
         fun newAccountTemplate(): Account = Account(id = UUID.randomUUID().toString(), label = "新账号")
 
         fun saveAccount(account: Account) {

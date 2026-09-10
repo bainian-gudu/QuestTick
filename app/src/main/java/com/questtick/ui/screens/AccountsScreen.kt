@@ -202,7 +202,6 @@ fun AccountsScreen(
         )
     }
 
-    // 删除账号确认弹窗。
     deleting?.let { acc ->
         AppMessageDialog(
             title = "删除账号",
@@ -283,9 +282,7 @@ private fun AccountCard(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 左侧账号信息。
             Column(Modifier.weight(1f)) {
-                // 账号名与扫码状态。
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         account.label,
@@ -332,7 +329,6 @@ private fun AccountCard(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                // 已选游戏图标。
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -350,18 +346,15 @@ private fun AccountCard(
                 }
             }
 
-            // 右侧启用开关与删除按钮。
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // 启用开关。
                 com.questtick.ui.components.AnimatedSwitch(
                     checked = account.enabled,
                     onCheckedChange = onToggle,
                     offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
                 )
-                // 删除按钮。
                 Row(
                     Modifier
                         .clip(RoundedCornerShape(8.dp))

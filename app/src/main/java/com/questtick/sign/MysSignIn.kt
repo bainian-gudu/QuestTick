@@ -156,8 +156,6 @@ class MysSignIn(
     /** 当前生效的 act_id：优先使用动态缓存，缺失时回退到内置默认值。 */
     private fun currentActId(game: GameConfig): String = actIdCache[game.key]?.takeIf { ActId.isValid(it) } ?: game.actId
 
-    // 角色查询。
-
     suspend fun getRole(
         cookie: String,
         game: GameConfig,
@@ -215,8 +213,6 @@ class MysSignIn(
             )
         }
     }
-
-    // 签到请求。
 
     private fun signUrl(game: GameConfig): String =
         if (game.signgame != null) {
@@ -372,7 +368,6 @@ class MysSignIn(
             return null
         }
 
-        // Mutex 保护并发写
         if (cacheMutex != null) {
             cacheMutex.withLock { actIdCache[game.key] = latest }
         } else {
@@ -381,8 +376,6 @@ class MysSignIn(
         onLog("INFO", "[${game.name}] 已获取最新 act_id=$latest，重试签到…")
         return signIn(cookie, game, role, retryOnActIdInvalid = false)
     }
-
-    // 奖励查询。
 
     private fun infoUrl(game: GameConfig): String =
         if (game.signgame != null) {
