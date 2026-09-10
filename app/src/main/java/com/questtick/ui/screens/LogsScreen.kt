@@ -171,7 +171,6 @@ fun LogsScreen(
         }
     }
 
-    // 导出按钮弹出菜单状态。
     var showExportMenu by remember { mutableStateOf(false) }
 
     fun saveExportBytes(
@@ -215,7 +214,6 @@ fun LogsScreen(
             ) {
                 if (logs.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 导出按钮作为下拉菜单触发器。
                         Box {
                             Row(
                                 Modifier
@@ -340,7 +338,6 @@ fun LogsScreen(
             }
             Spacer(Modifier.height(10.dp))
 
-            // 统计、过滤与详细模式区域。
             if (allEntries.isNotEmpty()) {
                 Row(
                     Modifier.fillMaxWidth(),

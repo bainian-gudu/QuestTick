@@ -68,6 +68,8 @@ class HomeViewModel
 
         val progress: StateFlow<RunProgressState> = runCoordinator.progress
 
+        private var lastHistoryRefreshAt = 0L
+
         private val _rootBlockWarning = MutableStateFlow<RootBlockWarningUiState?>(null)
         val rootBlockWarning: StateFlow<RootBlockWarningUiState?> = _rootBlockWarning.asStateFlow()
 
@@ -75,9 +77,18 @@ class HomeViewModel
             _rootBlockWarning.value = null
         }
 
+        /**
+         * 首页在主分页器中常驻，每次切回都会收到可见性事件。
+         * 已加载且刚刷新过时直接复用仓库快照，避免大历史记录反复从 Room 解码。
+         */
         fun refreshHistory() {
+            val now = System.currentTimeMillis()
+            val recentlyRefreshed = now - lastHistoryRefreshAt < MIN_HISTORY_REFRESH_INTERVAL_MILLIS
+            if (historyRepository.loaded.value && recentlyRefreshed) return
+            lastHistoryRefreshAt = now
             viewModelScope.launch(Dispatchers.IO) {
                 runCatching { historyRepository.reload() }
+                    .onFailure { lastHistoryRefreshAt = 0L }
             }
         }
 
@@ -212,4 +223,8 @@ class HomeViewModel
                 e is IllegalStateException && !e.message.isNullOrBlank() -> e.message.orEmpty()
                 else -> ErrorText.fromException(e)
             }
+
+        private companion object {
+            const val MIN_HISTORY_REFRESH_INTERVAL_MILLIS = 15_000L
+        }
     }

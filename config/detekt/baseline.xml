@@ -175,7 +175,7 @@
     <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsActionCard( title: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsCard( modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(16.dp), content: @Composable ColumnScope.() -&gt; Unit, )</ID>
     <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsCompactOutlinedButton( text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsEntryCard( icon: ImageVector, iconColor: Color, title: String, subtitle: String, modifier: Modifier = Modifier, trailing: (@Composable RowScope.() -&gt; Unit)? = null, onClick: (() -&gt; Unit)? = null, )</ID>
+    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsEntryCard( icon: ImageVector, iconColor: Color, title: String, modifier: Modifier = Modifier, trailing: (@Composable RowScope.() -&gt; Unit)? = null, onClick: (() -&gt; Unit)? = null, )</ID>
     <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsFetchButton( fetching: Boolean, modifier: Modifier = Modifier, onClick: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsFieldLabel(text: String)</ID>
     <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsInfoCard( title: String, text: String, modifier: Modifier = Modifier, )</ID>
@@ -352,7 +352,7 @@
     <ID>LongParameterList:RunDao.kt$RunDao$( runId: String, taskId: String, expectedStatus: String, newStatus: String, message: String, startedAt: Long, )</ID>
     <ID>LongParameterList:RunDao.kt$RunDao$( runId: String, taskId: String, expectedStatuses: List&lt;String&gt;, newStatus: String, failureCategory: String, errorCode: String, retryable: Boolean, finishedAt: Long, )</ID>
     <ID>LongParameterList:RunDao.kt$RunDao$( runId: String, taskId: String, expectedStatuses: List&lt;String&gt;, newStatus: String, message: String, resultJson: String, finishedAt: Long, )</ID>
-    <ID>LongParameterList:SettingsCommonComponents.kt$( icon: ImageVector, iconColor: Color, title: String, subtitle: String, modifier: Modifier = Modifier, trailing: (@Composable RowScope.() -&gt; Unit)? = null, onClick: (() -&gt; Unit)? = null, )</ID>
+    <ID>LongParameterList:SettingsCommonComponents.kt$( icon: ImageVector, iconColor: Color, title: String, modifier: Modifier = Modifier, trailing: (@Composable RowScope.() -&gt; Unit)? = null, onClick: (() -&gt; Unit)? = null, )</ID>
     <ID>LongParameterList:SettingsCommonComponents.kt$( title: String, subtitle: String, checked: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, onCheckedChange: (Boolean) -&gt; Unit, supportingContent: @Composable ColumnScope.() -&gt; Unit = {}, )</ID>
     <ID>LongParameterList:SettingsViewModel.kt$SettingsViewModel$( @param:ApplicationContext private val context: Context, private val appStateRepository: AppStateRepository, private val settingsRepository: SettingsRepository, private val httpTransport: HttpTransport, private val streamingHttpTransport: StreamingHttpTransport, private val networkCache: Cache, private val appErrorLogger: AppErrorLogger, )</ID>
     <ID>LongParameterList:SignInRunner.kt$SignInRunner$( acc: Account, settings: AppSettings, mysPreparation: Deferred&lt;MysRuntimePreparation&gt;, cloudPreparation: Deferred&lt;CloudRuntimePreparation&gt;, actIdCache: ConcurrentHashMap&lt;String, String&gt;, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, )</ID>
@@ -1452,5 +1452,18 @@
     <ID>UseOrEmpty:Mask.kt$Mask$text ?: ""</ID>
     <ID>UseOrEmpty:Passport.kt$Passport$text ?: ""</ID>
     <ID>UseRequire:TransportRetry.kt$TransportRetryPolicy$throw IllegalArgumentException("IDEMPOTENT_READ only supports GET or HEAD")</ID>
+    <!-- 以下条目为 SignInRunner 拆分（RunDiagnostics/RunFinalizer）平移的既有问题；下次运行 detektBaseline 可自动归位清理。 -->
+    <ID>CyclomaticComplexMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
+    <ID>LongMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
+    <ID>InjectDispatcher:RunFinalizer.kt$RunFinalizer$IO</ID>
+    <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$3</ID>
+    <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$4</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"${settings.scheduleHour.toString().padStart(2, '0')}:${settings.scheduleMinute.toString().padStart(2, '0')}"</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$append("dsConfig={version=${dsConfig.version}, algorithm=${dsConfig.algorithm}, updateTime=${dsConfig.updateTime}}, ")</ID>
+    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0L)).versionName</ID>
+    <ID>TooGenericExceptionCaught:RunDiagnostics.kt$RunDiagnostics$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RunFinalizer.kt$RunFinalizer$e: Exception</ID>
   </CurrentIssues>
 </SmellBaseline>

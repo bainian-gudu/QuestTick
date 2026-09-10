@@ -63,7 +63,6 @@ fun CloudQRLoginScreen(
     var confirmed by remember { mutableStateOf<CloudQRLogin.ScanStatus.Confirmed?>(null) }
     var refreshKey by remember { mutableStateOf(0) }
 
-    // combo_token 兑换状态。
     var exchanging by remember { mutableStateOf(false) }
     var exchangeError by remember { mutableStateOf("") }
     var comboToken by remember { mutableStateOf("") }
