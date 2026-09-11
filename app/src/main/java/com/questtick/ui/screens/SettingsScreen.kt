@@ -155,7 +155,8 @@ fun SettingsScreen(
                 // 子页面显示或退出动画期间禁止主列表滚动，防止触摸穿透。
                 userScrollEnabled = !overlayActive,
             ) {
-                item(key = "spacer_top") { Spacer(Modifier.height(8.dp)) }
+                // 顶部占位 10.dp + LazyColumn item 间距 10.dp = 20.dp，与账号/记录/日志页标题高度保持一致。
+                item(key = "spacer_top") { Spacer(Modifier.height(10.dp)) }
                 item(key = "page_title") { PageTitle("设置", "应用配置") }
                 item(key = "spacer_after_title") { Spacer(Modifier.height(4.dp)) }
                 item(key = "row_schedule") {

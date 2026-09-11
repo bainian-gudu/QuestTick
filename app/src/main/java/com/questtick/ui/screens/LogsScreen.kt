@@ -207,7 +207,9 @@ fun LogsScreen(
 
     GalaxyBackground {
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-            Spacer(Modifier.height(8.dp))
+            // 与账号/记录/设置页保持一致的标题高度：其它页为顶部占位 + LazyColumn item 间距（合计 20.dp），
+            // 日志页使用 Column 无 item 间距，因此这里直接使用对齐后的总高度。
+            Spacer(Modifier.height(20.dp))
             PageTitle(
                 "日志",
                 titleSubtitle,
