@@ -53,11 +53,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
-
-      - name: Generate Kover coverage report
-        run: ./gradlew :app:koverXmlReportDebug :app:koverHtmlReportDebug --no-daemon --stacktrace
+      # 单元测试与覆盖率报告放在同一次 Gradle 调用里：
+      # 分两次调用会各自 fork 一个 single-use daemon（日志里的 "a single-use Daemon process will be forked"），
+      # 白白多付一次 JVM 启动与配置阶段开销，还会重复输出一遍构建产物路径。
+      - name: Run unit tests and generate Kover coverage report
+        run: ./gradlew :app:testDebugUnitTest :app:koverXmlReportDebug :app:koverHtmlReportDebug --no-daemon --stacktrace
 
       - name: Enforce core business coverage >= 70%
         run: python3 scripts/check_kover_coverage.py
