@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 账号列表页：展示账号卡片与登录态风险提示，并提供恢复引导、暂停恢复与批量操作入口。
+ */
 import com.questtick.i18n.localizedText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -131,6 +134,7 @@ fun AccountsScreen(
                             )
                         }
                     }
+
                     loadState is RepositoryLoadState.InitialLoading -> {
                         item(key = "skeleton_1") {
                             SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 90.dp, lineCount = 4)
@@ -139,6 +143,7 @@ fun AccountsScreen(
                             SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 72.dp, lineCount = 3)
                         }
                     }
+
                     accounts.isEmpty() && recoveryIssues.isEmpty() -> {
                         item(key = "empty_state") {
                             EmptyState(

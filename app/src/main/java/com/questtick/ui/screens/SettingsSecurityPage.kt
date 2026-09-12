@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 安全设置页：展示 Root 检测与「检测到 Root 即阻断」开关的当前策略（策略为编译期固定，页面只读）。
+ */
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

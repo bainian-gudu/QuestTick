@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 更新检查结果的本地缓存：保存 ETag 与上次检查到的版本，避免重复请求 Release API。
+ */
+
 import android.content.Context
 import android.content.SharedPreferences
 import com.questtick.net.TrustedUrlPolicy

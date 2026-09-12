@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 首页主题化仪表盘：运行进度卡、统计条、签到按钮与任务队列预览，是首页的主要视觉区块。
+ */
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

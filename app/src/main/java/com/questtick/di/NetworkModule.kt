@@ -1,6 +1,6 @@
 package com.questtick.di
 
-/** 提供网络传输、流式传输及相关应用级网络依赖。 */
+// 提供网络传输、流式传输及相关应用级网络依赖。
 
 import android.content.Context
 import dagger.Module

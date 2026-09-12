@@ -1,5 +1,8 @@
 package com.questtick.data
 
+/*
+ * 签到日历的业务日口径：统一按米游社业务时区（UTC+8）计算 dayKey，避免用户手动改机或跨时区旅行导致日期错乱。
+ */
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone

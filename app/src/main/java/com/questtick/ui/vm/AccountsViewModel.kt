@@ -1,5 +1,8 @@
 package com.questtick.ui.vm
 
+/*
+ * 账号列表页状态容器：账号增删改、登录态风险（恢复项）的忽略与恢复、账号启停与列表刷新。
+ */
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.questtick.data.Account

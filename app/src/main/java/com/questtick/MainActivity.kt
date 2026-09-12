@@ -1,5 +1,8 @@
 package com.questtick
 
+/*
+ * 应用唯一的界面宿主：设置 Compose 内容、主题与边到边布局，并接管系统栏适配；业务导航状态见 MainAppRoot。
+ */
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -182,11 +185,18 @@ class MainActivity : ComponentActivity() {
 
     private fun shouldUseDarkLaunchTheme(mode: String): Boolean =
         when (mode) {
-            "LIGHT" -> false
-            "DARK" -> true
-            else ->
+            "LIGHT" -> {
+                false
+            }
+
+            "DARK" -> {
+                true
+            }
+
+            else -> {
                 (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
+            }
         }
 
     /** 窗口重新获得焦点时刷新高刷与挖孔屏参数。 */

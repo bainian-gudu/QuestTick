@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 云游戏签到执行器：单账号内云原神 / 云崩铁的任务循环，以及 Token 失效后的刷新重试。
+ */
+
 import com.questtick.data.Account
 import com.questtick.data.FailureCategory
 import com.questtick.data.TaskResult

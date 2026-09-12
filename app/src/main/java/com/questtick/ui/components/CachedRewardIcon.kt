@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 奖励图标：带磁盘缓存的异步图标加载，加载中与失败时降级为占位图形，避免重复网络请求。
+ */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size

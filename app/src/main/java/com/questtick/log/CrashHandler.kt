@@ -8,8 +8,6 @@ import com.questtick.BuildConfig
 import com.questtick.data.LogEntry
 import com.questtick.data.SecureStore
 import com.questtick.sign.Mask
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -30,23 +28,42 @@ class CrashHandler private constructor(
         runCatching {
             val report = buildReport(thread, throwable)
             writeCrashFile(report)
-            runBlocking(Dispatchers.IO) {
-                store.appendLogs(
-                    listOf(
-                        LogEntry(
-                            timestamp = System.currentTimeMillis(),
-                            level = "ERROR",
-                            message = "应用发生崩溃，已生成诊断信息",
-                            detail = report,
-                        ),
-                    ),
-                )
-            }
+            appendCrashLogWithTimeout(report)
         }
         previous?.uncaughtException(thread, throwable) ?: run {
             android.os.Process.killProcess(android.os.Process.myPid())
             kotlin.system.exitProcess(10)
         }
+    }
+
+    /**
+     * 在崩溃线程上只做有界等待地把崩溃摘要写入运行日志。
+     *
+     * 崩溃报告本身已经写入文件（[writeCrashFile]），日志只是为了让"运行日志"页能看到崩溃记录。
+     * 这里绝不能无限期阻塞崩溃线程：崩溃往往发生在 IO 调度器繁忙时（例如签到正在执行），
+     * 此时无限等待会把一次崩溃放大成 ANR，反而丢失现场。
+     */
+    private fun appendCrashLogWithTimeout(report: String) {
+        val worker =
+            Thread(
+                {
+                    runCatching {
+                        store.appendLogs(
+                            listOf(
+                                LogEntry(
+                                    timestamp = System.currentTimeMillis(),
+                                    level = "ERROR",
+                                    message = "应用发生崩溃，已生成诊断信息",
+                                    detail = report,
+                                ),
+                            ),
+                        )
+                    }
+                },
+                CRASH_LOG_THREAD_NAME,
+            ).apply { isDaemon = true }
+        worker.start()
+        worker.join(CRASH_LOG_JOIN_TIMEOUT_MS)
     }
 
     private fun buildReport(
@@ -103,6 +120,8 @@ class CrashHandler private constructor(
     companion object {
         private const val CRASH_DIR = "crash_diagnostics"
         private const val MAX_CRASH_FILES = 10
+        private const val CRASH_LOG_THREAD_NAME = "questtick-crash-log"
+        private const val CRASH_LOG_JOIN_TIMEOUT_MS = 800L
         private val timeFmt: SimpleDateFormat get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         private val fileNameFmt: SimpleDateFormat get() = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
 

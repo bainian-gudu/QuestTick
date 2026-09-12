@@ -1,6 +1,6 @@
 package com.questtick.ui.screens
 
-/** 设置页面复用的卡片、输入框、按钮和状态行组件。 */
+// 设置页面复用的卡片、输入框、按钮和状态行组件。
 
 import com.questtick.i18n.localizedText
 import android.content.Context
@@ -186,7 +186,10 @@ internal fun SettingsEntryCard(
                 softWrap = true,
             )
             when {
-                trailing != null -> trailing()
+                trailing != null -> {
+                    trailing()
+                }
+
                 onClick != null -> {
                     Icon(
                         Icons.Filled.ChevronRight,

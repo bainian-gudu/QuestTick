@@ -1,6 +1,6 @@
 package com.questtick.ui.components.qr
 
-/** QR 登录页面共用的状态提示和操作组件。 */
+// QR 登录页面共用的状态提示和操作组件。
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

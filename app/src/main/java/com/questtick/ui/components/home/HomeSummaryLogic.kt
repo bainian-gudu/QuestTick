@@ -1,6 +1,6 @@
 package com.questtick.ui.components.home
 
-/** 首页账号、签到结果和运行状态摘要的计算逻辑。 */
+// 首页账号、签到结果和运行状态摘要的计算逻辑。
 
 import com.questtick.data.Account
 import com.questtick.data.RunRecord

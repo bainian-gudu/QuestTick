@@ -1,5 +1,8 @@
 package com.questtick.ui.theme
 
+/*
+ * 应用主题：Material3 配色方案与动态取色，统一浅色 / 深色与自定义主题色的呈现。
+ */
 import android.app.Activity
 import android.os.Build
 import android.graphics.drawable.ColorDrawable

@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 游戏宫格单元：图标 + 名称的单个游戏入口，选中态由外层选择行提供，本组件本身无状态。
+ */
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth

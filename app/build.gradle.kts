@@ -18,23 +18,89 @@ detekt {
     baseline = rootProject.file("config/detekt/baseline.xml")
 }
 
+// ---------------------------------------------------------------------------
+// 代码红线：禁止裸 android.util.Log / println / printStackTrace 进入源码。
+// ---------------------------------------------------------------------------
+
+/**
+ * 剥离 Kotlin 注释后再做红线扫描，避免“注释里写了 println(”被误判为违规。
+ *
+ * 保留换行以维持行号不变，便于直接定位；字符串字面量（如 "https://..."）原样保留，
+ * 不会因为内部含有 // 或块注释起始符而被误当作注释截断。
+ * 注意：Kotlin 的块注释可嵌套，因此本文件任何注释里都不要再写块注释起始符。
+ */
+fun stripKotlinComments(source: String): String {
+    val out = StringBuilder(source.length)
+    var i = 0
+    while (i < source.length) {
+        when {
+            source[i] == '"' -> {
+                out.append(source[i])
+                i++
+                while (i < source.length) {
+                    if (source[i] == '\\') {
+                        out.append(source[i])
+                        if (i + 1 < source.length) out.append(source[i + 1])
+                        i += 2
+                        continue
+                    }
+                    out.append(source[i])
+                    i++
+                    if (source[i - 1] == '"') break
+                }
+            }
+
+            source.startsWith("//", i) -> {
+                while (i < source.length && source[i] != '\n') i++
+            }
+
+            source.startsWith("/*", i) -> {
+                val found = source.indexOf("*/", i + 2)
+                val stop = if (found < 0) source.length else found + 2
+                for (k in i until stop) out.append(if (source[k] == '\n') '\n' else ' ')
+                i = stop
+            }
+
+            else -> {
+                out.append(source[i])
+                i++
+            }
+        }
+    }
+    return out.toString()
+}
+
+val redLineRules =
+    listOf(
+        Regex("""^\s*import android\.util\.Log\b""") to
+            "禁止直接 import android.util.Log，请使用 com.questtick.log.AppLog",
+        Regex("""\bprintln\s*\(""") to
+            "禁止使用 println，请使用 AppLog 或 Room 日志",
+        Regex("""\.printStackTrace\s*\(\s*\)""") to
+            "禁止使用 printStackTrace，请将异常传递给 AppLog 或上层处理",
+    )
+
 tasks.register("verifyCodeRedLines") {
     group = "verification"
-    description = "扫描源码红线：裸 android.util.Log / println / printStackTrace"
-    val sourceDir = layout.projectDirectory.dir("src/main/java")
-    inputs.dir(sourceDir)
+    description = "扫描源码红线：裸 android.util.Log / println / printStackTrace（覆盖 main / test / androidTest）"
+    // main / test / androidTest 三个源码集一并纳入，避免测试代码成为红线缺口。
+    // 只登记实际存在的目录：inputs.dir 指向不存在的目录会让任务直接失败。
+    val sourceDirs =
+        listOf("src/main/java", "src/test/java", "src/androidTest/java")
+            .map { layout.projectDirectory.dir(it) }
+            .filter { it.asFile.exists() }
+    sourceDirs.forEach { inputs.dir(it) }
     doLast {
         val violations = mutableListOf<String>()
-        sourceDir.asFileTree.matching { include("**/*.kt") }.forEach { file ->
-            if (file.path.endsWith("log/AppLog.kt")) return@forEach
-            file.readLines().forEachIndexed { index, line ->
-                when {
-                    Regex("^\\s*import android\\.util\\.Log\b").containsMatchIn(line) ->
-                        violations.add("${file.path}:${index + 1} 禁止直接 import android.util.Log，请使用 com.questtick.log.AppLog")
-                    Regex("""\bprintln\s*\(""").containsMatchIn(line) ->
-                        violations.add("${file.path}:${index + 1} 禁止使用 println，请使用 AppLog 或 Room 日志")
-                    Regex("""\.printStackTrace\s*\(\s*\)""").containsMatchIn(line) ->
-                        violations.add("${file.path}:${index + 1} 禁止使用 printStackTrace，请将异常传递给 AppLog 或上层处理")
+        sourceDirs.forEach { dir ->
+            dir.asFileTree.matching { include("**/*.kt") }.forEach { file ->
+                if (file.path.endsWith("log/AppLog.kt")) return@forEach
+                stripKotlinComments(file.readText()).lines().forEachIndexed { index, line ->
+                    redLineRules.forEach { (regex, message) ->
+                        if (regex.containsMatchIn(line)) {
+                            violations.add("${file.path}:${index + 1} $message")
+                        }
+                    }
                 }
             }
         }
@@ -154,14 +220,6 @@ android {
         }
         // 仅保留当前需要的语言资源，减少 APK 体积。
         // 语言过滤统一在 androidResources.localeFilters 中配置。
-
-        // DS 签名 salt 混淆：支持通过 gradle.properties / 环境变量注入，避免源码硬编码
-        // 例：./gradlew assembleRelease -PdsSalt="your_salt"
-        val dsSaltRaw = optionalBuildValue("dsSalt", "DS_SALT") ?: "yUZ3s0Sna1IrSNfk29Vo6vRapdOyqyhB"
-        // 简单混淆：Base64 + 倒序，仅降低静态扫描命中率，不作为安全边界。
-        // 注意：此处不能用 java.util.Base64，会和 Gradle 的 java 扩展冲突
-        val dsSaltObf = Base64.getEncoder().encodeToString(dsSaltRaw.reversed().toByteArray(Charsets.UTF_8))
-        buildConfigField("String", "DS_SALT_OBF", "\"$dsSaltObf\"")
     }
 
     signingConfigs {
@@ -283,94 +341,93 @@ baselineProfile {
 }
 
 dependencies {
-    // --- Compose BOM ---
-    val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
+    // --- Compose BOM：各 Compose 库的具体版本由平台统一约束 ---
+    implementation(platform(libs.compose.bom))
+    androidTestImplementation(platform(libs.compose.bom))
 
     // AndroidX 核心能力
-    implementation("androidx.core:core-ktx:1.18.0")
-    implementation("androidx.core:core-splashscreen:1.2.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
 
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation(libs.androidx.activity.compose)
 
     // Compose UI 与 Material 组件
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons.extended)
 
     // Kotlin 协程（版本统一在 gradle/libs.versions.toml 中管理，测试库与运行库保持一致）
     implementation(libs.kotlinx.coroutines.android)
 
     // --- 网络请求 ---
-    implementation("com.squareup.okhttp3:okhttp:5.4.0")
+    implementation(libs.okhttp)
     // 项目当前未使用 Retrofit；如后续接入，可在此补充相关依赖。
 
     // Hilt 依赖注入与 WorkManager 集成
-    implementation("com.google.dagger:hilt-android:2.59.2")
-    ksp("com.google.dagger:hilt-android-compiler:2.59.2")
-    implementation("androidx.hilt:hilt-work:1.3.0")
-    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
-    ksp("androidx.hilt:hilt-compiler:1.3.0")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.hilt.navigation.compose)
+    ksp(libs.androidx.hilt.compiler)
 
     // Coil：加载签到奖励图标
-    implementation("io.coil-kt.coil3:coil-compose:3.4.0")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.4.0")
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     // ZXing：生成扫码登录二维码
-    implementation("com.google.zxing:core:3.5.3")
+    implementation(libs.zxing.core)
 
     // JSON 使用 Android 内置 org.json，无需额外依赖
 
     // WorkManager：每日定时签到
-    implementation("androidx.work:work-runtime-ktx:2.11.2")
+    implementation(libs.work.runtime.ktx)
 
     // Room：日志 / 历史记录数据库存储
-    implementation("androidx.room:room-runtime:2.8.4")
-    implementation("androidx.room:room-ktx:2.8.4")
-    ksp("androidx.room:room-compiler:2.8.4")
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 
     // RootBeer：可选 Root 环境检测
-    implementation("com.scottyab:rootbeer-lib:0.1.2")
+    implementation(libs.rootbeer.lib)
 
     // ProfileInstaller：运行时安装 Baseline Profile
-    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+    implementation(libs.profileinstaller)
 
     // 项目已不再依赖 AndroidX Security 的旧加密存储实现。
 
     // --- 邮件推送：Jakarta Mail ---
-    implementation("jakarta.mail:jakarta.mail-api:2.1.3")
-    implementation("org.eclipse.angus:angus-mail:2.0.3")
-    implementation("org.eclipse.angus:angus-activation:2.0.2")
+    implementation(libs.jakarta.mail.api)
+    implementation(libs.angus.mail)
+    implementation(libs.angus.activation)
 
     // Baseline Profile 生成模块
     baselineProfile(project(":baselineprofile"))
 
     // 调试工具
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // --- 测试依赖 ---
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20250107")
-    // MockWebServer 版本与 OkHttp 保持一致。
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.4.0")
+    testImplementation(libs.junit)
+    testImplementation(libs.json)
+    // MockWebServer 与 OkHttp 共用同一版本号，避免测试与生产的协议行为不一致。
+    testImplementation(libs.okhttp.mockwebserver)
 
     // 测试框架
-    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation("app.cash.turbine:turbine:1.1.0")
+    testImplementation(libs.turbine)
 
-    androidTestImplementation("androidx.test:core:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.room:room-testing:2.8.4")
-    androidTestImplementation("com.squareup.okhttp3:mockwebserver:5.4.0")
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.okhttp.mockwebserver)
 }

@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 异常与业务 retcode 到中文提示文案的映射，同时提供用于日志的技术细节摘要。
+ */
+
 import com.questtick.net.ResponseTooLargeException
 import com.questtick.net.HttpFailureKind
 import com.questtick.net.HttpTransportException
@@ -19,23 +23,69 @@ object ErrorText {
     /** 将异常转换为用户可读的中文提示。 */
     fun fromException(e: Throwable?): String =
         when (e) {
-            null -> "发生未知错误"
-            is HttpTransportException -> fromHttpFailure(e)
-            is TransportFailureException -> fromTransportFailure(e)
-            is UnknownHostException -> "网络连接失败，无法解析服务器地址，请检查网络"
-            is SocketTimeoutException -> "网络请求超时，请稍后重试"
-            is ConnectException -> "无法连接到服务器，请检查网络或稍后重试"
-            is NoRouteToHostException -> "网络不可达，请检查网络设置"
-            is SSLException -> "安全连接（SSL）建立失败，请检查网络环境"
-            is InterruptedIOException -> "网络请求被中断或超时"
-            is SocketException -> "网络连接异常中断，请重试"
-            is JSONException -> "服务器返回的数据格式异常"
-            is ResponseTooLargeException -> "服务器返回的数据过大，已停止读取，请稍后重试"
-            is jakarta.mail.AuthenticationFailedException -> "邮箱认证失败，请检查发件邮箱和授权码是否正确"
-            is jakarta.mail.internet.AddressException -> "收件邮箱地址格式不正确"
-            is jakarta.mail.MessagingException ->
+            null -> {
+                "发生未知错误"
+            }
+
+            is HttpTransportException -> {
+                fromHttpFailure(e)
+            }
+
+            is TransportFailureException -> {
+                fromTransportFailure(e)
+            }
+
+            is UnknownHostException -> {
+                "网络连接失败，无法解析服务器地址，请检查网络"
+            }
+
+            is SocketTimeoutException -> {
+                "网络请求超时，请稍后重试"
+            }
+
+            is ConnectException -> {
+                "无法连接到服务器，请检查网络或稍后重试"
+            }
+
+            is NoRouteToHostException -> {
+                "网络不可达，请检查网络设置"
+            }
+
+            is SSLException -> {
+                "安全连接（SSL）建立失败，请检查网络环境"
+            }
+
+            is InterruptedIOException -> {
+                "网络请求被中断或超时"
+            }
+
+            is SocketException -> {
+                "网络连接异常中断，请重试"
+            }
+
+            is JSONException -> {
+                "服务器返回的数据格式异常"
+            }
+
+            is ResponseTooLargeException -> {
+                "服务器返回的数据过大，已停止读取，请稍后重试"
+            }
+
+            is jakarta.mail.AuthenticationFailedException -> {
+                "邮箱认证失败，请检查发件邮箱和授权码是否正确"
+            }
+
+            is jakarta.mail.internet.AddressException -> {
+                "收件邮箱地址格式不正确"
+            }
+
+            is jakarta.mail.MessagingException -> {
                 e.cause?.takeIf { it !== e }?.let { fromException(it) } ?: "邮件发送失败，请检查 SMTP 服务器和端口配置"
-            else -> e.cause?.takeIf { it !== e }?.let { fromException(it) } ?: "发生未知错误"
+            }
+
+            else -> {
+                e.cause?.takeIf { it !== e }?.let { fromException(it) } ?: "发生未知错误"
+            }
         }
 
     private fun fromHttpFailure(error: HttpTransportException): String {
@@ -44,18 +94,26 @@ object ErrorText {
         }
         return when (error.failure.kind) {
             HttpFailureKind.DNS -> "网络连接失败，无法解析服务器地址，请检查网络"
+
             HttpFailureKind.CONNECT -> "无法连接到服务器，请检查网络或稍后重试"
+
             HttpFailureKind.CONNECT_TIMEOUT,
             HttpFailureKind.WRITE_TIMEOUT,
             HttpFailureKind.READ_TIMEOUT,
             -> "网络请求超时，请稍后重试"
+
             HttpFailureKind.CONNECTION_INTERRUPTED,
             HttpFailureKind.RESPONSE_INTERRUPTED,
             -> "网络连接异常中断，请重试"
+
             HttpFailureKind.RESPONSE_TOO_LARGE -> "服务器返回的数据过大，已停止读取，请稍后重试"
+
             HttpFailureKind.TLS -> "安全连接（SSL）建立失败，请检查网络环境"
+
             HttpFailureKind.SECURITY_REJECTED -> "请求地址未通过安全校验，已停止访问"
+
             HttpFailureKind.OTHER_IO -> "网络传输失败，请稍后重试"
+
             HttpFailureKind.INTERNAL -> "发生未知错误"
         }
     }
@@ -66,16 +124,22 @@ object ErrorText {
         }
         return when (error.kind) {
             TransportFailureKind.DNS -> "网络连接失败，无法解析服务器地址，请检查网络"
+
             TransportFailureKind.CONNECT -> "无法连接到服务器，请检查网络或稍后重试"
+
             TransportFailureKind.CONNECT_TIMEOUT,
             TransportFailureKind.WRITE_TIMEOUT,
             TransportFailureKind.READ_TIMEOUT,
             -> "网络请求超时，请稍后重试"
+
             TransportFailureKind.CONNECTION_INTERRUPTED,
             TransportFailureKind.RESPONSE_INTERRUPTED,
             -> "网络连接异常中断，请重试"
+
             TransportFailureKind.RESPONSE_TOO_LARGE -> "服务器返回的数据过大，已停止读取，请稍后重试"
+
             TransportFailureKind.TLS -> "安全连接（SSL）建立失败，请检查网络环境"
+
             TransportFailureKind.OTHER_IO -> "网络传输失败，请稍后重试"
         }
     }
