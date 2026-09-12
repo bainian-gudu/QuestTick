@@ -1,5 +1,8 @@
 package com.questtick.sign
 
+/* 米游社社区打卡（米游币）：发起打卡请求，并对比打卡前后的余额以计算本次获取量。
+ * 当前仅在 Debug 构建开放（见 featureEnabled）。 */
+
 import com.questtick.BuildConfig
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpTransport
@@ -110,7 +113,7 @@ internal object MysCoinCheckIn {
                     afterRead.detail.takeIf { it.isNotBlank() }?.let { "签到后余额查询失败：$it" },
                 ).filterNotNull().joinToString("；")
             when {
-                httpSuccess && retcode == 0 ->
+                httpSuccess && retcode == 0 -> {
                     Outcome(
                         success = true,
                         alreadyDone = false,
@@ -121,7 +124,9 @@ internal object MysCoinCheckIn {
                         signDay = after?.signDay ?: 0,
                         warning = stateWarning,
                     )
-                already ->
+                }
+
+                already -> {
                     Outcome(
                         success = true,
                         alreadyDone = true,
@@ -132,7 +137,9 @@ internal object MysCoinCheckIn {
                         signDay = after?.signDay ?: 0,
                         warning = stateWarning,
                     )
-                else ->
+                }
+
+                else -> {
                     Outcome(
                         success = false,
                         alreadyDone = false,
@@ -143,6 +150,7 @@ internal object MysCoinCheckIn {
                         signDay = after?.signDay ?: 0,
                         warning = stateWarning,
                     )
+                }
             }
         } catch (e: Exception) {
             e.throwIfCancellation()

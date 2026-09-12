@@ -23,8 +23,13 @@ object MysAppVersionRepository {
     var currentVersion: String = Endpoints.APP_VERSION
         private set
 
-    private var lastFetchTimeMs: Long = 0L
-    private var appContext: Context? = null
+    // 以下两个字段在主线程 initialize() 写入、在后台协程（refreshIfNeeded / persist）读取，
+    // 因此需要 @Volatile 建立跨线程可见性。缺少可见性时后台线程可能读到过期的 null 或旧值：
+    // persist() 会静默跳过导致新版本丢失，而 lastFetchTimeMs 已在内存中推进，
+    // 接下来 3 天内都不会再次刷新——错误会持续一个完整刷新周期。
+    @Volatile private var lastFetchTimeMs: Long = 0L
+
+    @Volatile private var appContext: Context? = null
 
     fun initialize(context: Context) {
         appContext = context.applicationContext

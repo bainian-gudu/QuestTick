@@ -27,7 +27,10 @@ class MysCoinCheckInTest {
                                 HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\",\"data\":{\"total_points\":130,\"already_received_points\":30}}")
                             }
                         }
-                        else -> HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\"}")
+
+                        else -> {
+                            HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\"}")
+                        }
                     }
                 }
 

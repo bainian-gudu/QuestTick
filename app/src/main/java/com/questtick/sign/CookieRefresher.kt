@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 凭证刷新：使用 SToken 换取新的 cookie_token 与 ltoken，供保持登录态下的自动续期使用。
+ */
+
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpTransport

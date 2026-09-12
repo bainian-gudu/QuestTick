@@ -1,6 +1,6 @@
 package com.questtick.work
 
-/** 独立执行签到完成后的通知和邮件投递任务。 */
+// 独立执行签到完成后的通知和邮件投递任务。
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
@@ -39,7 +39,9 @@ class PostRunActionWorker
             return try {
                 when (val claim = repository.claim(actionId)) {
                     is PostRunActionRepository.ClaimResult.Claimed -> deliver(claim.action)
+
                     is PostRunActionRepository.ClaimResult.NotReady -> Result.retry()
+
                     PostRunActionRepository.ClaimResult.Missing,
                     PostRunActionRepository.ClaimResult.Terminal,
                     -> Result.success()

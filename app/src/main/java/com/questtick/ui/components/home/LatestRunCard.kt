@@ -1,5 +1,8 @@
 package com.questtick.ui.components.home
 
+/*
+ * 最近一次运行卡片：汇总成功 / 失败 / 跳过数量与触发时间，是首页的运行结果速览。
+ */
 import com.questtick.i18n.localizedText
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState

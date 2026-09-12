@@ -53,160 +53,6 @@
     <ID>CyclomaticComplexMethod:Theme.kt$@Suppress("DEPRECATION") @Composable fun QuestTickTheme( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:TransportRetry.kt$TransportFailures$fun classify( error: IOException, requestMethod: String, phase: RequestTransmissionPhase, ): IOException</ID>
     <ID>DoubleMutabilityForCollection:ActIdStore.kt$ActIdStore$@Volatile private var cache: MutableMap&lt;String, String&gt;? = null</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable fun AccountEditScreen( initial: Account, isNew: Boolean, editorSessionKey: Long = 0L, onCancel: () -&gt; Unit, onSave: (Account) -&gt; Unit, /** 打开米游社扫码登录界面；回调参数是当前表单草稿，避免扫码结果覆盖未保存改动。 */ onStartQRLogin: ((Account) -&gt; Unit)? = null, /** 手动刷新米游社 Cookie；回调参数是当前表单草稿，完成回调用于展示完成态并收起界面刷新态。 */ onRefreshCookie: ((Account, (Boolean) -&gt; Unit) -&gt; Unit)? = null, /** 退出米游社扫码登录；回调参数是当前表单草稿，保留当前 Cookie。 */ onLogout: ((Account) -&gt; Unit)? = null, /** 打开云游戏扫码登录；gameKey 为 "CloudYS" 或 "CloudSR"，Account 为当前表单草稿。 */ onStartCloudQR: ((String, Account) -&gt; Unit)? = null, /** 手动刷新云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"，Account 为当前表单草稿，完成回调用于展示完成态并收起界面刷新态。 */ onRefreshCloudToken: ((String, Account, (Boolean) -&gt; Unit) -&gt; Unit)? = null, /** 退出云游戏扫码登录；回调参数是当前表单草稿，保留当前 Token。 */ onLogoutCloud: ((String, Account) -&gt; Unit)? = null, viewModel: AddAccountViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable internal fun GroupLabel(text: String)</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun BasicTab( label: String, onLabel: (String) -&gt; Unit, cookie: String, onCookie: (String) -&gt; Unit, cookieWarning: String? = null, keepLogin: Boolean = false, refreshingCookie: Boolean = false, cookieRefreshDone: Boolean = false, cookieRefreshFailed: Boolean = false, onStartQRLogin: (() -&gt; Unit)? = null, onRefreshCookie: (() -&gt; Unit)? = null, onLogout: (() -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun CloudLogoutButton( text: String = "退出登录", onConfirm: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun CloudTab( genshin: String, onGenshin: (String) -&gt; Unit, starrail: String, onStarrail: (String) -&gt; Unit, genshinKeepLogin: Boolean = false, starrailKeepLogin: Boolean = false, refreshingGenshinToken: Boolean = false, genshinTokenRefreshDone: Boolean = false, genshinTokenRefreshFailed: Boolean = false, refreshingStarrailToken: Boolean = false, starrailTokenRefreshDone: Boolean = false, starrailTokenRefreshFailed: Boolean = false, /** 扫码获取云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onStartCloudQR: ((gameKey: String) -&gt; Unit)? = null, /** 手动刷新云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onRefreshCloudToken: ((gameKey: String) -&gt; Unit)? = null, /** 退出云游戏扫码登录；保留当前 Token。 */ onLogoutCloud: ((gameKey: String) -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun EditTabButton( tab: EditTab, selected: Boolean, selectionFraction: Float, modifier: Modifier, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun EditTabRow( visualPosition: Float, onSelect: (Int) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun FieldLabel(text: String)</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun HintText(text: String)</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun IconField( value: String, onValueChange: (String) -&gt; Unit, placeholder: String, leading: androidx.compose.ui.graphics.vector.ImageVector, secret: Boolean = false, singleLine: Boolean = false, minLines: Int = 1, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun LoginActionButton( text: String, color: Color, modifier: Modifier = Modifier, loading: Boolean = false, done: Boolean = false, failed: Boolean = false, enabled: Boolean = true, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun LogoutActionButton( text: String = "退出登录", modifier: Modifier = Modifier, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountEditScreen.kt$@Composable private fun NoticeBox( color: Color, text: String, )</ID>
-    <ID>FunctionNaming:AccountGameSelection.kt$@Composable internal fun GamesTab( selected: Set&lt;String&gt;, onToggle: (String) -&gt; Unit, mysCoinEnabled: Boolean, onMysCoinEnabledChange: (Boolean) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountGameSelection.kt$@Composable private fun CheckCircle(checked: Boolean)</ID>
-    <ID>FunctionNaming:AccountGameSelection.kt$@Composable private fun GameSelectRow( game: GameInfo, checked: Boolean, enabled: Boolean = true, onToggle: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountsScreen.kt$@Composable fun AccountsScreen( onStartEdit: (Account, Boolean) -&gt; Unit, isVisible: Boolean = true, viewModel: AccountsViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:AccountsScreen.kt$@Composable private fun AccountCard( account: Account, onEdit: () -&gt; Unit, onDelete: () -&gt; Unit, onToggle: (Boolean) -&gt; Unit, executionGuard: ExecutionStateRepository.AccountGuard?, onResume: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AccountsScreen.kt$@Composable private fun AccountRecoveryCard( issue: AccountRecoveryIssue, onDelete: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:AnimatedSwitch.kt$@Composable fun AnimatedSwitch( checked: Boolean, onCheckedChange: (Boolean) -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, onColor: Color = SuccessGreen, offColor: Color = Color(0xFF2C2747), disabledColor: Color = Color(0xFFB8C0CC), thumbColor: Color = Color.White, )</ID>
-    <ID>FunctionNaming:AppDialogs.kt$@Composable fun AppAlertDialog( title: String, onDismissRequest: () -&gt; Unit, modifier: Modifier = Modifier, properties: DialogProperties = DialogProperties(), content: @Composable ColumnScope.() -&gt; Unit, actions: (@Composable () -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:AppDialogs.kt$@Composable fun AppDialogActionButton( label: String, onClick: () -&gt; Unit, style: AppDialogActionStyle = AppDialogActionStyle.PRIMARY, enabled: Boolean = true, )</ID>
-    <ID>FunctionNaming:AppDialogs.kt$@Composable fun AppMessageDialog( title: String, message: String, confirmLabel: String, onConfirm: () -&gt; Unit, onDismissRequest: () -&gt; Unit, confirmStyle: AppDialogActionStyle = AppDialogActionStyle.PRIMARY, dismissLabel: String? = null, onDismissAction: (() -&gt; Unit)? = null, properties: DialogProperties = DialogProperties(), )</ID>
-    <ID>FunctionNaming:CachedRewardIcon.kt$@Composable fun CachedRewardIcon( url: String, contentDescription: String?, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:CloudQRLoginScreen.kt$@Composable fun CloudQRLoginScreen( gameKey: String, deviceId: String, visible: Boolean = true, onResult: (CloudQRLoginResult) -&gt; Unit, onCancel: () -&gt; Unit, onError: (String) -&gt; Unit = {}, )</ID>
-    <ID>FunctionNaming:CloudQRLoginScreen.kt$@Composable private fun CloudQrSuccessChoiceCard( comboToken: String, cookieHeader: String, onResult: (CloudQRLoginResult) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun AccountTagChip( text: String, color: Color? = null, )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun EmptyState( badge: @Composable () -&gt; Unit, title: String, subtitle: String, action: (@Composable () -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun GalaxyBackground(content: @Composable () -&gt; Unit)</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun HairlineDivider(modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun PageTitle( title: String, subtitle: String, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun PanelCard( modifier: Modifier = Modifier, bg: Color? = null, content: @Composable () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun SectionHeader( icon: ImageVector, title: String, accent: Color? = null, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun SkeletonBlock( modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f), )</ID>
-    <ID>FunctionNaming:Common.kt$@Composable fun SkeletonCard( modifier: Modifier = Modifier, titleWidth: androidx.compose.ui.unit.Dp = 120.dp, lineCount: Int = 3, )</ID>
-    <ID>FunctionNaming:DialogSystemBars.kt$@Suppress("DEPRECATION") @Composable fun DialogSystemBars( statusBarColor: Color? = null, navigationBarColor: Color? = null, lightIcons: Boolean = true, )</ID>
-    <ID>FunctionNaming:GameIcon.kt$@Composable fun GameIcon( game: GameInfo, modifier: Modifier = Modifier, size: Dp = 48.dp, corner: Dp = 14.dp, )</ID>
-    <ID>FunctionNaming:GameTile.kt$@Composable fun GameTile( game: GameInfo, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeAccountCard.kt$@Composable fun HomeAccountCard( account: Account, onToggle: (Boolean) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeScreen.kt$@Composable fun HomeScreen( isVisible: Boolean = true, onGoAccounts: () -&gt; Unit, viewModel: HomeViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:HomeScreen.kt$@Composable private fun CenterSectionTitle( title: String, subtitle: String? = null, )</ID>
-    <ID>FunctionNaming:HomeScreen.kt$@Composable private fun EmptyAccountsCard( onGoAccounts: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeScreen.kt$@Composable private fun GamesGrid(modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable fun HomeThemeDashboard( clockText: String, secText: String, dayText: String, enabledAccounts: Int, totalAccounts: Int, gamesCount: Int, success: Int, already: Int, failed: Int, running: Boolean, completed: Boolean = false, onRun: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable fun HomeThemeProgressCard( progress: RunProgressState, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun CenteredSparkIcon(modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun DashboardHeader( theme: AppUiThemePalette, running: Boolean, hasAccounts: Boolean, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun DashboardStatChip( label: String, value: Int, color: Color, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun DashboardStatsRow( success: Int, already: Int, failed: Int, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun DashboardTimeBlock( clockText: String, secText: String, dayText: String, enabledAccounts: Int, totalAccounts: Int, gamesCount: Int, theme: AppUiThemePalette, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun ProgressTaskQueuePreview(tasks: List&lt;RunTaskProgress&gt;)</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun ProgressTaskRow(task: RunTaskProgress)</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun ResultSummaryRow( success: Int, alreadySigned: Int, failed: Int, skipped: Int, resultUnknown: Int, cancelled: Int, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun SigninButton( theme: AppUiThemePalette, running: Boolean, completed: Boolean, onRun: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun StarTrackProgress( completed: Int, total: Int, success: Int, alreadySigned: Int, failed: Int, skipped: Int, resultUnknown: Int, cancelled: Int, finished: Boolean, theme: AppUiThemePalette, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:HomeThemeDashboard.kt$@Composable private fun StatusPill(running: Boolean)</ID>
-    <ID>FunctionNaming:LatestRunCard.kt$@Composable fun LatestRunCard( record: RunRecord, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:LatestRunCard.kt$@Composable private fun MiniStatChip( text: String, color: androidx.compose.ui.graphics.Color, )</ID>
-    <ID>FunctionNaming:LocalizedText.kt$@Composable fun Text( text: AnnotatedString, modifier: Modifier = Modifier, color: Color = Color.Unspecified, fontSize: TextUnit = TextUnit.Unspecified, fontStyle: FontStyle? = null, fontWeight: FontWeight? = null, fontFamily: FontFamily? = null, letterSpacing: TextUnit = TextUnit.Unspecified, textDecoration: TextDecoration? = null, textAlign: TextAlign? = null, lineHeight: TextUnit = TextUnit.Unspecified, overflow: TextOverflow = TextOverflow.Clip, softWrap: Boolean = true, maxLines: Int = Int.MAX_VALUE, minLines: Int = 1, onTextLayout: ((TextLayoutResult) -&gt; Unit)? = null, style: TextStyle = LocalTextStyle.current, )</ID>
-    <ID>FunctionNaming:LocalizedText.kt$@Composable fun Text( text: String, modifier: Modifier = Modifier, color: Color = Color.Unspecified, fontSize: TextUnit = TextUnit.Unspecified, fontStyle: FontStyle? = null, fontWeight: FontWeight? = null, fontFamily: FontFamily? = null, letterSpacing: TextUnit = TextUnit.Unspecified, textDecoration: TextDecoration? = null, textAlign: TextAlign? = null, lineHeight: TextUnit = TextUnit.Unspecified, overflow: TextOverflow = TextOverflow.Clip, softWrap: Boolean = true, maxLines: Int = Int.MAX_VALUE, minLines: Int = 1, onTextLayout: ((TextLayoutResult) -&gt; Unit)? = null, style: TextStyle = LocalTextStyle.current, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable internal fun DateDivider(date: String)</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable internal fun LogRunGroupCard( group: LogRunGroup, expanded: Boolean, onExpandedChange: (Boolean) -&gt; Unit, verbose: Boolean, searchQuery: String, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable internal fun LogSearchField( value: String, onValueChange: (String) -&gt; Unit, onClear: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable internal fun LogStatChip( text: String, color: Color, selected: Boolean, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable private fun HighlightedLogText( text: String, query: String, modifier: Modifier = Modifier, fontFamily: FontFamily? = null, fontSize: TextUnit, lineHeight: TextUnit, color: Color, maxLines: Int = Int.MAX_VALUE, overflow: TextOverflow = TextOverflow.Clip, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable private fun LogEntryRowWithDivider( entry: ProcessedLogEntry, verbose: Boolean, searchQuery: String, showDivider: Boolean, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable private fun LogEntryRows( entries: List&lt;ProcessedLogEntry&gt;, verbose: Boolean, searchQuery: String, )</ID>
-    <ID>FunctionNaming:LogDisplayComponents.kt$@Composable private fun ProcessedLogRow( entry: ProcessedLogEntry, verbose: Boolean, searchQuery: String, )</ID>
-    <ID>FunctionNaming:LogsScreen.kt$@Composable fun LogsScreen( isVisible: Boolean = true, viewModel: LogsViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:MainAccountHosts.kt$@Composable internal fun AccountEditorSheetHost( editingAccount: Account?, editingIsNew: Boolean, editingSessionKey: Long, vm: MainViewModel, onDismiss: () -&gt; Unit, onEditingAccountChange: (Account?) -&gt; Unit, onOpenQrLogin: (Account) -&gt; Unit, onOpenCloudQr: (String, Account) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:MainAccountHosts.kt$@Composable internal fun CloudQrLoginOverlayHost( visible: Boolean, gameKey: String, targetAccount: Account?, vm: MainViewModel, onDismiss: () -&gt; Unit, onAccountUpdated: (Account) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:MainAccountHosts.kt$@Composable internal fun MysQrLoginOverlayHost( visible: Boolean, targetAccount: Account?, vm: MainViewModel, onDismiss: () -&gt; Unit, onAccountUpdated: (Account) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:MainAppRoot.kt$@Composable internal fun ThemedAppRoot( requestedTab: MutableStateFlow&lt;Int&gt;, httpTransport: HttpTransport, onCriticalUiReady: () -&gt; Unit, onFullyDrawn: () -&gt; Unit, vm: MainViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:MainAppRoot.kt$@Composable private fun AppRoot( requestedTab: MutableStateFlow&lt;Int&gt;, onCriticalUiReady: () -&gt; Unit, onFullyDrawn: () -&gt; Unit, vm: MainViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:MainTabHost.kt$@Composable internal fun GalaxyBottomBar( visualPosition: Float, onSelect: (Int) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:MainTabHost.kt$@Composable internal fun MainTabContent( tab: Int, warmedTabs: Set&lt;Int&gt;, contentPadding: PaddingValues, settingsVisibleCount: Int, homeVm: HomeViewModel, accountsVm: AccountsViewModel, recordsVm: RecordsViewModel, logsVm: LogsViewModel, settingsVm: SettingsViewModel, onTabChange: (Int) -&gt; Unit, onVisualTabPositionChange: (Float) -&gt; Unit, onStartEdit: (Account, Boolean) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:MainUpdateHosts.kt$@Composable internal fun UpdateDownloadDialog(progress: AppUpdateDownloadProgress)</ID>
-    <ID>FunctionNaming:MainUpdateHosts.kt$@Composable internal fun UpdateOverlayHost( updateDownloadProgress: AppUpdateDownloadProgress?, updatePrompt: AppUpdatePrompt?, settingsVm: SettingsViewModel, )</ID>
-    <ID>FunctionNaming:QRLoginScreen.kt$@Composable fun QRLoginScreen( deviceId: String, visible: Boolean = true, onResult: (QRLoginResult) -&gt; Unit, onCancel: () -&gt; Unit, onError: (String) -&gt; Unit = {}, )</ID>
-    <ID>FunctionNaming:QRLoginScreen.kt$@Composable private fun MysQrSuccessChoiceCard( data: QRLoginManager.ScanStatus.Confirmed, onResult: (QRLoginResult) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:QrLoginCommon.kt$@Composable internal fun PendingQrCancelDialog( onDismiss: () -&gt; Unit, onConfirmExit: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:QrLoginCommon.kt$@Composable internal fun QrLoginInstruction(targetName: String = "")</ID>
-    <ID>FunctionNaming:QrLoginCommon.kt$@Composable internal fun QrPendingConfirmOverlay()</ID>
-    <ID>FunctionNaming:QrLoginCommon.kt$@Composable internal fun TerminalQrStateCard(title: String)</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable internal fun QrCodeStatePanel( visualState: QrVisualState, qrBitmap: Bitmap?, )</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable internal fun QrLoginScaffold( title: String, visualState: QrVisualState, qrBitmap: Bitmap?, statusMessage: QrStatusMessage, instructionTargetName: String = "", refreshEnabled: Boolean, showSuccessContent: Boolean, showPendingCancelDialog: Boolean, visible: Boolean = true, onDismissPendingCancel: () -&gt; Unit, onConfirmPendingCancel: () -&gt; Unit, onRefresh: () -&gt; Unit, onCancelRequest: () -&gt; Unit, successContent: @Composable () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrActionButtons( refreshEnabled: Boolean, onRefresh: () -&gt; Unit, onCancelRequest: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrBitmapCard( qrBitmap: Bitmap?, scanned: Boolean, )</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrBusyStateCard(message: String)</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrErrorStateCard(error: QrVisualState.Error)</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrLoginTopBar( title: String, onCancelRequest: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrStatusLine(message: QrStatusMessage)</ID>
-    <ID>FunctionNaming:QrLoginScaffold.kt$@Composable private fun QrSuccessStateCard()</ID>
-    <ID>FunctionNaming:QrSuccessChoiceCard.kt$@Composable internal fun QrKeepLoginChoiceCard( keepDescription: String, onceDescription: String, onKeep: () -&gt; Unit, onOnce: () -&gt; Unit, keepEnabled: Boolean = true, keepUnavailableDescription: String? = null, )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable fun RecordsScreen( isVisible: Boolean = true, viewModel: RecordsViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable private fun EmailDeliveryStatusRow( delivery: EmailDeliveryUiState, onRetryEmail: (String) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable private fun FilterChip( label: String, count: Int, selected: Boolean, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable private fun MiniStat( text: String, color: Color, )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable private fun ResultRowWithDivider( result: TaskResult, showDivider: Boolean, loadRewardImage: Boolean, )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable private fun RunCard( group: RecordRunGroup, emailDelivery: EmailDeliveryUiState?, onRetryEmail: (String) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:RecordsScreen.kt$@Composable private fun RunResultRows( results: List&lt;TaskResult&gt;, loadRewardImages: Boolean, )</ID>
-    <ID>FunctionNaming:ResultRow.kt$@Composable fun ResultRow( r: TaskResult, loadRewardImage: Boolean, )</ID>
-    <ID>FunctionNaming:SettingsAboutPage.kt$@Composable internal fun AboutDetailPage( settings: AppSettings, onSaveSettings: (AppSettings) -&gt; Unit, onBack: () -&gt; Unit, onCheckUpdate: (onFinished: (AppUpdateInfo?) -&gt; Unit) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable internal fun AppearanceDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, onSaveLanguage: (AppSettings, String) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun CustomColorOption( colorHex: String, selected: String, enabled: Boolean, onSelect: (String) -&gt; Unit, compact: Boolean = false, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun CustomThemeColorPage( settings: AppSettings, onApply: (AppSettings) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun HslEditor( title: String, value: HslColor, onValueChange: (HslColor) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun HslSlider( label: String, valueText: String, value: Float, range: ClosedFloatingPointRange&lt;Float&gt;, onValueChange: (Float) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun LanguageOptionRow( options: List&lt;Pair&lt;AppLanguage, String&gt;&gt;, selected: String, onSelect: (AppLanguage) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun ThemeModeOptionChip( title: String, mode: String, currentMode: String, modifier: Modifier = Modifier, onSelect: (String) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsAppearancePage.kt$@Composable private fun ThemePresetOption( preset: ThemePreset, selected: Boolean, enabled: Boolean, onSelect: () -&gt; Unit, onDelete: (() -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun AboutLinkRow( title: String, value: String, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun DeviceIdField( label: String, value: String, placeholder: String, onValueChange: (String) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun FieldBox( value: String, onValueChange: (String) -&gt; Unit, placeholder: String, modifier: Modifier = Modifier, number: Boolean = false, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun HairlineSpacer()</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun HintBox( color: Color, text: String, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun PrimaryButton( text: String, icon: ImageVector? = null, enabled: Boolean = true, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun ProviderChip( text: String, brush: Brush, selected: Boolean, modifier: Modifier = Modifier, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SecretFieldBox( value: String, onValueChange: (String) -&gt; Unit, placeholder: String, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsActionCard( title: String, value: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsCard( modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(16.dp), content: @Composable ColumnScope.() -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsCompactOutlinedButton( text: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsEntryCard( icon: ImageVector, iconColor: Color, title: String, modifier: Modifier = Modifier, trailing: (@Composable RowScope.() -&gt; Unit)? = null, onClick: (() -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsFetchButton( fetching: Boolean, modifier: Modifier = Modifier, onClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsFieldLabel(text: String)</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsInfoCard( title: String, text: String, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsSectionTitle( text: String, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsSwitchCard( title: String, subtitle: String, checked: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, onCheckedChange: (Boolean) -&gt; Unit, supportingContent: @Composable ColumnScope.() -&gt; Unit = {}, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun SettingsTextActionCard( title: String, actionText: String, modifier: Modifier = Modifier, enabled: Boolean = true, onActionClick: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsCommonComponents.kt$@Composable internal fun ToggleRow( title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -&gt; Unit, enabled: Boolean = true, )</ID>
-    <ID>FunctionNaming:SettingsMailPage.kt$@Composable internal fun MailDetailPage( mail: MailSettings, onSave: (MailSettings) -&gt; Unit, onTest: (MailSettings) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsNavigationComponents.kt$@Composable internal fun DetailTopBar( title: String, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsNavigationComponents.kt$@Composable internal fun SettingsPageOverlay( visible: Boolean, consumeHorizontalGestures: Boolean = true, onExitFinished: () -&gt; Unit = {}, content: @Composable () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( visibleKey: Int = 0, isVisible: Boolean = true, viewModel: SettingsViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun ActIdDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun DeviceDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun ExperimentDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun KeepAliveCard(visibleKey: Int)</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun KeepAliveRow(visibleKey: Int)</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun ScheduleDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, visibleKey: Int, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsSecurityPage.kt$@Composable internal fun SecurityDetailPage(onBack: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:SettingsStoragePages.kt$@Composable internal fun CacheDetailPage( state: CacheStorageState, onRefresh: () -&gt; Unit, onClearCategory: (CacheCategory) -&gt; Unit, onClearAll: () -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsStoragePages.kt$@Composable internal fun LicenseDetailDialog( licenseText: String, onDismiss: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsVersionPages.kt$@Composable internal fun CloudVersionDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, onFetchCloudVersion: (onFinished: (CloudAppVersionFetcher.CloudVersions?) -&gt; Unit) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsVersionPages.kt$@Composable internal fun MysVersionDetailPage( settings: AppSettings, onSave: (AppSettings) -&gt; Unit, onFetchMysVersion: (onFinished: (String?) -&gt; Unit) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SettingsVersionPages.kt$@Composable private fun VersionSectionHeader( fetching: Boolean, onFetch: () -&gt; Unit, )</ID>
-    <ID>FunctionNaming:SignInCalendarCard.kt$@Composable fun SignInCalendarCard( days: List&lt;SignInCalendarDay&gt;, currentMillis: Long, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:SignInCalendarCard.kt$@Composable private fun CalendarDayCell( cell: CalendarDayUi?, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:SignInCalendarCard.kt$@Composable private fun CalendarLegend()</ID>
-    <ID>FunctionNaming:SignInCalendarCard.kt$@Composable private fun CalendarSummaryChip( text: String, color: Color, )</ID>
-    <ID>FunctionNaming:SignInCalendarCard.kt$@Composable private fun LegendItem( label: String, color: Color, )</ID>
-    <ID>FunctionNaming:StatusBadge.kt$@Composable fun StatusBadge( text: String, color: Color, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(8.dp), horizontalPadding: Dp = 8.dp, verticalPadding: Dp = 3.dp, fontSize: TextUnit = 11.sp, fontWeight: FontWeight = FontWeight.Medium, backgroundAlpha: Float = 0.16f, borderAlpha: Float = 0f, selected: Boolean = false, selectedContentColor: Color = Color.White, selectedBackgroundAlpha: Float = 1f, selectedBorderAlpha: Float = 0f, maxLines: Int = 1, leadingDotColor: Color? = null, leadingDotSize: Dp = 6.dp, leadingDotSpacing: Dp = 6.dp, onClick: (() -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:SyncedHorizontalPager.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun SyncedHorizontalPager( selectedPage: Int, pageCount: Int, modifier: Modifier = Modifier, beyondViewportPageCount: Int = 1, onVisualPagePositionChange: (Float) -&gt; Unit = {}, onPageSettled: (Int) -&gt; Unit, pageContent: @Composable (page: Int, pageVisible: Boolean) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:Theme.kt$@Suppress("DEPRECATION") @Composable fun QuestTickTheme( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
     <ID>ImplicitDefaultLocale:Ds.kt$Ds$String.format("\\u%04x", c.code)</ID>
     <ID>InjectDispatcher:AccountRepository.kt$AccountRepository$IO</ID>
     <ID>InjectDispatcher:AccountsViewModel.kt$AccountsViewModel$IO</ID>
@@ -231,7 +77,6 @@
     <ID>InjectDispatcher:QuestTickApp.kt$QuestTickApp$IO</ID>
     <ID>InjectDispatcher:RecordsScreen.kt$Default</ID>
     <ID>InjectDispatcher:RecordsViewModel.kt$RecordsViewModel$IO</ID>
-    <ID>InjectDispatcher:RefreshWorker.kt$RefreshWorker$IO</ID>
     <ID>InjectDispatcher:RewardIconCache.kt$RewardIconCache$IO</ID>
     <ID>InjectDispatcher:RewardIconCacheTest.kt$RewardIconCacheTest$Default</ID>
     <ID>InjectDispatcher:SettingsRepository.kt$SettingsRepository$IO</ID>
@@ -730,9 +575,6 @@
     <ID>MaxLineLength:CloudSignIn.kt$CloudSignIn$val url = "${game.baseURL}/gamer/api/listNotifications?status=NotificationStatusUnread&amp;type=NotificationTypePopup&amp;is_sort=true"</ID>
     <ID>MaxLineLength:Common.kt$Text(subtitle, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)</ID>
     <ID>MaxLineLength:Ds.kt$Ds$private fun randomString(length: Int): String</ID>
-    <ID>MaxLineLength:DsConfig.kt$DsConfig.Companion$?.</ID>
-    <ID>MaxLineLength:DsConfig.kt$DsConfig.Companion$if (requireSignature &amp;&amp; !config.verify(json.optString("sha256"), json.optString("rsaSignature"))) return null</ID>
-    <ID>MaxLineLength:DsConfig.kt$DsConfig.Companion$return selectFromEnvelope(json, requireSignature, selectedChannel, allowStableFallback, currentAppVersion)</ID>
     <ID>MaxLineLength:ExecutionStateRepository.kt$ExecutionStateRepository$if</ID>
     <ID>MaxLineLength:HistoryRepository.kt$HistoryRepository$override suspend fun loadFromStore(): List&lt;RunRecord&gt;</ID>
     <ID>MaxLineLength:HomeAccountCard.kt$game.cloud &amp;&amp; game.key == "CloudSR" -&gt; account.starrailToken.isNotBlank() || account.hasStarrailCloudKeepLogin</ID>
@@ -744,7 +586,6 @@
     <ID>MaxLineLength:HttpTransport.kt$HttpResponse.Companion$)</ID>
     <ID>MaxLineLength:HttpTransport.kt$private fun Map&lt;String, List&lt;String&gt;&gt;.immutableCopy(): Map&lt;String, List&lt;String&gt;&gt;</ID>
     <ID>MaxLineLength:LatestRunCard.kt$Box(Modifier.fillMaxWidth().height(0.5.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)))</ID>
-    <ID>MaxLineLength:LocalConfigProvider.kt$LocalConfigProvider$fun selectedChannel(): DsConfigChannel</ID>
     <ID>MaxLineLength:Localization.kt$"ACT_ID 失效自动刷新" to Translation("Refresh ACT_ID automatically when it expires", "ACT_ID失効時に自動更新", "ACT_ID 만료 시 자동 새로고침")</ID>
     <ID>MaxLineLength:Localization.kt$"Cookie 失效后可自动刷新，无需重新扫码" to Translation("Refreshes automatically when the Cookie expires; no new scan required", "Cookie失効時に自動更新します。再スキャンは不要です", "Cookie가 만료되면 자동으로 갱신되며 다시 스캔할 필요가 없습니다")</ID>
     <ID>MaxLineLength:Localization.kt$"MIHOYO_CLOUD_DEVICE_ID（可选）" to Translation("MIHOYO_CLOUD_DEVICE_ID (optional)", "MIHOYO_CLOUD_DEVICE_ID（任意）", "MIHOYO_CLOUD_DEVICE_ID(선택 사항)")</ID>
@@ -1071,7 +912,6 @@
     <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$suspend fun exchangeComboToken( gameKey: String, cookieHeader: String, deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;String&gt;</ID>
     <ID>ReturnCount:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
     <ID>ReturnCount:CookieRefresher.kt$CookieRefresher$suspend fun refresh( uid: String, stoken: String, mid: String, httpTransport: HttpTransport, onDiagnostic: (message: String, detail: String) -&gt; Unit = { _, _ -&gt; }, ): RefreshedCookie?</ID>
-    <ID>ReturnCount:DsConfig.kt$DsConfig.Companion$private fun parseSingle( json: JSONObject, requireSignature: Boolean, currentAppVersion: String, ): DsConfig?</ID>
     <ID>ReturnCount:ErrorText.kt$ErrorText$fun detailOf( e: Throwable?, includeStackTrace: Boolean = false, ): String</ID>
     <ID>ReturnCount:HomeViewModel.kt$HomeViewModel$fun runNow()</ID>
     <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getBoolean( key: String?, defValue: Boolean, ): Boolean</ID>
@@ -1153,7 +993,6 @@
     <ID>TooGenericExceptionCaught:HomeViewModel.kt$HomeViewModel$e: Throwable</ID>
     <ID>TooGenericExceptionCaught:HttpTransport.kt$error: Exception</ID>
     <ID>TooGenericExceptionCaught:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:LocalConfigProvider.kt$LocalConfigProvider$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LogExporter.kt$LogExporter$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LogsScreen.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LogsViewModel.kt$LogsViewModel$e: Exception</ID>
@@ -1171,7 +1010,6 @@
     <ID>TooGenericExceptionCaught:QRLoginManager.kt$QRLoginManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:QuestTickApp.kt$QuestTickApp$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:RecordsViewModel.kt$RecordsViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:RefreshWorker.kt$RefreshWorker$error: Exception</ID>
     <ID>TooGenericExceptionCaught:RewardIconCache.kt$RewardIconCache$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RoomAccountStore.kt$RoomAccountStore$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RoomHistoryStore.kt$RoomHistoryStore$e: Exception</ID>
@@ -1222,213 +1060,6 @@
     <ID>TooManyFunctions:TrustedRedirects.kt$TrustedRedirects</ID>
     <ID>TooManyFunctions:TrustedUrlPolicy.kt$TrustedUrlPolicy</ID>
     <ID>UnreachableCatchBlock:PostRunActionWorker.kt$PostRunActionWorker$catch (e: org.json.JSONException) { appErrorLogger.record("运行后动作解析", e) finishWithoutRetry(action, "invalid-action-payload") }</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$for (i in 0 until navigator.length()) { val path = navigator.optJSONObject(i)?.optString("app_path") ?: continue val candidate = parseNavigationPath(path, source) if (candidate != null) { candidates += candidate } else if (path.contains(source.basePath)) { rejectedGamePath = true } }</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$if (rejectedGamePath || candidates.size != 1) return null</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$if (root.optInt("retcode", Int.MIN_VALUE) != 0) return null</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$return candidates.first()</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$return try { val response = httpTransport.getIdempotent( url, headers = mapOf("User-Agent" to Endpoints.USER_AGENT, "Accept" to "application/json"), config = HttpRequestConfig(maxResponseBytes = MAX_NAVIGATION_BYTES), ) if (response.code !in 200..299) return null val final = response.finalUrl.ifBlank { url } val finalUri = URI(final) if (finalUri.scheme != "https" || finalUri.host?.lowercase() != NAVIGATION_HOST || finalUri.path != NAVIGATION_PATH || finalUri.rawQuery != "gids=${source.gids}") return null parseFromNavigation(response.body, game.key) } catch (e: Exception) { e.throwIfCancellation() recordError?.invoke("${game.name} act_id 导航获取失败: ${ErrorText.detailOf(e)}") AppLog.w("ActId", "导航 act_id 获取失败: ${game.key}", e) null }</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$val candidates = linkedSetOf&lt;String&gt;()</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$val navigator = root.optJSONObject("data")?.optJSONArray("navigator") ?: return null</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$val root = try { JSONObject(body ?: return null) } catch (_: Exception) { return null }</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$val source = NAVIGATION_SOURCES[game.key] ?: return null</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$val source = NAVIGATION_SOURCES[gameKey] ?: return null</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$val url = "$NAVIGATION_URL?gids=${source.gids}"</ID>
-    <ID>UnreachableCode:ActId.kt$ActId$var rejectedGamePath = false</ID>
-    <ID>UnreachableCode:ActIdStore.kt$ActIdStore$return@synchronized try { val obj = JSONObject(raw) val map = mutableMapOf&lt;String, String&gt;() for (name in obj.keys()) { obj.optString(name).takeIf { it.isNotBlank() }?.let { map[name] = it } } map.also { cache = it } } catch (_: Exception) { mutableMapOf&lt;String, String&gt;().also { cache = it } }</ID>
-    <ID>UnreachableCode:ActIdStore.kt$ActIdStore$val raw = prefs.getString(key, null) ?: return@synchronized mutableMapOf&lt;String, String&gt;().also { cache = it }</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$candidates.add(ApkAsset(name, url, sha))</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (!name.endsWith(".apk", true) || !TrustedUrlPolicy.isUpdateAssetUrl(url)) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (findApkAsset(release.optJSONArray("assets"), version) == null) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (isLikelyPreReleaseVersion(rawVersion)) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (name.contains("unsigned", true)) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (release.optBoolean("draft") || release.optBoolean("prerelease")) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (sha.isBlank()) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (shouldReplace) { best = release bestVersion = version bestPublishedAt = publishedAt }</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$if (version.isBlank()) continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$optString("name")</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val name = o.optString("name")</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val o = assets.optJSONObject(i) ?: continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val publishedAt = release.optString("published_at")</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val rawVersion = release.optString("tag_name").ifBlank { release.optString("name") }</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val release = arr.optJSONObject(i) ?: continue</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val sha = o .optString("digest") .removePrefix("sha256:") .lowercase() .takeIf { SHA256_PATTERN.matches(it) } .orEmpty()</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val shouldReplace = best == null || compareVersions(version, bestVersion) &gt; 0 || (compareVersions(version, bestVersion) == 0 &amp;&amp; publishedAt &gt; bestPublishedAt)</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val url = o.optString("browser_download_url")</ID>
-    <ID>UnreachableCode:AppUpdateChecker.kt$AppUpdateChecker$val version = normalizeVersion(rawVersion)</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$if (!hasMatchingSignature(currentInfo, archiveInfo)) return false</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$if (apkVersionCode &lt;= currentVersionCode) return false</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$if (archiveInfo.packageName != context.packageName) return false</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$if (signingInfo.hasMultipleSigners()) { signingInfo.apkContentsSigners.orEmpty().asList() } else { signingInfo.signingCertificateHistory.orEmpty().asList() }</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$return versionNameCompatible</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val apkVersion = normalizeVersion(archiveInfo.versionName.orEmpty())</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val apkVersionCode = longVersionCode(archiveInfo)</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val archiveInfo = archivePackageInfo(context, file) ?: return false</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val currentInfo = currentPackageInfo(context) ?: return false</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val currentVersionCode = longVersionCode(currentInfo)</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val expectedVersion = normalizeVersion(info.latestVersion)</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val signingInfo = info.signingInfo ?: return emptySet()</ID>
-    <ID>UnreachableCode:AppUpdateInstaller.kt$AppUpdateInstaller$val versionNameCompatible = apkVersion.isBlank() || expectedVersion.isBlank() || !AppUpdateChecker.isVersionNewer(expectedVersion, apkVersion)</ID>
-    <ID>UnreachableCode:AppUpdateNetwork.kt$AppUpdateNetwork$val caps = cm.getNetworkCapabilities(network) ?: return NetLevel.NORMAL</ID>
-    <ID>UnreachableCode:AppUpdateNetwork.kt$AppUpdateNetwork$val cm = context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return NetLevel.NORMAL</ID>
-    <ID>UnreachableCode:AppUpdateNetwork.kt$AppUpdateNetwork$val network = cm.activeNetwork ?: return NetLevel.OFFLINE</ID>
-    <ID>UnreachableCode:AppUpdateNetwork.kt$AppUpdateNetwork$when { caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -&gt; NetLevel.FAST caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &amp;&amp; caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) -&gt; NetLevel.FAST caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -&gt; NetLevel.NORMAL else -&gt; NetLevel.NORMAL }</ID>
-    <ID>UnreachableCode:BootReceiver.kt$BootReceiver$CoroutineScope(Dispatchers.IO).launch { try { AppUpdateInstaller.cleanupInstalledApks(appContext, BuildConfig.VERSION_NAME) val settings = store.getAppSettings() if (settings.scheduleEnabled) { scheduler.schedule(settings.scheduleHour, settings.scheduleMinute) } else { scheduler.cancel() } } catch (error: Exception) { appErrorLogger.record("系统事件重新调度", error) } finally { pending.finish() } }</ID>
-    <ID>UnreachableCode:BootReceiver.kt$BootReceiver$if (action !in RESCHEDULE_ACTIONS) return</ID>
-    <ID>UnreachableCode:BootReceiver.kt$BootReceiver$val action = intent.action ?: return</ID>
-    <ID>UnreachableCode:BootReceiver.kt$BootReceiver$val appContext = context.applicationContext</ID>
-    <ID>UnreachableCode:BootReceiver.kt$BootReceiver$val pending = goAsync()</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$AppLog.d(TAG, "refresh sr: currentSr=$currentSr")</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$AppLog.d(TAG, "refresh ys: currentYs=$currentYs")</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$AppLog.d(TAG, "sr refreshed: $v")</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$AppLog.d(TAG, "ys refreshed: $v")</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$AppLog.w(TAG, "sr refresh failed", e)</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$AppLog.w(TAG, "ys refresh failed", e)</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$ctx .getSharedPreferences("signin_cloud_version", Context.MODE_PRIVATE) .edit() .putString("cloud_ys_version", currentYs) .putString("cloud_sr_version", currentSr) .putLong("last_fetch_time_ms_ys", lastFetchTimeMsYs) .putLong("last_fetch_time_ms_sr", lastFetchTimeMsSr) .apply()</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$if (isWithinRefreshInterval(lastFetchTimeMsSr)) { AppLog.d(TAG, "skip sr refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentSr=$currentSr") return Result.success(currentSr) }</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$if (isWithinRefreshInterval(lastFetchTimeMsYs)) { AppLog.d(TAG, "skip ys refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentYs=$currentYs") return Result.success(currentYs) }</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$recordFetchAttempt(ys = false, timestampMs = System.currentTimeMillis(), context = ctx)</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$recordFetchAttempt(ys = true, timestampMs = System.currentTimeMillis(), context = ctx)</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$return CloudAppVersionFetcher .fetchCloudSr(httpTransport) .onSuccess { v -&gt; update(null, v, ctx) AppLog.d(TAG, "sr refreshed: $v") }.onFailure { e -&gt; recordFetchAttempt(ys = false, timestampMs = System.currentTimeMillis(), context = ctx) AppLog.w(TAG, "sr refresh failed", e) }</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$return CloudAppVersionFetcher .fetchCloudYs(httpTransport) .onSuccess { v -&gt; update(v, null, ctx) AppLog.d(TAG, "ys refreshed: $v") }.onFailure { e -&gt; recordFetchAttempt(ys = true, timestampMs = System.currentTimeMillis(), context = ctx) AppLog.w(TAG, "ys refresh failed", e) }</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$update(null, v, ctx)</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$update(v, null, ctx)</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$val ctx = appContext ?: return Result.failure(IllegalStateException("CloudVersionRepository not initialized"))</ID>
-    <ID>UnreachableCode:CloudAppVersionFetcher.kt$CloudVersionRepository$val ctx = context ?: appContext ?: return</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$Result.success(QRCode(ticket = ticket, url = qrUrl))</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$if (openId.isBlank() || comboToken.isBlank()) { return Result.failure(RuntimeException("combo webLogin: open_id 或 combo_token 为空")) }</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$if (ticket.isBlank() || qrUrl.isBlank()) { return Result.failure(RuntimeException("createQRLogin: ticket or url is blank")) }</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$return Result.success(buildWebComboToken(config, appId, channelId, openId, comboToken))</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val appId = data .optString("app_id") .ifBlank { nested?.optString("app_id").orEmpty() } .ifBlank { config.sdkAppId }</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val channelId = data .optString("channel_id") .ifBlank { nested?.optString("channel_id").orEmpty() } .ifBlank { config.channelId }</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val comboToken = data .optString("combo_token") .ifBlank { nested?.optString("combo_token").orEmpty() }</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val data = json.optJSONObject("data") ?: return Result.failure(RuntimeException("createQRLogin: data is null"))</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val data = jsonObjectFrom(json.opt("data")) ?: return Result.failure(RuntimeException("combo webLogin: data is null"))</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val nested = jsonObjectFrom(data.opt("data"))</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val openId = data .optString("open_id") .ifBlank { nested?.optString("open_id").orEmpty() }</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val qrUrl = data.optString("url")</ID>
-    <ID>UnreachableCode:CloudQRLogin.kt$CloudQRLogin$val ticket = data.optString("ticket")</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$comboToken = token</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$exchangeComboToken(gameKey, c.cookieHeader, deviceId, httpTransport, onError)</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$exchangeError = ""</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$exchanging = false</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$exchanging = true</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$val c = confirmed ?: return@LaunchedEffect</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$val result = withContext(Dispatchers.IO) { CloudQRLogin.exchangeComboToken(gameKey, c.cookieHeader, deviceId, httpTransport, onError) }</ID>
-    <ID>UnreachableCode:CloudQRLoginScreen.kt$val token = result.getOrElse { e -&gt; exchangeError = e.message ?: "获取云游戏 Token 失败" exchanging = false return@LaunchedEffect }</ID>
-    <ID>UnreachableCode:CookieRefresher.kt$CookieRefresher$isBlank()</ID>
-    <ID>UnreachableCode:CookieRefresher.kt$CookieRefresher$return RefreshedCookie(cookieToken, ltoken, fullCookie)</ID>
-    <ID>UnreachableCode:CookieRefresher.kt$CookieRefresher$return null</ID>
-    <ID>UnreachableCode:CookieRefresher.kt$CookieRefresher$val fullCookie = buildCookie(uid, cookieToken, ltoken, mid)</ID>
-    <ID>UnreachableCode:CookieRefresher.kt$CookieRefresher$val ltoken = try { val headers = mapOf("Cookie" to stokenCookie) val resp = httpTransport.get( "https://api-takumi.mihoyo.com/auth/api/getLTokenBySToken", headers, ) val json = resp.json() val retcode = json.optInt("retcode", -999) if (retcode != 0) { AppLog.w(TAG, "getLTokenBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}") onDiagnostic( "LToken 刷新接口返回错误", "getLTokenBySToken http=${resp.code}, retcode=$retcode, message=${json.optString("message")}", ) "" } else { json.optJSONObject("data")?.optString("ltoken").orEmpty() } } catch (e: Exception) { e.throwIfCancellation() AppLog.w(TAG, "getLTokenBySToken exception, uid=${Mask.uid(uid)}", e) onDiagnostic("LToken 刷新请求异常", ErrorText.detailOf(e)) "" }</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$"${types.joinToString( "+", )}, internet=${caps.hasCapability( NetworkCapabilities.NET_CAPABILITY_INTERNET, )}, validated=${caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)}"</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$add("wifi")</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$hasTransport(NetworkCapabilities.TRANSPORT_WIFI)</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) add("cellular")</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) add("ethernet")</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) add("vpn")</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$val caps = cm.getNetworkCapabilities(network) ?: return "unknown"</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$val network = cm.activeNetwork ?: return "none"</ID>
-    <ID>UnreachableCode:CrashHandler.kt$CrashHandler$val types = buildList { if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) add("wifi") if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) add("cellular") if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) add("ethernet") if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) add("vpn") }.ifEmpty { listOf("other") }</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$WindowCompat.getInsetsController(window, view).apply { isAppearanceLightStatusBars = lightIcons isAppearanceLightNavigationBars = lightIcons }</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$WindowCompat.setDecorFitsSystemWindows(window, false)</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.Q) { window.isNavigationBarContrastEnforced = false }</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$val window = (view.parent as? DialogWindowProvider)?.window ?: return@SideEffect</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.navigationBarColor = resolvedNavigationBarColor.toArgb()</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.setBackgroundDrawable(ColorDrawable(Color.Transparent.toArgb()))</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.setDimAmount(0f)</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)</ID>
-    <ID>UnreachableCode:DialogSystemBars.kt$window.statusBarColor = resolvedStatusBarColor.toArgb()</ID>
-    <ID>UnreachableCode:DsConfig.kt$DsConfig.Companion$let { parseSingle(it, requireSignature, currentAppVersion) }</ID>
-    <ID>UnreachableCode:DsConfig.kt$DsConfig.Companion$optJSONObject(index)</ID>
-    <ID>UnreachableCode:DsConfig.kt$DsConfig.Companion$return parsed.firstOrNull { it.channel == selectedChannel } ?: if (allowStableFallback) parsed.firstOrNull { it.channel == DsConfigChannel.STABLE } else null</ID>
-    <ID>UnreachableCode:DsConfig.kt$DsConfig.Companion$val arr = json.optJSONArray("configs") ?: return null</ID>
-    <ID>UnreachableCode:DsConfig.kt$DsConfig.Companion$val parsed = (0 until arr.length()).mapNotNull { index -&gt; arr.optJSONObject(index)?.let { parseSingle(it, requireSignature, currentAppVersion) } }</ID>
-    <ID>UnreachableCode:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$return decryptToString(encrypted)</ID>
-    <ID>UnreachableCode:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$val encrypted = delegate.getString(key, null) ?: return null</ID>
-    <ID>UnreachableCode:LogExporterTest.kt$LogExporterTest$names.add(entry.name)</ID>
-    <ID>UnreachableCode:LogExporterTest.kt$LogExporterTest$val entry = zip.nextEntry ?: break</ID>
-    <ID>UnreachableCode:MailStore.kt$MailStore$return try { MailSettings.fromJson(JSONObject(raw)).also { cache = it } } catch (_: Exception) { MailSettings().also { cache = it } }</ID>
-    <ID>UnreachableCode:MailStore.kt$MailStore$val raw = prefs.getString(key, null) ?: return MailSettings().also { cache = it }</ID>
-    <ID>UnreachableCode:MainAccountHosts.kt$editingAccount ?: displayedAccount ?: return</ID>
-    <ID>UnreachableCode:MainAccountHosts.kt$targetAccount ?: displayedTargetAccount ?: return</ID>
-    <ID>UnreachableCode:MainActivity.kt$MainActivity$if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.M) { lp.preferredDisplayModeId = best.modeId }</ID>
-    <ID>UnreachableCode:MainActivity.kt$MainActivity$lp.preferredRefreshRate = best.refreshRate</ID>
-    <ID>UnreachableCode:MainActivity.kt$MainActivity$val best = candidates .filter { it.refreshRate.isFinite() &amp;&amp; it.refreshRate &gt; 0f } .maxByOrNull { it.refreshRate } ?: return</ID>
-    <ID>UnreachableCode:MainActivity.kt$MainActivity$val lp = window.attributes</ID>
-    <ID>UnreachableCode:MainActivity.kt$MainActivity$window.attributes = lp</ID>
-    <ID>UnreachableCode:MysAppVersionRepository.kt$MysAppVersionRepository$ctx .getSharedPreferences(SP_NAME, Context.MODE_PRIVATE) .edit() .putString(KEY_VERSION, currentVersion) .putLong(KEY_LAST_FETCH_TIME, lastFetchTimeMs) .apply()</ID>
-    <ID>UnreachableCode:MysAppVersionRepository.kt$MysAppVersionRepository$val ctx = context ?: appContext ?: return</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$Result.success(QRCode(ticket = ticket, url = url))</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$for (index in 0 until list.length()) { val item = list.optJSONObject(index) ?: continue val token = item.firstNonBlank("token", "value", "token_value", "tokenValue") val tokenName = item.firstNonBlank("name", "token_name", "tokenName").lowercase() val tokenType = item.firstNonBlank("token_type", "tokenType", "type") when { tokenType == TOKEN_TYPE_STOKEN -&gt; stokenFromTokenType = stokenFromTokenType.ifBlank { token } tokenName == "stoken" || tokenName == "stoken_v2" -&gt; stokenFallback = stokenFallback.ifBlank { token } tokenName == "ltoken" || tokenName == "ltoken_v2" || tokenType == TOKEN_TYPE_LTOKEN -&gt; { ltoken = ltoken.ifBlank { token } } } }</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$for (index in 0 until tokens.length()) { val item = tokens.optJSONObject(index) ?: continue val token = item.firstNonBlank("token", "value", "token_value", "tokenValue") val tokenName = item.firstNonBlank("name", "token_name", "tokenName").lowercase() val tokenType = item.firstNonBlank("token_type", "tokenType", "type") val tokenCookies = CookieParser.parseCookieHeader(token) uid = uid.ifBlank { item.firstNonBlank("uid", "aid", "account_id", "stuid", "login_uid") } uid = uid.ifBlank { tokenCookies.firstNonBlank("stuid", "account_id", "account_id_v2", "login_uid") } mid = mid.ifBlank { item.firstNonBlank("mid", "account_mid", "account_mid_v2", "stmid", "stmid_v2") } mid = mid.ifBlank { tokenCookies.firstNonBlank("stmid_v2", "stmid", "account_mid_v2", "mid") } cookieToken = cookieToken.ifBlank { tokenCookies.firstNonBlank("cookie_token_v2", "cookie_token") } ltoken = ltoken.ifBlank { tokenCookies.firstNonBlank("ltoken_v2", "ltoken") } stokenFallback = stokenFallback.ifBlank { tokenCookies.firstNonBlank("stoken_v2", "stoken") } loginTicket = loginTicket.ifBlank { tokenCookies.firstNonBlank("login_ticket", "login_ticket_v2") } when { tokenType == TOKEN_TYPE_STOKEN -&gt; { stokenFromTokenType = stokenFromTokenType.ifBlank { token } } tokenName == "stoken" || tokenName == "stoken_v2" -&gt; { stokenFallback = stokenFallback.ifBlank { token } } tokenName == "ltoken" || tokenName == "ltoken_v2" || tokenType == TOKEN_TYPE_LTOKEN -&gt; { ltoken = ltoken.ifBlank { token } } tokenName == "cookie_token" || tokenName == "cookie_token_v2" || tokenType == TOKEN_TYPE_COOKIE_TOKEN -&gt; { cookieToken = cookieToken.ifBlank { token } } tokenName == "login_ticket" || tokenName == "login_ticket_v2" -&gt; { loginTicket = loginTicket.ifBlank { token } } } }</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$if (ticket.isBlank() || url.isBlank()) { return Result.failure(RuntimeException("createQRLogin: ticket or url is blank")) }</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$return ConfirmedBodyTokens( uid = uid, cookieToken = cookieToken, ltoken = ltoken, stoken = stokenFromTokenType.ifBlank { stokenFallback }, mid = mid, loginTicket = loginTicket, )</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$return MultiToken(stoken = stokenFromTokenType.ifBlank { stokenFallback }, ltoken = ltoken)</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$val data = json.optJSONObject("data") ?: return Result.failure(RuntimeException("createQRLogin: data is null"))</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$val list = json.optJSONObject("data")?.optJSONArray("list") ?: return MultiToken()</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$val ticket = data.optString("ticket")</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$val tokens = data.optJSONArray("tokens") ?: return ConfirmedBodyTokens()</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$val url = data.optString("url")</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var cookieToken = ""</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var loginTicket = ""</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var ltoken = ""</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var mid = ""</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var stokenFallback = ""</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var stokenFromTokenType = ""</ID>
-    <ID>UnreachableCode:QRLoginManager.kt$QRLoginManager$var uid = ""</ID>
-    <ID>UnreachableCode:RewardIconCache.kt$RewardIconCache$files.filter { it.lastModified() &lt; cutoff }.forEach { it.delete() }</ID>
-    <ID>UnreachableCode:RewardIconCache.kt$RewardIconCache$if (total &gt; MAX_CACHE_BYTES) { remaining.sortedBy { it.lastModified() }.forEach { f -&gt; if (total &lt;= MAX_CACHE_BYTES) return@forEach total -= f.length() f.delete() } }</ID>
-    <ID>UnreachableCode:RewardIconCache.kt$RewardIconCache$val cutoff = now - MAX_AGE_MILLIS</ID>
-    <ID>UnreachableCode:RewardIconCache.kt$RewardIconCache$val files = dir.listFiles() ?: return</ID>
-    <ID>UnreachableCode:RewardIconCache.kt$RewardIconCache$val remaining = dir.listFiles() ?: return</ID>
-    <ID>UnreachableCode:RewardIconCache.kt$RewardIconCache$var total = remaining.sumOf { it.length() }</ID>
-    <ID>UnreachableCode:RootCheckCache.kt$RootCheckCache$if (System.currentTimeMillis() - cachedTime &gt; CACHE_VALID_MS) return null</ID>
-    <ID>UnreachableCode:RootCheckCache.kt$RootCheckCache$return try { parseFromJson(jsonStr) } catch (e: Exception) { AppLog.w(TAG, "Root 检测结果缓存解析失败，将重新检测", e) null }</ID>
-    <ID>UnreachableCode:RootCheckCache.kt$RootCheckCache$val cachedTime = prefs.getLong(KEY_TIME, 0)</ID>
-    <ID>UnreachableCode:RootCheckCache.kt$RootCheckCache$val jsonStr = prefs.getString(KEY_RESULT, null) ?: return null</ID>
-    <ID>UnreachableCode:RunPersistenceRepository.kt$RunPersistenceRepository$if (result.skipped) return@forEach</ID>
-    <ID>UnreachableCode:RunPersistenceRepository.kt$RunPersistenceRepository$upsertMergedCalendarState( CalendarTaskStateEntity( dayKey = businessDay, taskId = task.taskId, accountId = task.accountId, taskType = task.taskType, gameKey = task.gameKey, status = if (result.success) CALENDAR_TASK_STATUS_SIGNED else CALENDAR_TASK_STATUS_FAILED, updatedAt = now, sourceRunId = run.runId, ), )</ID>
-    <ID>UnreachableCode:RunPersistenceRepository.kt$RunPersistenceRepository$val result = task.resultJson.takeIf { it.isNotBlank() }?.let { raw -&gt; try { TaskResult.fromJson(JSONObject(raw)) } catch (_: Exception) { null } } ?: return@forEach</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$if (max == min) return HslColor(0f, 0f, lightness)</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$return HslColor(hue, saturation, lightness)</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val b = android.graphics.Color.blue(color) / 255f</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val color = runCatching { android.graphics.Color.parseColor(hex) }.getOrNull() ?: return HslColor(210f, 0.65f, 0.5f)</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val delta = max - min</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val g = android.graphics.Color.green(color) / 255f</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val hue = when (max) { r -&gt; 60f * (((g - b) / delta) % 6f) g -&gt; 60f * (((b - r) / delta) + 2f) else -&gt; 60f * (((r - g) / delta) + 4f) }.let { if (it &lt; 0f) it + 360f else it }</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val lightness = (max + min) / 2f</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val max = maxOf(r, g, b)</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val min = minOf(r, g, b)</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val r = android.graphics.Color.red(color) / 255f</ID>
-    <ID>UnreachableCode:SettingsAppearancePage.kt$val saturation = delta / (1f - kotlin.math.abs(2f * lightness - 1f))</ID>
-    <ID>UnreachableCode:Theme.kt$CompositionLocalProvider(LocalAppUiTheme provides resolvedPalette) { MaterialTheme( colorScheme = colorScheme, typography = AppTypography, content = content, ) }</ID>
-    <ID>UnreachableCode:Theme.kt$if (!view.isInEditMode) { SideEffect { ThemeModeController.syncApplicationNightMode(view.context, themeMode) val window = (view.context as Activity).window // Use the resolved Material background so dynamic colors also reach the cutout/status and navigation areas. window.setBackgroundDrawable(ColorDrawable(colorScheme.background.toArgb())) window.statusBarColor = Color.Transparent.toArgb() window.navigationBarColor = colorScheme.background.toArgb() WindowCompat.getInsetsController(window, view).apply { isAppearanceLightStatusBars = !darkTheme isAppearanceLightNavigationBars = !darkTheme } } }</ID>
-    <ID>UnreachableCode:Theme.kt$val colorScheme = ( dynamicScheme ?: if (darkTheme) { darkColorScheme( primary = palette.brand, onPrimary = Color(0xFF0B1120), primaryContainer = palette.cardElevated, onPrimaryContainer = palette.textPrimary, secondary = palette.brandAlt, onSecondary = Color(0xFF0B1120), background = palette.backgroundBottom, onBackground = palette.textPrimary, surface = palette.card, onSurface = palette.textPrimary, surfaceVariant = palette.field, onSurfaceVariant = palette.textSecondary, outline = palette.hairline, outlineVariant = palette.hairline, error = DangerRed, onError = Color.White, ) } else { lightColorScheme( primary = palette.brand, onPrimary = Color.White, primaryContainer = palette.cardElevated, onPrimaryContainer = palette.textPrimary, secondary = palette.brandAlt, onSecondary = Color.White, background = palette.backgroundBottom, onBackground = palette.textPrimary, surface = palette.card, onSurface = palette.textPrimary, surfaceVariant = palette.field, onSurfaceVariant = palette.textSecondary, outline = palette.hairline, outlineVariant = palette.hairline, error = DangerRed, onError = Color.White, ) } ).let { scheme -&gt; if (useCustomColor) { // 自定义色同时映射到背景、卡片、输入区域和边框，保证全局观感一致。 val customBackground = if (darkTheme) { blendColor(scheme.background, customColor, 0.08f) } else { blendColor(scheme.background, customColor, 0.035f) } scheme.copy( primary = customColor, secondary = customSecondaryColor ?: customColor, tertiary = customTertiaryColor ?: customColor, primaryContainer = blendColor(scheme.primaryContainer, customColor, if (darkTheme) 0.32f else 0.16f), background = customBackground, surface = blendColor(scheme.surface, customColor, if (darkTheme) 0.14f else 0.06f), surfaceVariant = blendColor(scheme.surfaceVariant, customColor, if (darkTheme) 0.2f else 0.1f), outline = blendColor(scheme.outline, customColor, 0.28f), outlineVariant = blendColor(scheme.outlineVariant, customColor, 0.22f), ) } else { scheme } }.let { scheme -&gt; if (darkTheme &amp;&amp; oledPureBlackEnabled) { scheme.copy( background = palette.backgroundBottom, surface = palette.card, surfaceVariant = palette.field, ) } else { scheme } }</ID>
-    <ID>UnreachableCode:Theme.kt$val resolvedPalette = if (dynamicScheme != null || useCustomColor) { AppUiThemePalette( brand = colorScheme.primary, brandAlt = colorScheme.secondary, backgroundTop = colorScheme.background, backgroundBottom = colorScheme.background, card = colorScheme.surface, cardElevated = colorScheme.surfaceVariant, field = colorScheme.surfaceVariant, textPrimary = colorScheme.onSurface, textSecondary = colorScheme.onSurfaceVariant, hairline = colorScheme.outline, accent = colorScheme.tertiary, ) } else { palette }</ID>
-    <ID>UnreachableCode:Theme.kt$val view = LocalView.current</ID>
-    <ID>UnreachableCode:ThemeModeController.kt$ThemeModeController$runCatching { uiModeManager.setApplicationNightMode(mode) }</ID>
-    <ID>UnreachableCode:ThemeModeController.kt$ThemeModeController$setApplicationNightMode(mode)</ID>
-    <ID>UnreachableCode:ThemeModeController.kt$ThemeModeController$val mode = when (themeMode.uppercase()) { "LIGHT" -&gt; UiModeManager.MODE_NIGHT_NO "DARK" -&gt; UiModeManager.MODE_NIGHT_YES else -&gt; UiModeManager.MODE_NIGHT_AUTO }</ID>
-    <ID>UnreachableCode:ThemeModeController.kt$ThemeModeController$val uiModeManager = context.getSystemService(UiModeManager::class.java) ?: return</ID>
-    <ID>UnreachableCode:TrustedRedirects.kt$TrustedRedirects$return response.request.url.resolve(location) ?: throw UntrustedRedirectException("invalid redirect Location")</ID>
-    <ID>UnreachableCode:TrustedRedirects.kt$TrustedRedirects$return snapshot</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$if (isDirectUpdateAssetUrl(candidateRawUrl)) return candidate.host == initial.host</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$if (url.host != "api.github.com") return false</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return candidate.host == GITHUB_RELEASE_ASSET_HOST &amp;&amp; candidate.encodedPath.startsWith(GITHUB_RELEASE_ASSET_PATH_PREFIX)</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return initial.scheme == candidate.scheme &amp;&amp; initial.host == candidate.host &amp;&amp; initial.port == candidate.port</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return url.host == "github.com" &amp;&amp; ( url.encodedPath == "$GITHUB_REPOSITORY_PATH/releases" || url.encodedPath.startsWith("$GITHUB_REPOSITORY_PATH/releases/") )</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return url.host == "github.com" &amp;&amp; url.encodedPath.startsWith("$GITHUB_REPOSITORY_PATH/releases/download/")</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return url.host in activityResourceHosts</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return url.host in businessRequestHosts</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return url.host in rewardIconHosts</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return url.host in timeSourceHosts</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$return when (path) { "$GITHUB_API_REPOSITORY_PATH/releases/latest" -&gt; url.query == null "$GITHUB_API_REPOSITORY_PATH/releases" -&gt; url.queryParameterNames == setOf("per_page") &amp;&amp; url.queryParameter("per_page") == "20" else -&gt; false }</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$val candidate = parseHttps(candidateRawUrl) ?: return false</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$val initial = parseHttps(initialRawUrl) ?: return false</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$val path = url.encodedPath</ID>
-    <ID>UnreachableCode:TrustedUrlPolicy.kt$TrustedUrlPolicy$val url = parseHttps(rawUrl) ?: return false</ID>
     <ID>UnusedParameter:AccountEditScreen.kt$done: Boolean = false</ID>
     <ID>UnusedParameter:AppUpdateInstaller.kt$AppUpdateInstaller$context: Context</ID>
     <ID>UnusedParameter:AppUpdateInstaller.kt$AppUpdateInstaller$enforceSha256: Boolean = true</ID>

@@ -238,6 +238,7 @@ fun RecordsScreen(
                         )
                     }
                 }
+
                 loadState is RepositoryLoadState.InitialLoading || buildingInitialIndex -> {
                     item(key = "skeleton_1") {
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 90.dp, lineCount = 4)
@@ -246,6 +247,7 @@ fun RecordsScreen(
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 72.dp, lineCount = 3)
                     }
                 }
+
                 history.isEmpty() -> {
                     item(key = "empty_state") {
                         EmptyState(
@@ -271,6 +273,7 @@ fun RecordsScreen(
                         )
                     }
                 }
+
                 currentRunSummaries.isNotEmpty() -> {
                     // LazyColumn 只组合视口附近的运行卡片；详情在展开时按需读取。
                     items(
@@ -300,7 +303,10 @@ fun RecordsScreen(
                         }
                     }
                 }
-                else -> Unit
+
+                else -> {
+                    Unit
+                }
             }
             item(key = "spacer_bottom") { Spacer(Modifier.height(24.dp)) }
         }
@@ -484,12 +490,30 @@ private fun EmailDeliveryStatusRow(
                 val suffix = if (delivery.attemptCount > 0) "（等待第${delivery.attemptCount + 1}次尝试）" else ""
                 "邮件待发送$suffix" to WarnAmber
             }
-            PostRunActionRepository.STATUS_PROCESSING -> "邮件发送中" to MaterialTheme.colorScheme.primary
-            PostRunActionRepository.STATUS_DELIVERED -> "邮件已发送" to SuccessGreen
-            PostRunActionRepository.STATUS_FAILED -> "邮件发送失败" to DangerRed
-            PostRunActionRepository.STATUS_RESULT_UNKNOWN -> "邮件投递结果不确定，请确认后重发" to WarnAmber
-            PostRunActionRepository.STATUS_CANCELLED -> "邮件发送已取消" to TextSecondary
-            else -> "邮件状态未知" to TextSecondary
+
+            PostRunActionRepository.STATUS_PROCESSING -> {
+                "邮件发送中" to MaterialTheme.colorScheme.primary
+            }
+
+            PostRunActionRepository.STATUS_DELIVERED -> {
+                "邮件已发送" to SuccessGreen
+            }
+
+            PostRunActionRepository.STATUS_FAILED -> {
+                "邮件发送失败" to DangerRed
+            }
+
+            PostRunActionRepository.STATUS_RESULT_UNKNOWN -> {
+                "邮件投递结果不确定，请确认后重发" to WarnAmber
+            }
+
+            PostRunActionRepository.STATUS_CANCELLED -> {
+                "邮件发送已取消" to TextSecondary
+            }
+
+            else -> {
+                "邮件状态未知" to TextSecondary
+            }
         }
 
     Row(

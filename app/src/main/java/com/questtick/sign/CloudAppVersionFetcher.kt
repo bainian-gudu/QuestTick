@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 云游戏版本号的获取与缓存：按固定间隔（3 天）刷新，并允许用户自定义版本覆盖。
+ */
+
 import android.content.Context
 import com.questtick.log.AppLog
 import com.questtick.core.runCatchingCancellable
@@ -129,10 +133,17 @@ object CloudVersionRepository {
     }
 
     // 每个游戏独立记录最后刷新时间，避免只有单游戏 Token 时另一游戏无意义的刷新把公共时间推后。
-    private var lastFetchTimeMsYs: Long = 0L
-    private var lastFetchTimeMsSr: Long = 0L
+    //
+    // 下面三个字段与 update() / persist() 的 @Synchronized 并不完全重合：
+    // initialize() 在主线程写入它们，而 persist() 可能在后台协程读取。可见性版本字段
+    // （currentYs / currentSr / overrideYs / overrideSr）已单独标注 @Volatile，
+    // 这里必须与之一致，否则后台线程可能读到 null 的 appContext 而过期的
+    // lastFetchTimeMs 会让 persist() 静默跳过，错误持续整个 3 天刷新周期。
+    @Volatile private var lastFetchTimeMsYs: Long = 0L
 
-    private var appContext: Context? = null
+    @Volatile private var lastFetchTimeMsSr: Long = 0L
+
+    @Volatile private var appContext: Context? = null
 
     fun initialize(context: Context) {
         appContext = context.applicationContext

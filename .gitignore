@@ -28,3 +28,8 @@ keystore.properties
 
 # Local toolchain (not part of the project)
 .toolchain/
+
+# Kotlin / Gradle 增量编译会话与 Python 缓存
+.kotlin/
+__pycache__/
+*.pyc

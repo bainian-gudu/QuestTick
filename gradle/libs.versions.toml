@@ -1,20 +1,126 @@
 # 依赖与插件版本目录：构建脚本中不再硬编码版本号。
+#
+# 约定：
+# 1. 所有 app / baselineprofile 模块的依赖坐标与版本都在这里登记，构建脚本只用 libs.* 别名。
+# 2. 需要跟随同一版本升级的一组依赖（如 lifecycle 三件套、Room 四件套）共用一个 version 键。
+# 3. Compose 相关库不写版本，统一由 compose-bom 平台约束。
+
 [versions]
-ktlint = "1.5.0"
+# 与 .github/workflows/code-quality.yml 保持一致：CLI 与 Spotless 使用同一 ktlint 版本，
+# 否则两边规则集不同，会出现「本地 spotlessCheck 通过、CI 报错」的漂移。
+ktlint = "1.8.0"
+
+agp = "9.2.1"
+kotlin = "2.4.0"
+ksp = "2.3.9"
+baselineprofile = "1.5.0-alpha05"
+kover = "0.9.8"
+spotless = "7.0.4"
+detekt = "1.23.8"
+
 # 协程运行库与测试库共用同一版本，避免测试行为与生产环境不一致。
 kotlinx-coroutines = "1.11.0"
+
+composeBom = "2026.06.00"
+androidxCore = "1.18.0"
+coreSplashscreen = "1.2.0"
+lifecycle = "2.10.0"
+activityCompose = "1.13.0"
+
+okhttp = "5.4.0"
+hilt = "2.59.2"
+androidxHilt = "1.3.0"
+coil = "3.4.0"
+zxing = "3.5.3"
+work = "2.11.2"
+room = "2.8.4"
+rootbeer = "0.1.2"
+profileinstaller = "1.4.1"
+
+jakartaMail = "2.1.3"
+angusMail = "2.0.3"
+angusActivation = "2.0.2"
+
+junit4 = "4.13.2"
+json = "20250107"
+mockk = "1.13.12"
+turbine = "1.1.0"
+androidxTestCore = "1.6.1"
+androidxTestRunner = "1.6.2"
+androidxTestExtJunit = "1.2.1"
+espresso = "3.6.1"
+benchmarkMacro = "1.4.1"
+uiautomator = "2.3.0"
 
 [libraries]
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 
+# Compose：具体版本由 compose-bom 平台统一约束，故此处不写 version。
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "androidxHilt" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidxHilt" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "androidxHilt" }
+
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+
+work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+
+rootbeer-lib = { group = "com.scottyab", name = "rootbeer-lib", version.ref = "rootbeer" }
+profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+
+jakarta-mail-api = { group = "jakarta.mail", name = "jakarta.mail-api", version.ref = "jakartaMail" }
+angus-mail = { group = "org.eclipse.angus", name = "angus-mail", version.ref = "angusMail" }
+angus-activation = { group = "org.eclipse.angus", name = "angus-activation", version.ref = "angusActivation" }
+
+junit = { group = "junit", name = "junit", version.ref = "junit4" }
+json = { group = "org.json", name = "json", version.ref = "json" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacro" }
+uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+
 [plugins]
-android-application = { id = "com.android.application", version = "9.2.1" }
-android-test = { id = "com.android.test", version = "9.2.1" }
-baselineprofile = { id = "androidx.baselineprofile", version = "1.5.0-alpha05" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version = "2.4.0" }
-ksp = { id = "com.google.devtools.ksp", version = "2.3.9" }
-hilt = { id = "com.google.dagger.hilt.android", version = "2.59.2" }
-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.8" }
-spotless = { id = "com.diffplug.spotless", version = "7.0.4" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.8" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-test = { id = "com.android.test", version.ref = "agp" }
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

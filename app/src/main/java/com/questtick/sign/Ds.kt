@@ -1,7 +1,5 @@
 package com.questtick.sign
 
-import com.questtick.config.DsConfig
-import com.questtick.config.DsConfigRepository
 import org.json.JSONObject
 import java.security.MessageDigest
 import kotlin.random.Random
@@ -13,14 +11,33 @@ import kotlin.random.Random
  * - md5_v1：`salt=<salt>&t=<t>&r=<r>`
  * - md5_v2：`salt=<salt>&t=<t>&r=<r>&b=<body>&q=<query>`
  * 其中 body 为 JSON 字符串（按 key 字母序），query 为 URL 查询字符串（按 key 字母序）。
- * salt 与 algorithm 由 [DsConfigRepository] 提供；远程配置不可用时会回退到本地默认值。
+ *
+ * salt 与算法由调用方按接口类型显式指定，不再依赖任何远程或本地动态配置。
+ * 这些 salt 是米游社客户端公开常量，随客户端一起分发，不是密钥，因此不做混淆。
  */
 object Ds {
-    private const val CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
-    private const val BBS_X6_SALT = "t0qEgfub6cvueAPgR5m9aQWWVciEer7v"
+    /** DS 算法版本。 */
+    enum class Algorithm {
+        MD5_V1,
+        MD5_V2,
+    }
 
-    // 普通 luna 网页接口使用独立的 Web DS，不读取米游币 X6 动态配置。
-    private const val WEB_SALT = "d9200c84610886e8c874fc33c8f308b"
+    /** 通用 luna 接口使用的 salt（历史上由动态配置提供的默认 salt）。 */
+    internal const val LUNA_SALT = "yUZ3s0Sna1IrSNfk29Vo6vRapdOyqyhB"
+
+    /** 米游社 App 社区写接口（X6）使用的 salt。 */
+    internal const val X6_SALT = "t0qEgfub6cvueAPgR5m9aQWWVciEer7v"
+
+    /** 普通游戏签到 / 奖励等网页端接口使用的 salt。 */
+    internal const val WEB_SALT = "d9200c84610886e8c874fc33c8f308b"
+
+    private const val CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
+    private const val RANDOM_V1_LENGTH = 6
+    private const val V2_RANDOM_MIN = 100000
+    private const val V2_RANDOM_MAX = 200000
+    private const val V2_RANDOM_SPECIAL = "100000"
+    private const val V2_RANDOM_REPLACEMENT = "642367"
+    private const val MIN_SALT_LENGTH = 8
 
     private fun md5(input: String): String {
         val bytes = MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8))
@@ -29,29 +46,29 @@ object Ds {
 
     private fun randomString(length: Int): String = (1..length).map { CHARS[Random.nextInt(CHARS.length)] }.joinToString("")
 
+    private fun randomV2(): String = Random.nextInt(V2_RANDOM_MIN, V2_RANDOM_MAX + 1).toString()
+
     /**
      * 生成用于当前请求的 DS。
      *
      * @param body POST 请求体 JSON 字符串（已按 key 字母序）；GET 请求传空字符串
      * @param query URL 查询字符串（不含 ?，已按 key 字母序）；无查询参数传空字符串
-     * @param config DS 配置
+     * @param algorithm 算法版本
+     * @param salt 接口对应的 salt
      */
     fun generate(
         body: String = "",
         query: String = "",
-        config: DsConfig = DsConfigRepository.current,
+        algorithm: Algorithm = Algorithm.MD5_V1,
+        salt: String = LUNA_SALT,
     ): String {
         val t = System.currentTimeMillis() / 1000
         val r =
-            when (config.algorithm) {
-                DsConfig.ALGORITHM_MD5_V1 -> randomString(6)
-                DsConfig.ALGORITHM_MD5_V2 -> {
-                    val raw = Random.nextInt(100000, 200001)
-                    if (raw == 100000) "642367" else raw.toString()
-                }
-                else -> throw IllegalArgumentException("unsupported DS algorithm: ${config.algorithm}")
+            when (algorithm) {
+                Algorithm.MD5_V1 -> randomString(RANDOM_V1_LENGTH)
+                Algorithm.MD5_V2 -> randomV2()
             }
-        return generate(t, r, body, query, config)
+        return generate(t, r, body, query, algorithm, salt)
     }
 
     /** 米游社 App 社区写接口使用的 X6 DS。 */
@@ -60,14 +77,14 @@ object Ds {
         query: String = "",
     ): String {
         val timestampSeconds = System.currentTimeMillis() / 1000
-        val random = Random.nextInt(100001, 200001).toString()
-        return generateMd5V2(timestampSeconds, random, BBS_X6_SALT, body, query)
+        val random = Random.nextInt(V2_RANDOM_MIN + 1, V2_RANDOM_MAX + 1).toString()
+        return generateMd5V2(timestampSeconds, random, X6_SALT, body, query)
     }
 
-    /** 普通游戏签到/奖励接口使用的网页端 md5_v1 DS。 */
+    /** 普通游戏签到 / 奖励接口使用的网页端 md5_v1 DS。 */
     fun generateWeb(): String {
         val timestampSeconds = System.currentTimeMillis() / 1000
-        val random = randomString(6)
+        val random = randomString(RANDOM_V1_LENGTH)
         return generateMd5V1(timestampSeconds, random, WEB_SALT)
     }
 
@@ -75,32 +92,36 @@ object Ds {
      * 使用指定时间戳与随机串生成 DS，便于单元测试和异常参数校验。
      *
      * @param timestampSeconds Unix 秒级时间戳
-     * @param random 算法相关随机串：md5_v1 为 6 位 base36；md5_v2 为 100001..200000 的数字
+     * @param random 算法相关随机串：md5_v1 为 6 位 base36；md5_v2 为 100000..200000 的数字
      * @param body POST 请求体 JSON 字符串（已按 key 字母序）；GET 请求传空字符串
      * @param query URL 查询字符串（不含 ?，已按 key 字母序）；无查询参数传空字符串
-     * @param config DS 配置
+     * @param algorithm 算法版本
+     * @param salt 接口对应的 salt
      */
     fun generate(
         timestampSeconds: Long,
         random: String,
         body: String = "",
         query: String = "",
-        config: DsConfig = DsConfigRepository.current,
+        algorithm: Algorithm = Algorithm.MD5_V1,
+        salt: String = LUNA_SALT,
     ): String {
         require(timestampSeconds > 0) { "timestampSeconds must be positive" }
-        require(config.isUsable()) { "DS config is invalid" }
-        return when (config.algorithm) {
-            DsConfig.ALGORITHM_MD5_V1 -> {
-                require(random.length == 6) { "random must be 6 characters" }
+        require(salt.length >= MIN_SALT_LENGTH) { "DS salt is invalid" }
+        return when (algorithm) {
+            Algorithm.MD5_V1 -> {
+                require(random.length == RANDOM_V1_LENGTH) { "random must be 6 characters" }
                 require(random.all { it in CHARS }) { "random must only contain lowercase base36 characters" }
-                generateMd5V1(timestampSeconds, random, config.salt)
+                generateMd5V1(timestampSeconds, random, salt)
             }
-            DsConfig.ALGORITHM_MD5_V2 -> {
+
+            Algorithm.MD5_V2 -> {
                 val r = random.toIntOrNull()
-                require(r != null && r in 100000..200000) { "md5_v2 random must be an integer in [100000, 200000]" }
-                generateMd5V2(timestampSeconds, random, config.salt, body, query)
+                require(r != null && r in V2_RANDOM_MIN..V2_RANDOM_MAX) {
+                    "md5_v2 random must be an integer in [$V2_RANDOM_MIN, $V2_RANDOM_MAX]"
+                }
+                generateMd5V2(timestampSeconds, random, salt, body, query)
             }
-            else -> throw IllegalArgumentException("unsupported DS algorithm: ${config.algorithm}")
         }
     }
 
@@ -121,7 +142,7 @@ object Ds {
         query: String,
     ): String {
         // 社区规范：r = 100000 时需替换为 642367
-        val effectiveR = if (random == "100000") "642367" else random
+        val effectiveR = if (random == V2_RANDOM_SPECIAL) V2_RANDOM_REPLACEMENT else random
         val c = "salt=$salt&t=$timestampSeconds&r=$effectiveR&b=$body&q=$query"
         return "$timestampSeconds,$effectiveR,${md5(c)}"
     }
@@ -130,6 +151,20 @@ object Ds {
      * 将 [JSONObject] 序列化为 key 按字母序排列的 JSON 字符串，供 md5_v2 的 body 使用。
      */
     fun sortedJsonString(json: JSONObject): String = serializeJsonObject(json)
+
+    /**
+     * 对查询参数按 key 字母序排序后重新拼接，供 md5_v2 的 q 使用。
+     */
+    fun sortedQueryString(query: String): String {
+        if (query.isBlank()) return ""
+        return query
+            .split("&")
+            .mapNotNull { part ->
+                val idx = part.indexOf('=')
+                if (idx > 0) part.substring(0, idx) to part.substring(idx + 1) else null
+            }.sortedBy { it.first }
+            .joinToString("&") { "${it.first}=${it.second}" }
+    }
 
     private fun serializeJsonObject(json: JSONObject): String {
         val sortedKeys =
@@ -149,31 +184,38 @@ object Ds {
         return sb.toString()
     }
 
-    /**
-     * 对查询参数按 key 字母序排序后重新拼接，供 md5_v2 的 q 使用。
-     */
-    fun sortedQueryString(query: String): String {
-        if (query.isBlank()) return ""
-        return query
-            .split("&")
-            .mapNotNull { part ->
-                val idx = part.indexOf('=')
-                if (idx > 0) part.substring(0, idx) to part.substring(idx + 1) else null
-            }.sortedBy { it.first }
-            .joinToString("&") { "${it.first}=${it.second}" }
-    }
-
     private fun escapeJson(s: String): String {
         val sb = StringBuilder()
         for (c in s) {
             when (c) {
-                '\\' -> sb.append("\\\\")
-                '\"' -> sb.append("\\\"")
-                '\b' -> sb.append("\\b")
-                '\u000C' -> sb.append("\\f")
-                '\n' -> sb.append("\\n")
-                '\r' -> sb.append("\\r")
-                '\t' -> sb.append("\\t")
+                '\\' -> {
+                    sb.append("\\\\")
+                }
+
+                '\"' -> {
+                    sb.append("\\\"")
+                }
+
+                '\b' -> {
+                    sb.append("\\b")
+                }
+
+                '\u000C' -> {
+                    sb.append("\\f")
+                }
+
+                '\n' -> {
+                    sb.append("\\n")
+                }
+
+                '\r' -> {
+                    sb.append("\\r")
+                }
+
+                '\t' -> {
+                    sb.append("\\t")
+                }
+
                 else -> {
                     if (c < ' ') {
                         sb.append(String.format("\\u%04x", c.code))
@@ -188,8 +230,14 @@ object Ds {
 
     private fun serializeValue(value: Any?): String =
         when (value) {
-            null, JSONObject.NULL -> "null"
-            is Boolean -> value.toString()
+            null, JSONObject.NULL -> {
+                "null"
+            }
+
+            is Boolean -> {
+                value.toString()
+            }
+
             is Number -> {
                 // JSON 不允许 NaN / Infinity
                 if ((value is Double && !value.isFinite()) || (value is Float && !value.isFinite())) {
@@ -198,10 +246,22 @@ object Ds {
                     value.toString()
                 }
             }
-            is String -> "\"${escapeJson(value)}\""
-            is JSONObject -> serializeJsonObject(value)
-            is org.json.JSONArray -> serializeJsonArray(value)
-            else -> "\"${escapeJson(value.toString())}\""
+
+            is String -> {
+                "\"${escapeJson(value)}\""
+            }
+
+            is JSONObject -> {
+                serializeJsonObject(value)
+            }
+
+            is org.json.JSONArray -> {
+                serializeJsonArray(value)
+            }
+
+            else -> {
+                "\"${escapeJson(value.toString())}\""
+            }
         }
 
     private fun serializeJsonArray(array: org.json.JSONArray): String {

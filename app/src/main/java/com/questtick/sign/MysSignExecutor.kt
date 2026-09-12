@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 米游社签到执行器：单账号内的游戏任务循环、Cookie 失效后的刷新重试与结果回传。
+ */
+
 import com.questtick.data.Account
 import com.questtick.data.AppSettings
 import com.questtick.data.FailureCategory
@@ -269,7 +273,7 @@ internal class MysSignExecutor(
         val hasStoken = lower.contains("stoken")
 
         when {
-            missing.isNotEmpty() ->
+            missing.isNotEmpty() -> {
                 log(
                     "WARN",
                     "[${account.label}] Cookie 缺少必要字段: ${missing.joinToString(", ")}",
@@ -279,18 +283,23 @@ internal class MysSignExecutor(
                         )
                     }.joinToString()}",
                 )
-            cookie.length < 50 ->
+            }
+
+            cookie.length < 50 -> {
                 log(
                     "WARN",
                     "[${account.label}] Cookie 过短（${cookie.length} 字符），可能不完整",
                     "hasLtoken=$hasLtoken, hasStoken=$hasStoken",
                 )
-            else ->
+            }
+
+            else -> {
                 log(
                     "INFO",
                     "[${account.label}] Cookie 校验通过",
                     "cookieLength=${cookie.length}, hasLtoken=$hasLtoken, hasStoken=$hasStoken",
                 )
+            }
         }
     }
 

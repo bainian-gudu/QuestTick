@@ -39,44 +39,56 @@ data class HttpFailure(
 object HttpFailureMapper {
     fun from(error: Throwable): HttpFailure =
         when (error) {
-            is HttpTransportException -> error.failure
-            is TransportFailureException ->
+            is HttpTransportException -> {
+                error.failure
+            }
+
+            is TransportFailureException -> {
                 HttpFailure(
                     kind = error.kind.toPublicKind(),
                     errorCode = "transport:${error.kind.name.lowercase()}:${error.phase.name.lowercase()}",
                     retryable = !error.outcomeUnknown && error.retryableForIdempotentRead,
                     outcomeUnknown = error.outcomeUnknown,
                 )
-            is ResponseTooLargeException ->
+            }
+
+            is ResponseTooLargeException -> {
                 HttpFailure(
                     kind = HttpFailureKind.RESPONSE_TOO_LARGE,
                     errorCode = "response-too-large",
                     retryable = false,
                     outcomeUnknown = false,
                 )
+            }
+
             is UntrustedRedirectException,
             is IllegalArgumentException,
-            ->
+            -> {
                 HttpFailure(
                     kind = HttpFailureKind.SECURITY_REJECTED,
                     errorCode = "request-rejected",
                     retryable = false,
                     outcomeUnknown = false,
                 )
-            is IOException ->
+            }
+
+            is IOException -> {
                 HttpFailure(
                     kind = HttpFailureKind.OTHER_IO,
                     errorCode = error.javaClass.simpleName.ifBlank { "IOException" },
                     retryable = false,
                     outcomeUnknown = false,
                 )
-            else ->
+            }
+
+            else -> {
                 HttpFailure(
                     kind = HttpFailureKind.INTERNAL,
                     errorCode = error.javaClass.simpleName.ifBlank { "InternalError" },
                     retryable = false,
                     outcomeUnknown = false,
                 )
+            }
         }
 
     private fun TransportFailureKind.toPublicKind(): HttpFailureKind =

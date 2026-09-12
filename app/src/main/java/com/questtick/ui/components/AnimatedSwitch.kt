@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 自定义开关：带过渡动画的开 / 关控件，用于替代原生 Switch 以统一各处设置项的视觉与点击区域。
+ */
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState

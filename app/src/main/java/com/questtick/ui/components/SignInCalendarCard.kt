@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 签到月历卡片：把任务级的签到状态按月聚合为每日成败，并附状态图例与当月汇总。
+ */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
