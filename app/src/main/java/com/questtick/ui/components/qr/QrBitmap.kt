@@ -1,6 +1,6 @@
 package com.questtick.ui.components.qr
 
-/** 将二维码内容渲染为可显示 Bitmap 的工具。 */
+// 将二维码内容渲染为可显示 Bitmap 的工具。
 
 import android.graphics.Bitmap
 import com.google.zxing.BarcodeFormat

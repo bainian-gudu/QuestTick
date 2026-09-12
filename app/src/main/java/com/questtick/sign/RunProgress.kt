@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 签到运行进度的状态模型：运行阶段、任务类型、任务状态，以及任务计划与稳定任务 ID 的构造。
+ */
+
 import com.questtick.data.Account
 import com.questtick.data.TaskResult
 

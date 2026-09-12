@@ -1,6 +1,6 @@
 package com.questtick.sign
 
-/** 将各类签到执行结果转换为统一的任务记录模型。 */
+// 将各类签到执行结果转换为统一的任务记录模型。
 
 import com.questtick.data.Account
 import com.questtick.data.FailureCategory

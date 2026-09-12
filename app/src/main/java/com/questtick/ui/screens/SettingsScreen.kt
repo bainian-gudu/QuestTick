@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 设置页总入口：左侧分类列表 + 右侧单层详情栈，同一时刻只展开一页，各子页实现见对应的 *DetailPage。
+ */
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -281,35 +284,55 @@ fun SettingsScreen(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (displayedPage) {
-                    SettingsPage.Schedule ->
+                    SettingsPage.Schedule -> {
                         ScheduleDetailPage(settings, onSaveSchedule, visibleKey) { closeSettingsPage() }
-                    SettingsPage.Mail ->
+                    }
+
+                    SettingsPage.Mail -> {
                         MailDetailPage(mail, onSaveMail, onTestMail) { closeSettingsPage() }
-                    SettingsPage.Device ->
+                    }
+
+                    SettingsPage.Device -> {
                         DeviceDetailPage(settings, onSaveSchedule) { closeSettingsPage() }
-                    SettingsPage.ActId ->
+                    }
+
+                    SettingsPage.ActId -> {
                         ActIdDetailPage(settings, onSaveSchedule) { closeSettingsPage() }
-                    SettingsPage.Experiment ->
+                    }
+
+                    SettingsPage.Experiment -> {
                         ExperimentDetailPage(settings, onSaveSchedule) { closeSettingsPage() }
-                    SettingsPage.MysVersion ->
+                    }
+
+                    SettingsPage.MysVersion -> {
                         MysVersionDetailPage(
                             settings = settings,
                             onSave = onSaveSchedule,
                             onFetchMysVersion = onFetchMysVersion,
                         ) { closeSettingsPage() }
-                    SettingsPage.CloudVersion ->
+                    }
+
+                    SettingsPage.CloudVersion -> {
                         CloudVersionDetailPage(
                             settings = settings,
                             onSave = onSaveSchedule,
                             onFetchCloudVersion = viewModel::fetchLatestCloudVersion,
                         ) { closeSettingsPage() }
-                    SettingsPage.Security ->
+                    }
+
+                    SettingsPage.Security -> {
                         SecurityDetailPage { closeSettingsPage() }
-                    SettingsPage.Appearance ->
+                    }
+
+                    SettingsPage.Appearance -> {
                         AppearanceDetailPage(settings, onSaveSchedule) { closeSettingsPage() }
-                    SettingsPage.Language ->
+                    }
+
+                    SettingsPage.Language -> {
                         LanguageDetailPage(settings, onSaveLanguage) { closeSettingsPage() }
-                    SettingsPage.Cache ->
+                    }
+
+                    SettingsPage.Cache -> {
                         CacheDetailPage(
                             state = cacheStorageState,
                             onRefresh = viewModel::refreshCacheStorage,
@@ -317,15 +340,20 @@ fun SettingsScreen(
                             onClearAll = viewModel::clearAllCaches,
                             onBack = { closeSettingsPage() },
                         )
-                    SettingsPage.About ->
+                    }
+
+                    SettingsPage.About -> {
                         AboutDetailPage(
                             settings = settings,
                             onSaveSettings = onSaveSchedule,
                             onBack = { closeSettingsPage() },
                             onCheckUpdate = onCheckAppUpdate,
                         )
-                    SettingsPage.None ->
+                    }
+
+                    SettingsPage.None -> {
                         Spacer(Modifier.fillMaxSize())
+                    }
                 }
             }
         }
@@ -401,8 +429,14 @@ private fun ScheduleDetailPage(
                             pendingNotificationEnable = false
                             persistNotifyEnabled(true)
                         }
-                        notifyEnabled && !available -> persistNotifyEnabled(false)
-                        available -> pendingNotificationEnable = false
+
+                        notifyEnabled && !available -> {
+                            persistNotifyEnabled(false)
+                        }
+
+                        available -> {
+                            pendingNotificationEnable = false
+                        }
                     }
                 }
             }
@@ -736,21 +770,35 @@ private fun KeepAliveCard(visibleKey: Int) {
     val romHint =
         remember(manufacturer) {
             when {
-                manufacturer.contains("xiaomi") || manufacturer.contains("redmi") ->
+                manufacturer.contains("xiaomi") || manufacturer.contains("redmi") -> {
                     "小米 / Redmi：设置 → 应用设置 → 应用管理 → 找到本应用 → 自启动（开启）"
-                manufacturer.contains("huawei") || manufacturer.contains("honor") ->
+                }
+
+                manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
                     "华为 / 荣耀：设置 → 应用 → 应用启动管理 → 找到本应用 → " +
                         "关闭「自动管理」→ 手动打开全部三项开关"
-                manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") ->
+                }
+
+                manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") -> {
                     "OPPO / realme / 一加：设置 → 应用管理 → 应用列表 → " +
                         "找到本应用 → 耗电保护 → 允许后台运行"
-                manufacturer.contains("vivo") || manufacturer.contains("iqoo") ->
+                }
+
+                manufacturer.contains("vivo") || manufacturer.contains("iqoo") -> {
                     "vivo / iQOO：设置 → 电池 → 后台耗电管理 → 找到本应用 → 允许后台高耗电"
-                manufacturer.contains("samsung") ->
+                }
+
+                manufacturer.contains("samsung") -> {
                     "三星：设置 → 电池和设备维护 → 电池 → 后台使用限制 → 将本应用移至「不受限」"
-                manufacturer.contains("meizu") ->
+                }
+
+                manufacturer.contains("meizu") -> {
                     "魅族：设置 → 应用管理 → 找到本应用 → 权限管理 → 后台管理 → 允许后台运行"
-                else -> null
+                }
+
+                else -> {
+                    null
+                }
             }
         }
 

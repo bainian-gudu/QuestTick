@@ -1,6 +1,6 @@
 package com.questtick.ui.components.pager
 
-/** 与外部选中状态同步的横向分页器组件。 */
+// 与外部选中状态同步的横向分页器组件。
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.pager.HorizontalPager

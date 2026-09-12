@@ -273,17 +273,23 @@ class MainViewModel
                     val updated =
                         accountRepository.update(account.id) { latest ->
                             when (gameKey) {
-                                "CloudYS" ->
+                                "CloudYS" -> {
                                     latest.copy(
                                         genshinWebCookie = "",
                                         genshinCloudQrLoginBound = false,
                                     )
-                                "CloudSR" ->
+                                }
+
+                                "CloudSR" -> {
                                     latest.copy(
                                         starrailWebCookie = "",
                                         starrailCloudQrLoginBound = false,
                                     )
-                                else -> latest
+                                }
+
+                                else -> {
+                                    latest
+                                }
                             }
                         }
                     updated?.let { withContext(Dispatchers.Main) { onUpdated?.invoke(it) } }
@@ -331,19 +337,25 @@ class MainViewModel
                         withContext(Dispatchers.IO) {
                             accountRepository.update(account.id) { latest ->
                                 when (gameKey) {
-                                    "CloudYS" ->
+                                    "CloudYS" -> {
                                         latest.copy(
                                             genshinToken = CredentialFieldSanitizer.cloudSigninToken(token),
                                             genshinWebCookie = webCookie,
                                             genshinCloudQrLoginBound = true,
                                         )
-                                    "CloudSR" ->
+                                    }
+
+                                    "CloudSR" -> {
                                         latest.copy(
                                             starrailToken = CredentialFieldSanitizer.cloudSigninToken(token),
                                             starrailWebCookie = webCookie,
                                             starrailCloudQrLoginBound = true,
                                         )
-                                    else -> latest
+                                    }
+
+                                    else -> {
+                                        latest
+                                    }
                                 }
                             }
                         }
@@ -368,19 +380,25 @@ class MainViewModel
             keepLogin: Boolean,
         ): Account =
             when (gameKey) {
-                "CloudYS" ->
+                "CloudYS" -> {
                     account.copy(
                         genshinToken = comboToken,
                         genshinWebCookie = if (keepLogin) webCookie else "",
                         genshinCloudQrLoginBound = keepLogin,
                     )
-                "CloudSR" ->
+                }
+
+                "CloudSR" -> {
                     account.copy(
                         starrailToken = comboToken,
                         starrailWebCookie = if (keepLogin) webCookie else "",
                         starrailCloudQrLoginBound = keepLogin,
                     )
-                else -> account
+                }
+
+                else -> {
+                    account
+                }
             }
     }
 

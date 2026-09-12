@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 账号编辑页：新增 / 编辑米游社（Cookie）与云游戏账号，支持扫码登录、账号体检、登录态修复与登出。
+ */
 import com.questtick.i18n.localizedText
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -298,7 +301,7 @@ fun AccountEditScreen(
                 onPageSettled = viewModel::setTab,
             ) { page, _ ->
                 when (EditTab.entries[page]) {
-                    EditTab.Basic ->
+                    EditTab.Basic -> {
                         BasicTab(
                             ui.label,
                             viewModel::updateLabel,
@@ -330,7 +333,9 @@ fun AccountEditScreen(
                                 },
                             onLogout = onLogout?.let { action -> { action(currentDraftAccount()) } },
                         )
-                    EditTab.Cloud ->
+                    }
+
+                    EditTab.Cloud -> {
                         CloudTab(
                             ui.genshin,
                             viewModel::updateGenshinToken,
@@ -370,6 +375,7 @@ fun AccountEditScreen(
                                                     }
                                                 }
                                             }
+
                                             "CloudSR" -> {
                                                 if (!refreshingStarrailToken &&
                                                     !starrailTokenRefreshDone &&
@@ -396,7 +402,9 @@ fun AccountEditScreen(
                                     { gameKey -> action(gameKey, currentDraftAccount()) }
                                 },
                         )
-                    EditTab.Games ->
+                    }
+
+                    EditTab.Games -> {
                         GamesTab(
                             selected = ui.selectedGames,
                             onToggle = viewModel::toggleGame,
@@ -409,6 +417,7 @@ fun AccountEditScreen(
                                 }
                             },
                         )
+                    }
                 }
             }
         }

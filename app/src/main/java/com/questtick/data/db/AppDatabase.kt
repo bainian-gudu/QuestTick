@@ -1,5 +1,8 @@
 package com.questtick.data.db
 
+/*
+ * Room 数据库定义与单例获取。升级必须提供显式 Migration，禁止 destructive migration，避免用户数据被静默清空。
+ */
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room

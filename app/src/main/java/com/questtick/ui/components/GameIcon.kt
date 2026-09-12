@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 游戏图标：按 gameKey 渲染对应图标与主题底色，统一圆角与尺寸。
+ */
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 邮件推送设置页：SMTP 服务器、端口、账号授权与收件人配置，并支持发送测试邮件验证。
+ */
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

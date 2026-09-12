@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * act_id 的抓取与校验：解析活动页脚本或从导航接口提取，并对来源地址做白名单校验。
+ */
+
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig

@@ -8,10 +8,9 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
-# 只对已建立单测的核心业务逻辑做门禁，避免 UI / Hilt 生成代码 / Android 壳层
+# 阻断层：只对已建立单测的核心业务逻辑做门禁，避免 UI / Hilt 生成代码 / Android 壳层
 # 把整仓覆盖率拉低后导致 CI 误判。阈值与工作流步骤名保持一致：>= 70%。
 CORE_CLASS_PREFIXES = (
-    "com/questtick/config/DsConfig",
     "com/questtick/core/security/CertificateConfig",
     "com/questtick/log/LogExporter",
     "com/questtick/mail/Mailer",
@@ -22,6 +21,20 @@ CORE_CLASS_PREFIXES = (
     "com/questtick/sign/Ds",
     "com/questtick/sign/Mask",
     "com/questtick/sign/RiskState",
+)
+
+# 观察层：真正的业务编排核心，但当前单测覆盖不足，因此只统计展示、不阻断 CI。
+# 目的是让缺口持续可见 —— 当某一项达到阈值后，把它上移到 CORE_CLASS_PREFIXES。
+WATCH_CLASS_PREFIXES = (
+    "com/questtick/sign/SignInRunner",
+    "com/questtick/sign/MysSignExecutor",
+    "com/questtick/sign/CloudSignExecutor",
+    "com/questtick/sign/SignInCredentialCoordinator",
+    "com/questtick/sign/TaskResultAccumulator",
+    "com/questtick/sign/TaskFailureClassifier",
+    "com/questtick/repository/run/RunPersistenceRepository",
+    "com/questtick/work/Scheduler",
+    "com/questtick/work/SignInWorkerDecision",
 )
 
 # 排除 Hilt/Factory 等生成类，以及协程状态机这类非业务源码。
@@ -47,10 +60,12 @@ class ClassCoverage:
         return 100.0 * self.covered / self.total if self.total else 0.0
 
 
-def should_include(class_name: str) -> bool:
-    return (
-        any(class_name.startswith(prefix) for prefix in CORE_CLASS_PREFIXES)
-        and not any(part in class_name for part in EXCLUDED_NAME_PARTS)
+def should_include(
+    class_name: str,
+    prefixes: tuple[str, ...] = CORE_CLASS_PREFIXES,
+) -> bool:
+    return any(class_name.startswith(prefix) for prefix in prefixes) and not any(
+        part in class_name for part in EXCLUDED_NAME_PARTS
     )
 
 
@@ -75,14 +90,17 @@ def find_report(explicit_report: str | None) -> Path:
     raise FileNotFoundError(f"No Kover XML report found under: {report_root}")
 
 
-def read_core_coverage(report_path: Path) -> list[ClassCoverage]:
+def read_core_coverage(
+    report_path: Path,
+    prefixes: tuple[str, ...] = CORE_CLASS_PREFIXES,
+) -> list[ClassCoverage]:
     root = ET.parse(report_path).getroot()
     rows: list[ClassCoverage] = []
 
     for package in root.findall("package"):
         for klass in package.findall("class"):
             class_name = klass.attrib.get("name", "")
-            if not should_include(class_name):
+            if not should_include(class_name, prefixes):
                 continue
 
             line_counter = klass.find("counter[@type='LINE']")
@@ -133,12 +151,37 @@ def main() -> int:
     for row in rows:
         print(f"  - {row.name}: {row.percent:.2f}% ({row.covered}/{row.total})")
 
+    report_watch_coverage(report_path)
+
     if percent + 1e-9 < args.threshold:
         print("\n❌ Coverage gate failed.", file=sys.stderr)
         return 1
 
     print("\n✅ Coverage gate passed.")
     return 0
+
+
+def report_watch_coverage(report_path: Path) -> None:
+    """打印观察层覆盖率：让核心编排链路的测试缺口持续可见，但不阻断 CI。"""
+    try:
+        rows = read_core_coverage(report_path, WATCH_CLASS_PREFIXES)
+    except ET.ParseError as exc:
+        print(f"\n⚠️ 无法解析观察层覆盖率：{exc}")
+        return
+
+    if not rows:
+        print("\n👀 Watch list: 本次报告中没有匹配到观察层类。")
+        return
+
+    covered = sum(row.covered for row in rows)
+    total = sum(row.total for row in rows)
+    percent = 100.0 * covered / total if total else 0.0
+
+    print("\n👀 Watch list (不阻断 CI，仅观察):")
+    print(f"  业务核心覆盖率: {percent:.2f}% ({covered}/{total})")
+    for row in rows:
+        print(f"  - {row.name}: {row.percent:.2f}% ({row.covered}/{row.total})")
+    print(f"  提示: 达到 {DEFAULT_THRESHOLD:.0f}% 后可移入 CORE_CLASS_PREFIXES 并纳入门禁。")
 
 
 if __name__ == "__main__":

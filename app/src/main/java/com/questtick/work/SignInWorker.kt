@@ -10,6 +10,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import com.questtick.core.throwIfCancellation
 import com.questtick.R
 import com.questtick.data.FailureCategory
 import com.questtick.data.LogEntry
@@ -160,8 +161,14 @@ class SignInWorker
                     logDuplicateScheduleSkip(businessDayKey)
                     return Result.success()
                 }
-                ExecutionStateRepository.SlotClaim.NOT_BEFORE -> return Result.retry()
-                ExecutionStateRepository.SlotClaim.CLAIMED -> Unit
+
+                ExecutionStateRepository.SlotClaim.NOT_BEFORE -> {
+                    return Result.retry()
+                }
+
+                ExecutionStateRepository.SlotClaim.CLAIMED -> {
+                    Unit
+                }
             }
 
             var record: RunRecord? = null
@@ -287,6 +294,7 @@ class SignInWorker
                 historyRepository.reload()
                 logRepository.reload()
             } catch (error: Exception) {
+                error.throwIfCancellation()
                 appErrorLogger.record("后台签到结果同步", error)
                 // UI 同步失败不影响本次签到结果，下次启动仍会从磁盘读取最新数据。
             }

@@ -1,6 +1,6 @@
 package com.questtick.ui.components.qr
 
-/** QR 登录流程的视觉状态定义。 */
+// QR 登录流程的视觉状态定义。
 
 import androidx.compose.ui.graphics.Color
 

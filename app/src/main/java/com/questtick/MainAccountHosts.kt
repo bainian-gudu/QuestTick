@@ -1,6 +1,6 @@
 package com.questtick
 
-/** 账号编辑、登录和账号相关页面的导航承载逻辑。 */
+// 账号编辑、登录和账号相关页面的导航承载逻辑。
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState

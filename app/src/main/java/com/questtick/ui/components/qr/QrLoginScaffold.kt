@@ -1,6 +1,6 @@
 package com.questtick.ui.components.qr
 
-/** QR 登录流程的统一页面骨架和二维码展示容器。 */
+// QR 登录流程的统一页面骨架和二维码展示容器。
 
 import com.questtick.i18n.localizedText
 import android.graphics.Bitmap
@@ -187,21 +187,27 @@ internal fun QrCodeStatePanel(
                 QrVisualState.Loading -> {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, strokeWidth = 3.dp)
                 }
+
                 QrVisualState.Success -> {
                     QrSuccessStateCard()
                 }
+
                 QrVisualState.Expired -> {
                     TerminalQrStateCard(title = "二维码已过期")
                 }
+
                 QrVisualState.Cancelled -> {
                     TerminalQrStateCard(title = "扫码已取消")
                 }
+
                 is QrVisualState.Error -> {
                     QrErrorStateCard(visualState)
                 }
+
                 is QrVisualState.Busy -> {
                     QrBusyStateCard(visualState.message)
                 }
+
                 QrVisualState.Waiting,
                 QrVisualState.Scanned,
                 -> {

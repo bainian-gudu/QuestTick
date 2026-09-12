@@ -36,7 +36,7 @@ subprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency {
             if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-metadata-jvm") {
-                useVersion("2.4.0")
+                useVersion(libs.versions.kotlin.get())
                 because("确保 Hilt 在 Kotlin 2.4 下读取到兼容的 metadata 版本")
             }
         }

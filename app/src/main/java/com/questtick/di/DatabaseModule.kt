@@ -1,6 +1,6 @@
 package com.questtick.di
 
-/** 提供 Room 数据库及其 DAO 依赖。 */
+// 提供 Room 数据库及其 DAO 依赖。
 
 import android.content.Context
 import com.questtick.data.db.AppDatabase

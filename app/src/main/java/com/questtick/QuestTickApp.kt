@@ -1,5 +1,8 @@
 package com.questtick
 
+/*
+ * Application 入口：安装崩溃处理器、配置 WorkManager 与图片加载器，并在启动时预热缓存和重新调度每日签到。
+ */
 import android.app.Application
 import android.content.Context
 import com.questtick.log.AppLog
@@ -9,7 +12,6 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
-import com.questtick.config.DsConfigRepository
 import com.questtick.data.SecureStore
 import com.questtick.log.CrashHandler
 import com.questtick.repository.run.RunPersistenceRepository
@@ -86,8 +88,6 @@ class QuestTickApp :
 
         // 崩溃时补充写入本地诊断信息。
         CrashHandler.install(this, secureStore)
-        // 先加载本地 DS 配置，确保首个请求即可使用。
-        DsConfigRepository.initialize(this)
         try {
             CloudVersionRepository.initialize(this)
             // 将用户在设置页输入的自定义版本同步到生效版本，确保启动后即可使用自定义值
@@ -124,9 +124,8 @@ class QuestTickApp :
                 if (currentSettings.scheduleEnabled) {
                     scheduler.reconcile(currentSettings.scheduleHour, currentSettings.scheduleMinute)
                 }
-                // 预热加密存储。DS 配置仅使用本地 assets/内置配置，不在后台联网刷新。
+                // 预热加密存储与常用设置缓存，减少首次打开页面时的主线程等待。
                 secureStore.warmUp()
-                // 米游社和云游戏版本只允许在实际签到流程中按 3 天间隔自动获取。
             } catch (t: Throwable) {
                 AppLog.w(TAG, "启动后台预热任务失败", t)
                 appErrorLogger.record("应用启动预热", t)

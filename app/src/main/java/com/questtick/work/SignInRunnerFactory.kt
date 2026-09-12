@@ -1,6 +1,6 @@
 package com.questtick.work
 
-/** 根据运行设置创建串行或并行签到执行器。 */
+// 根据运行设置创建串行或并行签到执行器。
 
 import android.content.Context
 import com.questtick.data.SecureStore
