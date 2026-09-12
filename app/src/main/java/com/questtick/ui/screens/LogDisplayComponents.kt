@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 日志页展示组件：搜索框、统计芯片、日期分隔条、运行分组卡片与关键词高亮文本，供 LogsScreen 组装复用。
+ */
 import com.questtick.i18n.localizedText
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState

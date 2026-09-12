@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 云游戏免费时长领取的接口封装：钱包查询、签到请求、通知确认与失败分类。
+ */
+
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.data.FailureCategory

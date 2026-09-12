@@ -1,5 +1,8 @@
 package com.questtick.sign
 
+/* 签到运行的顶层编排器：加载账号、组建任务计划、执行 Root 阻断、控制并发度并归并结果。
+ * 具体执行与落盘分别委托给 MysSignExecutor / CloudSignExecutor / RunPersistenceRepository。 */
+
 import android.content.Context
 import com.questtick.core.throwIfCancellation
 import com.questtick.data.Account
@@ -340,6 +343,7 @@ class SignInRunner(
                                 try {
                                     runPersistenceRepository.persistTaskResult(runId, taskId, normalizedResult)
                                 } catch (e: Exception) {
+                                    e.throwIfCancellation()
                                     throw RunPersistenceException(
                                         "任务终态持久化异常: $taskId (${e.javaClass.simpleName})",
                                         e,
@@ -352,6 +356,7 @@ class SignInRunner(
                             val completed = done.incrementAndGet()
                             onProgress(progressLabel, completed.coerceAtMost(total), total)
                         }
+
                         TaskResultAcceptance.DUPLICATE -> {
                             hadUnexpectedAccountFailure.set(true)
                             log(
@@ -360,6 +365,7 @@ class SignInRunner(
                                 "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
                             )
                         }
+
                         TaskResultAcceptance.UNPLANNED -> {
                             hadUnexpectedAccountFailure.set(true)
                             log(
@@ -377,6 +383,7 @@ class SignInRunner(
                     try {
                         runPersistenceRepository.isTaskRunning(runId, taskId)
                     } catch (e: Exception) {
+                        e.throwIfCancellation()
                         throw RunPersistenceException(
                             "读取任务持久化状态异常: $taskId (${e.javaClass.simpleName})",
                             e,
@@ -391,6 +398,7 @@ class SignInRunner(
                             try {
                                 runPersistenceRepository.markTaskRunning(runId, taskId, message)
                             } catch (e: Exception) {
+                                e.throwIfCancellation()
                                 throw RunPersistenceException(
                                     "任务执行权持久化异常: $taskId (${e.javaClass.simpleName})",
                                     e,
@@ -553,10 +561,17 @@ class SignInRunner(
                 val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
                 val mysVersion =
                     when {
-                        settings.mysAppVersion.isNotBlank() -> "自定义(${settings.mysAppVersion})"
-                        settings.mysAppVersionAutoFetch ->
+                        settings.mysAppVersion.isNotBlank() -> {
+                            "自定义(${settings.mysAppVersion})"
+                        }
+
+                        settings.mysAppVersionAutoFetch -> {
                             "自动准备中(${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion)})"
-                        else -> "默认(${MysAppVersionRepository.currentVersion})"
+                        }
+
+                        else -> {
+                            "默认(${MysAppVersionRepository.currentVersion})"
+                        }
                     }
 
                 log(
@@ -868,38 +883,6 @@ class SignInRunner(
                 current
             },
         )
-    }
-
-    private fun validateCookie(
-        label: String,
-        cookie: String,
-    ) {
-        val required = listOf("cookie_token", "account_id")
-        val lower = cookie.lowercase()
-        val missing = required.filter { !lower.contains(it) }
-        val hasLtoken = lower.contains("ltoken")
-        val hasStoken = lower.contains("stoken")
-
-        if (missing.isNotEmpty()) {
-            log(
-                "WARN",
-                "[$label] Cookie 缺少必要字段: ${missing.joinToString(", ")}",
-                "cookieLength=${cookie.length}, hasLtoken=$hasLtoken, hasStoken=$hasStoken, " +
-                    "fieldsFound=${required.filter { lower.contains(it) }.joinToString()}",
-            )
-        } else if (cookie.length < 50) {
-            log(
-                "WARN",
-                "[$label] Cookie 过短（${cookie.length} 字符），可能不完整",
-                "hasLtoken=$hasLtoken, hasStoken=$hasStoken",
-            )
-        } else {
-            log(
-                "INFO",
-                "[$label] Cookie 校验通过",
-                "cookieLength=${cookie.length}, hasLtoken=$hasLtoken, hasStoken=$hasStoken",
-            )
-        }
     }
 
     private fun logAccountProcessingStart(acc: Account) {

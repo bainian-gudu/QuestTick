@@ -1,6 +1,6 @@
 package com.questtick.ui.vm
 
-/** 运行日志页面的加载、清理和导出状态管理。 */
+// 运行日志页面的加载、清理和导出状态管理。
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

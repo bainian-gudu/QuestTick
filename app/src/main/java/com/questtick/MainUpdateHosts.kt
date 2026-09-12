@@ -1,6 +1,6 @@
 package com.questtick
 
-/** 应用更新提示、下载进度和安装流程的页面承载逻辑。 */
+// 应用更新提示、下载进度和安装流程的页面承载逻辑。
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

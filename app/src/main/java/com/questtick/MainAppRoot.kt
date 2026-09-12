@@ -1,6 +1,6 @@
 package com.questtick
 
-/** 应用根 Composable：组装全局状态、主题、页面和底部导航。 */
+// 应用根 Composable：组装全局状态、主题、页面和底部导航。
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box

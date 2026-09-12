@@ -1,6 +1,6 @@
 package com.questtick.work
 
-/** 将签到完成后的通知和邮件动作提交到 WorkManager。 */
+// 将签到完成后的通知和邮件动作提交到 WorkManager。
 
 import android.content.Context
 import androidx.work.BackoffPolicy

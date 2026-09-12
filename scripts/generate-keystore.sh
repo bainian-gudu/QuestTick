@@ -2,14 +2,15 @@
 # =============================================================================
 # 一键生成 release keystore 并创建 keystore.properties
 #
-# 用法：
-#   ./generate-keystore.sh
-#   ./generate-keystore.sh release.keystore mihoyo   # 自定义文件名/别名
+# 用法（在仓库根目录执行）：
+#   ./scripts/generate-keystore.sh
+#   ./scripts/generate-keystore.sh release.keystore mihoyo   # 自定义文件名/别名
 #
 # 依赖：JDK 的 keytool（随 Android Studio / JDK 安装）。
 # 生成后即可执行：./gradlew :app:assembleRelease
 #
-# 💡 提示：CI 环境推荐使用环境变量方式传入签名密钥，无需此脚本。
+# 💡 提示：keystore 与 keystore.properties 均已被 .gitignore 忽略，切勿提交。
+#    CI 环境推荐使用环境变量方式传入签名密钥，无需此脚本。
 #    详见 keystore.properties.template 中的说明。
 # =============================================================================
 set -euo pipefail
@@ -19,8 +20,10 @@ KEY_ALIAS="${2:-mihoyo}"
 VALIDITY_DAYS=10000
 KEYSIZE=2048
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# 产出物（keystore 与 keystore.properties）必须落在仓库根目录：
+# app/build.gradle.kts 通过 rootProject.file("keystore.properties") 读取签名配置。
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
 
 if ! command -v keytool >/dev/null 2>&1; then
     echo "❌ 找不到 keytool，请先安装 JDK（或把 JDK/bin 加入 PATH）。"

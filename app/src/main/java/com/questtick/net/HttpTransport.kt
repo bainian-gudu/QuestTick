@@ -70,7 +70,10 @@ class HttpRequest(
         when (method) {
             HttpMethod.GET,
             HttpMethod.HEAD,
-            -> require(body == null && contentType == null) { "$method must not have a request body" }
+            -> {
+                require(body == null && contentType == null) { "$method must not have a request body" }
+            }
+
             HttpMethod.POST -> {
                 require(body != null) { "POST requires a request body" }
                 require(!contentType.isNullOrBlank()) { "POST requires a content type" }

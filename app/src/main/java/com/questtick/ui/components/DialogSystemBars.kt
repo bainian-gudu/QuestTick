@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 弹窗系统栏适配：在 Dialog 中同步状态栏 / 导航栏的深浅色与边到边显示，避免弹窗内系统栏样式失效。
+ */
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.view.ViewGroup

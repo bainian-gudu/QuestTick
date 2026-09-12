@@ -19,9 +19,12 @@ object AppUpdateNetwork {
             when {
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                     caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetLevel.FAST
+
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
                     caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) -> NetLevel.FAST
+
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetLevel.NORMAL
+
                 else -> NetLevel.NORMAL
             }
         } catch (_: Exception) {

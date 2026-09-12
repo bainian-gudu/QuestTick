@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 米游社签到引擎：游戏角色查询、奖励查询、签到请求，以及 act_id 失效时的抓取与重试。
+ */
+
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.data.FailureCategory
@@ -296,8 +300,14 @@ class MysSignIn(
             // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
             val already = httpSuccess && (retcode == -5003 || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
             when {
-                already -> SignResult(true, true, "今日已签到")
-                httpSuccess && (message == "OK" || retcode == 0) -> SignResult(true, false, "签到成功")
+                already -> {
+                    SignResult(true, true, "今日已签到")
+                }
+
+                httpSuccess && (message == "OK" || retcode == 0) -> {
+                    SignResult(true, false, "签到成功")
+                }
+
                 else -> {
                     // act_id 疑似失效时尝试动态刷新并重试一次。
                     if (httpSuccess &&
@@ -501,20 +511,26 @@ class MysSignIn(
         game: GameConfig,
     ): Outcome {
         when (val rr = getRole(cookie, game)) {
-            is RoleResult.NoRole -> return Outcome(
-                success = true,
-                skipped = true,
-                message = "未注册该游戏，已跳过签到",
-                detail = "getUserGameRolesByCookie returned no role for game_biz=${game.gameBiz}",
-                failure = TaskFailureDescriptor(FailureCategory.NO_ROLE),
-            )
-            is RoleResult.Failed -> return Outcome(
-                success = false,
-                skipped = false,
-                message = rr.message,
-                detail = rr.detail,
-                failure = rr.failure,
-            )
+            is RoleResult.NoRole -> {
+                return Outcome(
+                    success = true,
+                    skipped = true,
+                    message = "未注册该游戏，已跳过签到",
+                    detail = "getUserGameRolesByCookie returned no role for game_biz=${game.gameBiz}",
+                    failure = TaskFailureDescriptor(FailureCategory.NO_ROLE),
+                )
+            }
+
+            is RoleResult.Failed -> {
+                return Outcome(
+                    success = false,
+                    skipped = false,
+                    message = rr.message,
+                    detail = rr.detail,
+                    failure = rr.failure,
+                )
+            }
+
             is RoleResult.Ok -> {
                 val role = rr.role
                 val sr = signIn(cookie, game, role)

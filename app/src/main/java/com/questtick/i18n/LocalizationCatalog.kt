@@ -1,5 +1,8 @@
 package com.questtick.i18n
 
+/*
+ * 本地化词典目录：把简中 / 繁中 / 英 / 日 / 韩 五份词典合并为一份中文 key 到多语言的映射，缺失翻译回退到中文原文。
+ */
 import com.questtick.i18n.languages.enTranslations
 import com.questtick.i18n.languages.jaTranslations
 import com.questtick.i18n.languages.koTranslations

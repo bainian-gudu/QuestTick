@@ -1,6 +1,6 @@
 package com.questtick.ui.components.home
 
-/** 首页账号卡片，展示账号状态、游戏和米游币打卡标识。 */
+// 首页账号卡片，展示账号状态、游戏和米游币打卡标识。
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

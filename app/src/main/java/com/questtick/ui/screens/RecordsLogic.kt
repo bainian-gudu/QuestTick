@@ -1,6 +1,6 @@
 package com.questtick.ui.screens
 
-/** 签到记录筛选、分组和展示状态的纯 UI 逻辑。 */
+// 签到记录筛选、分组和展示状态的纯 UI 逻辑。
 
 import com.questtick.data.FailureCategory
 import com.questtick.data.RunRecord

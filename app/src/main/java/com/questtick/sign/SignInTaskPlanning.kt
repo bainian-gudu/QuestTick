@@ -1,6 +1,6 @@
 package com.questtick.sign
 
-/** 生成米游社和云游戏签到任务绑定关系的辅助模型。 */
+// 生成米游社和云游戏签到任务绑定关系的辅助模型。
 
 import com.questtick.data.Account
 

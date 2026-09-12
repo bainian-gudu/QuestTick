@@ -1,6 +1,6 @@
 package com.questtick.ui.components.pager
 
-/** 横向分页器页码边界和切换状态的纯函数。 */
+// 横向分页器页码边界和切换状态的纯函数。
 
 import kotlin.math.abs
 

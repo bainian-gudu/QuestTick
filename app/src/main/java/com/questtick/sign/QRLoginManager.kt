@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 米游社扫码登录：创建二维码、轮询扫码状态，并在用户确认后解析出 Cookie、SToken 等凭证。
+ */
+
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
@@ -184,7 +188,11 @@ object QRLoginManager {
                     is ScanStatus.Expired,
                     is ScanStatus.Cancelled,
                     is ScanStatus.Error,
-                    -> return@flow // 终态，结束轮询。
+                    -> {
+                        return@flow
+                    }
+
+                    // 终态，结束轮询。
                     else -> {
                         attempts++
                         val waitMs = if (status is ScanStatus.Scanned) 600L else currentInterval
@@ -343,15 +351,19 @@ object QRLoginManager {
                 tokenType == TOKEN_TYPE_STOKEN -> {
                     stokenFromTokenType = stokenFromTokenType.ifBlank { token }
                 }
+
                 tokenName == "stoken" || tokenName == "stoken_v2" -> {
                     stokenFallback = stokenFallback.ifBlank { token }
                 }
+
                 tokenName == "ltoken" || tokenName == "ltoken_v2" || tokenType == TOKEN_TYPE_LTOKEN -> {
                     ltoken = ltoken.ifBlank { token }
                 }
+
                 tokenName == "cookie_token" || tokenName == "cookie_token_v2" || tokenType == TOKEN_TYPE_COOKIE_TOKEN -> {
                     cookieToken = cookieToken.ifBlank { token }
                 }
+
                 tokenName == "login_ticket" || tokenName == "login_ticket_v2" -> {
                     loginTicket = loginTicket.ifBlank { token }
                 }
@@ -384,8 +396,14 @@ object QRLoginManager {
             val tokenName = item.firstNonBlank("name", "token_name", "tokenName").lowercase()
             val tokenType = item.firstNonBlank("token_type", "tokenType", "type")
             when {
-                tokenType == TOKEN_TYPE_STOKEN -> stokenFromTokenType = stokenFromTokenType.ifBlank { token }
-                tokenName == "stoken" || tokenName == "stoken_v2" -> stokenFallback = stokenFallback.ifBlank { token }
+                tokenType == TOKEN_TYPE_STOKEN -> {
+                    stokenFromTokenType = stokenFromTokenType.ifBlank { token }
+                }
+
+                tokenName == "stoken" || tokenName == "stoken_v2" -> {
+                    stokenFallback = stokenFallback.ifBlank { token }
+                }
+
                 tokenName == "ltoken" || tokenName == "ltoken_v2" || tokenType == TOKEN_TYPE_LTOKEN -> {
                     ltoken = ltoken.ifBlank { token }
                 }

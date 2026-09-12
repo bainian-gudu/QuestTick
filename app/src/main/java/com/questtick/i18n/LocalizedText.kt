@@ -1,5 +1,8 @@
 package com.questtick.i18n
 
+/*
+ * 本地化文本组件：Text 的统一入口，渲染前先把中文业务文案解析为当前语言，业务代码无需感知本地化细节。
+ */
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text as MaterialText

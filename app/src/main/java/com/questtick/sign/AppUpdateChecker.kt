@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 应用更新检查：并发请求 GitHub Release API，解析最新版本号、更新说明与 APK 资产。
+ */
+
 import android.content.Context
 import com.questtick.net.HttpRequestConfig
 import com.questtick.net.HttpTransport

@@ -3,6 +3,15 @@
 build:
   maxIssues: 0
 
+naming:
+  FunctionNaming:
+    # Jetpack Compose 官方规范要求 @Composable 函数使用 PascalCase（如 HomeScreen）。
+    # detekt 1.23 的 FunctionNaming 尚不支持 ignoreAnnotated，无法只豁免带注解的函数，
+    # 因此放宽首字母大小写限制，接受 camelCase（普通函数）与 PascalCase（Composable）。
+    # 升级到支持 ignoreAnnotated 的 detekt 版本后，可改回 '[a-z][a-zA-Z0-9]*' 并配置
+    # ignoreAnnotated: ['Composable']。
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+
 style:
   ForbiddenMethodCall:
     active: true
@@ -13,3 +22,12 @@ style:
 potential-bugs:
   UnsafeCallOnNullableType:
     active: true
+  UnreachableCode:
+    # detekt 1.23.8 的 UnreachableCode 在本仓库产生大规模误报：任何位于 Elvis 跳转
+    # （`val x = y ?: return/continue`）、守卫式 return 或循环内 continue 之后的普通语句
+    # 都会被标记为不可达。已人工抽查原基线中的 200+ 条，全部是可达的正常代码，例如：
+    #   - `return url.host in businessRequestHosts`（函数唯一出口）
+    #   - `val max = maxOf(r, g, b)`（纯顺序语句）
+    #   - `if (caps.hasTransport(CELLULAR)) add("cellular")`（buildList 内部）
+    # 误报淹没了该规则的真实信号，故停用；升级 detekt 并确认误报修复后可重新启用。
+    active: false

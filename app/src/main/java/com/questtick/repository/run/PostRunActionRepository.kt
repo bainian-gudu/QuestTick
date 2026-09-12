@@ -1,6 +1,6 @@
 package com.questtick.repository.run
 
-/** 管理签到完成后动作的领取、状态更新和重试持久化。 */
+// 管理签到完成后动作的领取、状态更新和重试持久化。
 
 import com.questtick.data.db.AppDatabase
 import com.questtick.data.db.PostRunActionEntity

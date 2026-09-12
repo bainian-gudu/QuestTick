@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 签到运行进度的协调器：维护任务计划与任务级状态，并把变更同步给首页进度 UI。
+ */
+
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

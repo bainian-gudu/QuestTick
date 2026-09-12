@@ -1,5 +1,8 @@
 package com.questtick.work
 
+/*
+ * 定时基准时钟：综合系统时间、网络时间与单调时钟推算出可信的「现在」，降低用户手动改机对每日定时任务的影响。
+ */
 import android.os.SystemClock
 import com.questtick.net.HttpRequest
 import com.questtick.net.HttpRequestConfig
@@ -38,14 +41,21 @@ internal fun selectScheduleTime(sources: ScheduleTimeSources): Long {
             }
         }
     return when {
-        agreeingPairs.isNotEmpty() ->
+        agreeingPairs.isNotEmpty() -> {
             agreeingPairs
                 .maxBy { pair ->
                     candidates.count { it.second in pair }
                 }.average()
                 .toLong()
-        sources.networkMillis != null -> sources.networkMillis
-        else -> sources.systemMillis
+        }
+
+        sources.networkMillis != null -> {
+            sources.networkMillis
+        }
+
+        else -> {
+            sources.systemMillis
+        }
     }
 }
 
