@@ -156,19 +156,16 @@ class SignInWorker
             // 延迟启动与跨午夜退避始终归属原计划业务日，确保只重试上一轮明确可重试的失败任务。
             val businessDayKey = dayKey(scheduledTargetAt)
             val workId = id.toString()
-            when (executionStateRepository.claimScheduledSlot(workId, runAttemptCount, businessDayKey, startedAt)) {
-                ExecutionStateRepository.SlotClaim.DUPLICATE -> {
-                    logDuplicateScheduleSkip(businessDayKey)
-                    return Result.success()
-                }
-
-                ExecutionStateRepository.SlotClaim.NOT_BEFORE -> {
-                    return Result.retry()
-                }
-
-                ExecutionStateRepository.SlotClaim.CLAIMED -> {
-                    Unit
-                }
+            val slotClaim =
+                executionStateRepository.claimScheduledSlot(workId, runAttemptCount, businessDayKey, startedAt)
+            // 只有 CLAIMED 才继续执行签到；DUPLICATE / NOT_BEFORE 必须立刻返回，避免同一业务日重复投递。
+            // 这里刻意用 if 而不是 when：when 作为语句使用时，兜底分支里的 Unit 会被编译器判定为无用表达式。
+            if (slotClaim == ExecutionStateRepository.SlotClaim.DUPLICATE) {
+                logDuplicateScheduleSkip(businessDayKey)
+                return Result.success()
+            }
+            if (slotClaim == ExecutionStateRepository.SlotClaim.NOT_BEFORE) {
+                return Result.retry()
             }
 
             var record: RunRecord? = null
