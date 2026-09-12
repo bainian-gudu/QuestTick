@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 日志页：按运行分组展示日志，支持关键词搜索、等级与功能筛选、导出分享以及跟随最新日志自动滚动。
+ */
 import com.questtick.i18n.localizedText
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -427,12 +430,14 @@ fun LogsScreen(
                         action = { Button(onClick = viewModel::refresh) { Text("重新加载") } },
                     )
                 }
+
                 loadState is RepositoryLoadState.InitialLoading -> {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 72.dp, lineCount = 4)
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 96.dp, lineCount = 3)
                     }
                 }
+
                 logs.isEmpty() -> {
                     EmptyState(
                         badge = {
@@ -456,6 +461,7 @@ fun LogsScreen(
                         subtitle = "执行签到后日志将实时显示在这里",
                     )
                 }
+
                 visibleGroups.isEmpty() -> {
                     EmptyState(
                         badge = {
@@ -484,6 +490,7 @@ fun LogsScreen(
                             },
                     )
                 }
+
                 else -> {
                     PanelCard(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         LazyColumn(

@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 首页：游戏宫格、主题仪表盘与最近一次运行卡片，无账号时给出空状态引导。
+ */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -155,6 +158,7 @@ fun HomeScreen(
                             lineCount = 6,
                         )
                     }
+
                     else -> {
                         SignInCalendarCard(
                             days = calendarDays,

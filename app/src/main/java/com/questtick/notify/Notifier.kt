@@ -93,13 +93,25 @@ object Notifier {
         val title =
             localizeText(
                 when {
-                    record.total == 0 -> "未配置账号，已跳过"
-                    record.resultUnknown == record.total -> "签到结果待确认 ⚠️"
-                    allSkipped -> "签到已跳过 ⏭"
-                    record.failed == 0 && record.resultUnknown == 0 ->
+                    record.total == 0 -> {
+                        "未配置账号，已跳过"
+                    }
+
+                    record.resultUnknown == record.total -> {
+                        "签到结果待确认 ⚠️"
+                    }
+
+                    allSkipped -> {
+                        "签到已跳过 ⏭"
+                    }
+
+                    record.failed == 0 && record.resultUnknown == 0 -> {
                         "签到完成 ✅ 成功${record.succeeded} 已签${record.alreadySigned}"
-                    else ->
+                    }
+
+                    else -> {
                         "签到完成 ⚠️ 失败${record.failed} 待确认${record.resultUnknown} 成功${record.succeeded}"
+                    }
                 },
                 language,
             )

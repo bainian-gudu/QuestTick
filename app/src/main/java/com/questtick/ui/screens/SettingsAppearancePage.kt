@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 外观与语言设置：主题模式、动态取色、预设主题与自定义主题色（HSL 编辑器），以及界面语言切换。
+ */
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut

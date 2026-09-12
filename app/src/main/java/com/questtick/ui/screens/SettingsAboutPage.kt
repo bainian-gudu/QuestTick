@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 关于页：应用版本、开源许可与致谢信息。
+ */
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues

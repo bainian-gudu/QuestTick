@@ -207,34 +207,41 @@ object Mailer {
         val hasMys = record.results.any { !isCloud(it) }
         val hasCloud = record.results.any { isCloud(it) }
         return when {
-            hasMys && hasCloud ->
+            hasMys && hasCloud -> {
                 TitleInfo(
                     pageTitle = "米游社和云游戏签到结果总结",
                     mainTitle = "📜 米游社和云游戏签到结果总结",
                     sectionTitle = "📖 签到明细",
                     mailTitle = "米游社和云游戏签到结果",
                 )
-            hasCloud ->
+            }
+
+            hasCloud -> {
                 TitleInfo(
                     pageTitle = "云游戏签到结果总结",
                     mainTitle = "📜 云游戏签到结果总结",
                     sectionTitle = "📖 云游戏签到明细",
                     mailTitle = "云游戏签到结果",
                 )
-            hasMys ->
+            }
+
+            hasMys -> {
                 TitleInfo(
                     pageTitle = "米游社签到结果总结",
                     mainTitle = "📜 米游社签到结果总结",
                     sectionTitle = "📖 米游社签到明细",
                     mailTitle = "米游社签到结果",
                 )
-            else ->
+            }
+
+            else -> {
                 TitleInfo(
                     pageTitle = "签到结果总结",
                     mainTitle = "📜 签到结果总结",
                     sectionTitle = "📖 签到结果",
                     mailTitle = "签到结果",
                 )
+            }
         }
     }
 

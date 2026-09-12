@@ -56,6 +56,9 @@ class RunFinalizer(
         )
         log("INFO", "========== 签到结束 (${formatSignInElapsed(totalElapsed)}) ==========", "")
 
+        // NonCancellable：收尾步骤必须跑完，不能因为外部取消而中断。
+        // 下面几个 try/catch 是刻意的「尽力而为」降级——失败只记日志并跳过对应能力，
+        // 绝不向上抛出，否则会覆盖掉本次签到已经产生的真实结果。
         withContext(NonCancellable + Dispatchers.IO) {
             try {
                 store.saveActIdCache(actIdCache.toMap())

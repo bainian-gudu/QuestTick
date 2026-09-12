@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 云游戏（云原神 / 云崩铁）扫码登录：生成二维码、轮询状态，并用登录票据换取 combo_token。
+ */
+
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
@@ -230,7 +234,10 @@ object CloudQRLogin {
                     is ScanStatus.Expired,
                     is ScanStatus.Cancelled,
                     is ScanStatus.Error,
-                    -> return@flow
+                    -> {
+                        return@flow
+                    }
+
                     else -> {
                         attempts++
                         val waitMs = if (status is ScanStatus.Scanned) 600L else currentInterval

@@ -1,5 +1,8 @@
 package com.questtick.ui.components.home
 
+/*
+ * 运行结果行：展示单个任务的图标、游戏名、状态与奖励，是运行结果列表的最小单元。
+ */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column

@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * Modifier 扩展：无涟漪点击等通用修饰，供需要自定义反馈的组件复用。
+ */
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable

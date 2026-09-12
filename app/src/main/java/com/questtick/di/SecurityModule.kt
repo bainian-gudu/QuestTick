@@ -1,6 +1,6 @@
 package com.questtick.di
 
-/** 提供证书固定和 Root 环境检测依赖。 */
+// 提供证书固定和 Root 环境检测依赖。
 
 import com.questtick.core.security.PinningManager
 import com.questtick.security.AndroidRootEnvironmentChecker

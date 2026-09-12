@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 应用内更新安装：下载 APK、校验 SHA-256，并调用系统安装器完成安装。
+ */
+
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -63,7 +67,10 @@ object AppUpdateInstaller {
         val dir = File(context.applicationContext.cacheDir, DIR_NAME)
         dir.listFiles()?.forEach { file ->
             when {
-                file.isFile && file.name.endsWith(".tmp") -> file.delete()
+                file.isFile && file.name.endsWith(".tmp") -> {
+                    file.delete()
+                }
+
                 file.isFile && file.name.endsWith(".apk") -> {
                     val apkVersion = versionFromFileName(file.name)
                     if (apkVersion.isBlank() || !AppUpdateChecker.isVersionNewer(apkVersion, currentVersion)) {

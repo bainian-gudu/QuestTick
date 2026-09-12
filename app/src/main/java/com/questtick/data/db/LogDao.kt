@@ -1,6 +1,6 @@
 package com.questtick.data.db
 
-/** 运行日志的 Room 数据访问接口。 */
+// 运行日志的 Room 数据访问接口。
 
 import androidx.room.Dao
 import androidx.room.Insert

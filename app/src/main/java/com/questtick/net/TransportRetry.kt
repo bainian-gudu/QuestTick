@@ -150,13 +150,25 @@ internal object TransportFailures {
         }
         val kind =
             when (relevant) {
-                is ResponseTooLargeException -> TransportFailureKind.RESPONSE_TOO_LARGE
-                is UnknownHostException -> TransportFailureKind.DNS
+                is ResponseTooLargeException -> {
+                    TransportFailureKind.RESPONSE_TOO_LARGE
+                }
+
+                is UnknownHostException -> {
+                    TransportFailureKind.DNS
+                }
+
                 is ConnectException,
                 is NoRouteToHostException,
-                -> TransportFailureKind.CONNECT
-                is SocketTimeoutException -> timeoutKind(phase)
-                is InterruptedIOException ->
+                -> {
+                    TransportFailureKind.CONNECT
+                }
+
+                is SocketTimeoutException -> {
+                    timeoutKind(phase)
+                }
+
+                is InterruptedIOException -> {
                     if (relevant.message.orEmpty().contains("timeout", ignoreCase = true)) {
                         timeoutKind(phase)
                     } else if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
@@ -164,22 +176,33 @@ internal object TransportFailures {
                     } else {
                         TransportFailureKind.CONNECTION_INTERRUPTED
                     }
-                is SSLException -> TransportFailureKind.TLS
+                }
+
+                is SSLException -> {
+                    TransportFailureKind.TLS
+                }
+
                 is EOFException,
                 is ProtocolException,
-                ->
+                -> {
                     if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
                         TransportFailureKind.RESPONSE_INTERRUPTED
                     } else {
                         TransportFailureKind.CONNECTION_INTERRUPTED
                     }
-                is SocketException ->
+                }
+
+                is SocketException -> {
                     if (phase >= RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED) {
                         TransportFailureKind.RESPONSE_INTERRUPTED
                     } else {
                         TransportFailureKind.CONNECTION_INTERRUPTED
                     }
-                else -> TransportFailureKind.OTHER_IO
+                }
+
+                else -> {
+                    TransportFailureKind.OTHER_IO
+                }
             }
         return TransportFailureException(kind, phase, requestMethod, error)
     }
@@ -199,9 +222,11 @@ internal object TransportFailures {
     private fun timeoutKind(phase: RequestTransmissionPhase): TransportFailureKind =
         when (phase) {
             RequestTransmissionPhase.BEFORE_SEND -> TransportFailureKind.CONNECT_TIMEOUT
+
             RequestTransmissionPhase.REQUEST_HEADERS_SENDING,
             RequestTransmissionPhase.REQUEST_BODY_SENDING,
             -> TransportFailureKind.WRITE_TIMEOUT
+
             RequestTransmissionPhase.REQUEST_SENT,
             RequestTransmissionPhase.RESPONSE_HEADERS_RECEIVED,
             RequestTransmissionPhase.RESPONSE_BODY_READING,
