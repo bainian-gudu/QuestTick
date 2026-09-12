@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 存储设置页：分类统计缓存（奖励图、网络响应、更新包、导出文件等）占用并支持清理，附开源许可声明。
+ */
 import com.questtick.i18n.localizedText
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background

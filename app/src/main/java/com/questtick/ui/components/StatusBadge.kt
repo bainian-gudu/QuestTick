@@ -1,6 +1,6 @@
 package com.questtick.ui.components
 
-/** 应用内状态标签的统一视觉组件。 */
+// 应用内状态标签的统一视觉组件。
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

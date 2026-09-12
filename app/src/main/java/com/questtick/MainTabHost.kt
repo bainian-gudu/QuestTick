@@ -1,6 +1,6 @@
 package com.questtick
 
-/** 主 Tab 容器及各顶层页面之间的切换动画。 */
+// 主 Tab 容器及各顶层页面之间的切换动画。
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -107,34 +107,43 @@ internal fun MainTabContent(
     ) { page, pageVisible ->
         Box(tabModifier) {
             when (page) {
-                MainActivity.TAB_HOME ->
+                MainActivity.TAB_HOME -> {
                     HomeScreen(
                         isVisible = pageVisible,
                         onGoAccounts = { onTabChange(MainActivity.TAB_ACCOUNTS) },
                         viewModel = homeVm,
                     )
-                MainActivity.TAB_ACCOUNTS ->
+                }
+
+                MainActivity.TAB_ACCOUNTS -> {
                     AccountsScreen(
                         onStartEdit = onStartEdit,
                         isVisible = pageVisible,
                         viewModel = accountsVm,
                     )
-                MainActivity.TAB_RECORDS ->
+                }
+
+                MainActivity.TAB_RECORDS -> {
                     RecordsScreen(
                         isVisible = pageVisible,
                         viewModel = recordsVm,
                     )
-                MainActivity.TAB_LOGS ->
+                }
+
+                MainActivity.TAB_LOGS -> {
                     LogsScreen(
                         isVisible = pageVisible,
                         viewModel = logsVm,
                     )
-                MainActivity.TAB_SETTINGS ->
+                }
+
+                MainActivity.TAB_SETTINGS -> {
                     SettingsScreen(
                         visibleKey = settingsVisibleCount,
                         isVisible = pageVisible,
                         viewModel = settingsVm,
                     )
+                }
             }
         }
     }

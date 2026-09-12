@@ -163,18 +163,37 @@ private fun mysStatusMessage(
     confirmed: QRLoginManager.ScanStatus.Confirmed?,
 ): QrStatusMessage =
     when {
-        confirmed != null -> QrStatusMessage("登录成功！请选择是否保持登录状态", SuccessGreen)
-        status is QRLoginManager.ScanStatus.Created -> QrStatusMessage("等待扫码…", TextSecondary)
+        confirmed != null -> {
+            QrStatusMessage("登录成功！请选择是否保持登录状态", SuccessGreen)
+        }
+
+        status is QRLoginManager.ScanStatus.Created -> {
+            QrStatusMessage("等待扫码…", TextSecondary)
+        }
+
         status is QRLoginManager.ScanStatus.Scanned -> {
             QrStatusMessage("已扫码，请在手机上确认", MaterialTheme.colorScheme.primary)
         }
+
         status is QRLoginManager.ScanStatus.TransientError -> {
             QrStatusMessage("网络波动，正在继续重试…", WarnAmber)
         }
-        status is QRLoginManager.ScanStatus.Expired -> QrStatusMessage("二维码已过期，请点击刷新", WarnAmber)
-        status is QRLoginManager.ScanStatus.Cancelled -> QrStatusMessage("用户已取消扫码", WarnAmber)
-        status is QRLoginManager.ScanStatus.Error -> QrStatusMessage(status.msg, DangerRed)
-        else -> QrStatusMessage("", TextSecondary)
+
+        status is QRLoginManager.ScanStatus.Expired -> {
+            QrStatusMessage("二维码已过期，请点击刷新", WarnAmber)
+        }
+
+        status is QRLoginManager.ScanStatus.Cancelled -> {
+            QrStatusMessage("用户已取消扫码", WarnAmber)
+        }
+
+        status is QRLoginManager.ScanStatus.Error -> {
+            QrStatusMessage(status.msg, DangerRed)
+        }
+
+        else -> {
+            QrStatusMessage("", TextSecondary)
+        }
     }
 
 internal fun buildMysQrLoginResult(

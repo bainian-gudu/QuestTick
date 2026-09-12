@@ -1,6 +1,6 @@
 package com.questtick.data.db
 
-/** 签到历史记录的 Room 数据访问接口。 */
+// 签到历史记录的 Room 数据访问接口。
 
 import androidx.room.Dao
 import androidx.room.Insert

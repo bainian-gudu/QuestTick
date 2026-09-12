@@ -1,5 +1,8 @@
 package com.questtick.ui.vm
 
+/*
+ * 设置页状态容器：设置读写、应用更新检查与下载、缓存占用统计与分类清理、导出文件的临时目录管理。
+ */
 import android.content.Context
 import com.questtick.log.AppLog
 import androidx.lifecycle.ViewModel
@@ -473,6 +476,7 @@ class SettingsViewModel
                         )
                     }
                 } catch (e: Exception) {
+                    e.throwIfCancellation()
                     AppLog.w(TAG, "cache read failed", e)
                     null
                 }
@@ -588,13 +592,26 @@ class SettingsViewModel
             return CacheCategory.entries.map { category ->
                 val size =
                     when (category) {
-                        CacheCategory.REWARD_IMAGES ->
+                        CacheCategory.REWARD_IMAGES -> {
                             directorySize(File(context.filesDir, REWARD_ICON_DIR)) +
                                 (imageLoader.diskCache?.size ?: directorySize(File(context.cacheDir, COIL_CACHE_DIR)))
-                        CacheCategory.NETWORK_RESPONSES -> networkCache.size()
-                        CacheCategory.APP_UPDATES -> directorySize(File(context.cacheDir, APK_UPDATE_DIR))
-                        CacheCategory.LOG_EXPORTS -> directorySize(File(context.cacheDir, LOG_EXPORT_DIR))
-                        CacheCategory.OTHER_TEMP -> otherCacheTargets().sumOf(::directorySize)
+                        }
+
+                        CacheCategory.NETWORK_RESPONSES -> {
+                            networkCache.size()
+                        }
+
+                        CacheCategory.APP_UPDATES -> {
+                            directorySize(File(context.cacheDir, APK_UPDATE_DIR))
+                        }
+
+                        CacheCategory.LOG_EXPORTS -> {
+                            directorySize(File(context.cacheDir, LOG_EXPORT_DIR))
+                        }
+
+                        CacheCategory.OTHER_TEMP -> {
+                            otherCacheTargets().sumOf(::directorySize)
+                        }
                     }
                 CacheStorageItem(category, size)
             }
@@ -609,13 +626,23 @@ class SettingsViewModel
                         diskCache?.clear()
                     }
                 }
-                CacheCategory.NETWORK_RESPONSES -> networkCache.evictAll()
+
+                CacheCategory.NETWORK_RESPONSES -> {
+                    networkCache.evictAll()
+                }
+
                 CacheCategory.APP_UPDATES -> {
                     clearDirectory(File(context.cacheDir, APK_UPDATE_DIR))
                     AppUpdateCache.clear(context)
                 }
-                CacheCategory.LOG_EXPORTS -> clearDirectory(File(context.cacheDir, LOG_EXPORT_DIR))
-                CacheCategory.OTHER_TEMP -> otherCacheTargets().forEach(::clearTarget)
+
+                CacheCategory.LOG_EXPORTS -> {
+                    clearDirectory(File(context.cacheDir, LOG_EXPORT_DIR))
+                }
+
+                CacheCategory.OTHER_TEMP -> {
+                    otherCacheTargets().forEach(::clearTarget)
+                }
             }
         }
 

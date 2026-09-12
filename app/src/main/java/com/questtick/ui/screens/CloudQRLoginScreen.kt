@@ -192,20 +192,53 @@ internal fun cloudVisualState(
     status: CloudQRLogin.ScanStatus,
 ): QrVisualState =
     when {
-        loading -> QrVisualState.Loading
-        errorMsg.isNotBlank() -> QrVisualState.Error(message = errorMsg)
-        comboToken.isNotBlank() -> QrVisualState.Success
+        loading -> {
+            QrVisualState.Loading
+        }
+
+        errorMsg.isNotBlank() -> {
+            QrVisualState.Error(message = errorMsg)
+        }
+
+        comboToken.isNotBlank() -> {
+            QrVisualState.Success
+        }
+
         exchangeError.isNotBlank() -> {
             QrVisualState.Error(message = exchangeError, title = "获取 Token 失败")
         }
-        exchanging -> QrVisualState.Busy("正在获取云游戏 Token…")
-        status is CloudQRLogin.ScanStatus.Confirmed -> QrVisualState.Busy("正在获取云游戏 Token…")
-        status is CloudQRLogin.ScanStatus.Expired -> QrVisualState.Expired
-        status is CloudQRLogin.ScanStatus.Cancelled -> QrVisualState.Cancelled
-        status is CloudQRLogin.ScanStatus.Scanned -> QrVisualState.Scanned
-        status is CloudQRLogin.ScanStatus.TransientError -> QrVisualState.Waiting
-        status is CloudQRLogin.ScanStatus.Error -> QrVisualState.Error(message = status.msg)
-        else -> QrVisualState.Waiting
+
+        exchanging -> {
+            QrVisualState.Busy("正在获取云游戏 Token…")
+        }
+
+        status is CloudQRLogin.ScanStatus.Confirmed -> {
+            QrVisualState.Busy("正在获取云游戏 Token…")
+        }
+
+        status is CloudQRLogin.ScanStatus.Expired -> {
+            QrVisualState.Expired
+        }
+
+        status is CloudQRLogin.ScanStatus.Cancelled -> {
+            QrVisualState.Cancelled
+        }
+
+        status is CloudQRLogin.ScanStatus.Scanned -> {
+            QrVisualState.Scanned
+        }
+
+        status is CloudQRLogin.ScanStatus.TransientError -> {
+            QrVisualState.Waiting
+        }
+
+        status is CloudQRLogin.ScanStatus.Error -> {
+            QrVisualState.Error(message = status.msg)
+        }
+
+        else -> {
+            QrVisualState.Waiting
+        }
     }
 
 @Composable
@@ -216,23 +249,49 @@ private fun cloudStatusMessage(
     status: CloudQRLogin.ScanStatus,
 ): QrStatusMessage =
     when {
-        comboToken.isNotBlank() -> QrStatusMessage("登录成功！请选择是否保持登录状态", SuccessGreen)
-        exchangeError.isNotBlank() -> QrStatusMessage(exchangeError, DangerRed)
-        exchanging -> QrStatusMessage("正在获取云游戏 Token…", MaterialTheme.colorScheme.primary)
+        comboToken.isNotBlank() -> {
+            QrStatusMessage("登录成功！请选择是否保持登录状态", SuccessGreen)
+        }
+
+        exchangeError.isNotBlank() -> {
+            QrStatusMessage(exchangeError, DangerRed)
+        }
+
+        exchanging -> {
+            QrStatusMessage("正在获取云游戏 Token…", MaterialTheme.colorScheme.primary)
+        }
+
         status is CloudQRLogin.ScanStatus.Confirmed -> {
             QrStatusMessage("正在获取云游戏 Token…", MaterialTheme.colorScheme.primary)
         }
-        status is CloudQRLogin.ScanStatus.Created -> QrStatusMessage("等待扫码…", TextSecondary)
+
+        status is CloudQRLogin.ScanStatus.Created -> {
+            QrStatusMessage("等待扫码…", TextSecondary)
+        }
+
         status is CloudQRLogin.ScanStatus.Scanned -> {
             QrStatusMessage("已扫码，请在手机上确认", MaterialTheme.colorScheme.primary)
         }
+
         status is CloudQRLogin.ScanStatus.TransientError -> {
             QrStatusMessage("网络波动，正在继续重试…", WarnAmber)
         }
-        status is CloudQRLogin.ScanStatus.Expired -> QrStatusMessage("二维码已过期", WarnAmber)
-        status is CloudQRLogin.ScanStatus.Cancelled -> QrStatusMessage("用户已取消扫码", WarnAmber)
-        status is CloudQRLogin.ScanStatus.Error -> QrStatusMessage(status.msg, DangerRed)
-        else -> QrStatusMessage("", TextSecondary)
+
+        status is CloudQRLogin.ScanStatus.Expired -> {
+            QrStatusMessage("二维码已过期", WarnAmber)
+        }
+
+        status is CloudQRLogin.ScanStatus.Cancelled -> {
+            QrStatusMessage("用户已取消扫码", WarnAmber)
+        }
+
+        status is CloudQRLogin.ScanStatus.Error -> {
+            QrStatusMessage(status.msg, DangerRed)
+        }
+
+        else -> {
+            QrStatusMessage("", TextSecondary)
+        }
     }
 
 internal fun buildCloudQrLoginResult(

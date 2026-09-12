@@ -1,5 +1,8 @@
 package com.questtick.data.db
 
+/*
+ * 签到日历的落库与合并规则：把一次运行的结果拆分为「业务日 × 任务」维度的状态，并定义同日多次运行时的状态合并优先级。
+ */
 import com.questtick.data.FailureCategory
 import com.questtick.data.RunRecord
 import com.questtick.data.SignInCalendarDay

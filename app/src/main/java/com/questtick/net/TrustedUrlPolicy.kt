@@ -17,7 +17,8 @@ object TrustedUrlPolicy {
     private const val GITHUB_RELEASE_ASSET_PATH_PREFIX =
         "/github-production-release-asset/$GITHUB_REPOSITORY_ID/"
 
-    private val businessRequestHosts =
+    // internal：供 CertificatePinningTest 断言每个业务主机都已登记证书 Pin 或显式豁免。
+    internal val businessRequestHosts =
         setOf(
             "api-takumi.mihoyo.com",
             "act-nap-api.mihoyo.com",
@@ -136,10 +137,17 @@ object TrustedUrlPolicy {
         if (url.host != "api.github.com") return false
         val path = url.encodedPath
         return when (path) {
-            "$GITHUB_API_REPOSITORY_PATH/releases/latest" -> url.query == null
-            "$GITHUB_API_REPOSITORY_PATH/releases" ->
+            "$GITHUB_API_REPOSITORY_PATH/releases/latest" -> {
+                url.query == null
+            }
+
+            "$GITHUB_API_REPOSITORY_PATH/releases" -> {
                 url.queryParameterNames == setOf("per_page") && url.queryParameter("per_page") == "20"
-            else -> false
+            }
+
+            else -> {
+                false
+            }
         }
     }
 
@@ -159,8 +167,6 @@ object TrustedUrlPolicy {
         if (isIpLiteral(url.host)) return null
         return url
     }
-
-    private fun normalizeHost(host: String): String = host.trim().trimEnd('.').lowercase()
 
     private fun isIpLiteral(host: String): Boolean {
         if (':' in host) return true

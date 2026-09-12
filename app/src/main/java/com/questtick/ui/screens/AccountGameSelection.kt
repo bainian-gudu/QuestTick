@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 账号编辑页的游戏选择标签页：勾选该账号参与签到的游戏列表。
+ */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement

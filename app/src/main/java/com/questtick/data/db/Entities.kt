@@ -1,5 +1,8 @@
 package com.questtick.data.db
 
+/*
+ * Room 数据表定义：账号、日志、签到历史、运行会话、任务终态、日历状态、定时执行槽位、账号暂停守卫与运行后动作，共 10 张表。
+ */
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey

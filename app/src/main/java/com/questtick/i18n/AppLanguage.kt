@@ -41,10 +41,22 @@ enum class AppLanguage(
                         SIMPLIFIED_CHINESE
                     }
                 }
-                "en" -> ENGLISH
-                "ja" -> JAPANESE
-                "ko" -> KOREAN
-                else -> ENGLISH
+
+                "en" -> {
+                    ENGLISH
+                }
+
+                "ja" -> {
+                    JAPANESE
+                }
+
+                "ko" -> {
+                    KOREAN
+                }
+
+                else -> {
+                    ENGLISH
+                }
             }
     }
 }

@@ -54,21 +54,27 @@ internal fun decideSignInWorkerResult(
         ).firstOrNull { category -> retryableFailures.any { it.failureCategory == category } }
             ?: retryableFailures.first().failureCategory
     return when (retryCategory) {
-        FailureCategory.RATE_LIMITED ->
+        FailureCategory.RATE_LIMITED -> {
             SignInWorkerDecision(
                 retry = true,
                 retryDelayMillis = ExecutionStateRepository.RATE_LIMIT_RETRY_DELAY_MS,
                 category = retryCategory,
             )
+        }
+
         FailureCategory.NETWORK_TIMEOUT,
         FailureCategory.NETWORK_UNAVAILABLE,
         FailureCategory.SERVER_ERROR,
-        ->
+        -> {
             SignInWorkerDecision(
                 retry = true,
                 retryDelayMillis = ExecutionStateRepository.NETWORK_RETRY_DELAY_MS,
                 category = retryCategory,
             )
-        else -> SignInWorkerDecision(retry = false, category = retryCategory)
+        }
+
+        else -> {
+            SignInWorkerDecision(retry = false, category = retryCategory)
+        }
     }
 }

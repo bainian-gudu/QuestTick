@@ -1,5 +1,9 @@
 package com.questtick.sign
 
+/*
+ * 把 HTTP 状态码、业务 retcode 与异常统一映射为结构化失败描述，供重试判定与结果展示使用。
+ */
+
 import com.questtick.data.FailureCategory
 import com.questtick.net.ResponseTooLargeException
 import com.questtick.net.HttpFailureKind
@@ -35,14 +39,22 @@ internal object TaskFailureClassifier {
 
         // 先处理明确语义，再读取技术错误码；部分风控响应会返回 retcode=0 但 data.success=1。
         when {
-            containsAny(lower, "未绑定角色", "未注册该游戏", "no role") ->
+            containsAny(lower, "未绑定角色", "未注册该游戏", "no role") -> {
                 return TaskFailureDescriptor(FailureCategory.NO_ROLE)
-            containsAny(lower, "短信", "sms", "mobile verify", "phone verify") ->
+            }
+
+            containsAny(lower, "短信", "sms", "mobile verify", "phone verify") -> {
                 return TaskFailureDescriptor(FailureCategory.SMS_REQUIRED)
-            containsAny(lower, "验证码", "人机验证", "captcha", "geetest") ->
+            }
+
+            containsAny(lower, "验证码", "人机验证", "captcha", "geetest") -> {
                 return TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED)
-            containsAny(lower, "操作过于频繁", "请求过于频繁", "too many", "rate limit") ->
+            }
+
+            containsAny(lower, "操作过于频繁", "请求过于频繁", "too many", "rate limit") -> {
                 return TaskFailureDescriptor(FailureCategory.RATE_LIMITED, retryable = true)
+            }
+
             containsAny(
                 lower,
                 "root",
@@ -53,7 +65,10 @@ internal object TaskFailureClassifier {
                 "黑名单",
                 "forbidden",
                 "blocked by risk",
-            ) -> return TaskFailureDescriptor(FailureCategory.SECURITY_BLOCKED)
+            ) -> {
+                return TaskFailureDescriptor(FailureCategory.SECURITY_BLOCKED)
+            }
+
             containsAny(
                 lower,
                 "登录状态已失效",
@@ -66,15 +81,25 @@ internal object TaskFailureClassifier {
                 "token invalid",
                 "token expired",
                 "combo_token",
-            ) -> return TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED)
-            containsAny(lower, "凭证不完整", "cookie 组合", "cookie组合", "认证字段", "身份冲突") ->
+            ) -> {
+                return TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED)
+            }
+
+            containsAny(lower, "凭证不完整", "cookie 组合", "cookie组合", "认证字段", "身份冲突") -> {
                 return TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED, "credential_incomplete")
-            containsAny(lower, "请求超时", "连接超时", "timeout", "timed out") ->
+            }
+
+            containsAny(lower, "请求超时", "连接超时", "timeout", "timed out") -> {
                 return TaskFailureDescriptor(FailureCategory.NETWORK_TIMEOUT, retryable = true)
-            containsAny(lower, "无法解析服务器", "无法连接", "网络不可达", "network unavailable") ->
+            }
+
+            containsAny(lower, "无法解析服务器", "无法连接", "网络不可达", "network unavailable") -> {
                 return TaskFailureDescriptor(FailureCategory.NETWORK_UNAVAILABLE, retryable = true)
-            containsAny(lower, "配置", "缺少游戏服务器", "version", "设备参数") ->
+            }
+
+            containsAny(lower, "配置", "缺少游戏服务器", "version", "设备参数") -> {
                 return TaskFailureDescriptor(FailureCategory.CONFIGURATION_ERROR)
+            }
         }
 
         extractRetcode(text)?.takeIf { it != 0 }?.let { return fromRetcode(it) }
@@ -88,13 +113,29 @@ internal object TaskFailureClassifier {
 
     fun fromRetcode(retcode: Int): TaskFailureDescriptor =
         when (retcode) {
-            -100, -101, 10001, 10103 ->
+            -100, -101, 10001, 10103 -> {
                 TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED, "retcode:$retcode")
-            1008 -> TaskFailureDescriptor(FailureCategory.NO_ROLE, "retcode:$retcode")
-            1034, 5003 -> TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode")
-            -1004 -> TaskFailureDescriptor(FailureCategory.RATE_LIMITED, "retcode:$retcode", retryable = true)
-            -502 -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "retcode:$retcode", retryable = true)
-            else -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "retcode:$retcode")
+            }
+
+            1008 -> {
+                TaskFailureDescriptor(FailureCategory.NO_ROLE, "retcode:$retcode")
+            }
+
+            1034, 5003 -> {
+                TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode")
+            }
+
+            -1004 -> {
+                TaskFailureDescriptor(FailureCategory.RATE_LIMITED, "retcode:$retcode", retryable = true)
+            }
+
+            -502 -> {
+                TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "retcode:$retcode", retryable = true)
+            }
+
+            else -> {
+                TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "retcode:$retcode")
+            }
         }
 
     fun fromNonIdempotentResponse(
@@ -115,35 +156,54 @@ internal object TaskFailureClassifier {
 
     fun fromException(error: Throwable?): TaskFailureDescriptor =
         when (error) {
-            is HttpTransportException -> fromHttpFailure(error)
-            is TransportFailureException -> fromTransportFailure(error)
+            is HttpTransportException -> {
+                fromHttpFailure(error)
+            }
+
+            is TransportFailureException -> {
+                fromTransportFailure(error)
+            }
+
             is SocketTimeoutException,
             is InterruptedIOException,
-            ->
+            -> {
                 TaskFailureDescriptor(
                     FailureCategory.NETWORK_TIMEOUT,
                     errorCode = error.javaClass.simpleName,
                     retryable = true,
                 )
+            }
+
             is UnknownHostException,
             is ConnectException,
             is NoRouteToHostException,
             is SocketException,
-            ->
+            -> {
                 TaskFailureDescriptor(
                     FailureCategory.NETWORK_UNAVAILABLE,
                     errorCode = error.javaClass.simpleName,
                     retryable = true,
                 )
-            is SSLException -> TaskFailureDescriptor(FailureCategory.NETWORK_UNAVAILABLE, "SSLException")
-            is JSONException -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "JSONException", retryable = true)
-            is ResponseTooLargeException ->
+            }
+
+            is SSLException -> {
+                TaskFailureDescriptor(FailureCategory.NETWORK_UNAVAILABLE, "SSLException")
+            }
+
+            is JSONException -> {
+                TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "JSONException", retryable = true)
+            }
+
+            is ResponseTooLargeException -> {
                 TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "response-too-large", retryable = true)
-            else ->
+            }
+
+            else -> {
                 TaskFailureDescriptor(
                     FailureCategory.INTERNAL_ERROR,
                     errorCode = error?.javaClass?.simpleName.orEmpty(),
                 )
+            }
         }
 
     private fun fromHttpFailure(error: HttpTransportException): TaskFailureDescriptor {
@@ -161,6 +221,7 @@ internal object TaskFailureClassifier {
                 HttpFailureKind.WRITE_TIMEOUT,
                 HttpFailureKind.READ_TIMEOUT,
                 -> FailureCategory.NETWORK_TIMEOUT
+
                 HttpFailureKind.DNS,
                 HttpFailureKind.CONNECT,
                 HttpFailureKind.CONNECTION_INTERRUPTED,
@@ -168,8 +229,11 @@ internal object TaskFailureClassifier {
                 HttpFailureKind.TLS,
                 HttpFailureKind.OTHER_IO,
                 -> FailureCategory.NETWORK_UNAVAILABLE
+
                 HttpFailureKind.RESPONSE_TOO_LARGE -> FailureCategory.SERVER_ERROR
+
                 HttpFailureKind.SECURITY_REJECTED -> FailureCategory.SECURITY_BLOCKED
+
                 HttpFailureKind.INTERNAL -> FailureCategory.INTERNAL_ERROR
             }
         return TaskFailureDescriptor(category, failure.errorCode, failure.retryable)
@@ -189,6 +253,7 @@ internal object TaskFailureClassifier {
                 com.questtick.net.TransportFailureKind.WRITE_TIMEOUT,
                 com.questtick.net.TransportFailureKind.READ_TIMEOUT,
                 -> FailureCategory.NETWORK_TIMEOUT
+
                 com.questtick.net.TransportFailureKind.DNS,
                 com.questtick.net.TransportFailureKind.CONNECT,
                 com.questtick.net.TransportFailureKind.CONNECTION_INTERRUPTED,
@@ -196,6 +261,7 @@ internal object TaskFailureClassifier {
                 com.questtick.net.TransportFailureKind.TLS,
                 com.questtick.net.TransportFailureKind.OTHER_IO,
                 -> FailureCategory.NETWORK_UNAVAILABLE
+
                 com.questtick.net.TransportFailureKind.RESPONSE_TOO_LARGE -> FailureCategory.SERVER_ERROR
             }
         val retryable =

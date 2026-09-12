@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 通用 UI 构件：面板卡、区块标题、页标题、标签芯片、空状态、骨架屏与分割线，供各页面统一复用。
+ */
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement

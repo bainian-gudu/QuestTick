@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 版本信息设置页：查询并展示米游社与云游戏 App 的当前版本，便于核对接口签名所需的版本号。
+ */
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
-import com.questtick.config.DsConfigRepository
 import com.questtick.data.Account
 import com.questtick.data.AppSettings
 import com.questtick.data.SecureStore
@@ -51,19 +50,26 @@ class RunDiagnostics(
                     it.isRooted -> {
                         "检测到Root [${it.level} score=${it.score} ${it.rootEvidenceTriggers.take(3).joinToString()}]"
                     }
+
                     it.completeness == RootDetectorV2.CheckCompleteness.FAILED -> {
                         "Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"
                     }
+
                     it.completeness == RootDetectorV2.CheckCompleteness.PARTIAL -> {
                         "Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"
                     }
+
                     it.isEmulator -> {
                         "模拟器环境（不阻断） [score=${it.score} ${it.triggers.take(3).joinToString()}]"
                     }
+
                     it.triggers.isNotEmpty() -> {
                         "检测到非Root风险项（不阻断） [${it.level} score=${it.score} ${it.triggers.take(3).joinToString()}]"
                     }
-                    else -> "未检测到Root"
+
+                    else -> {
+                        "未检测到Root"
+                    }
                 }
             } ?: "检测失败"
 
@@ -114,7 +120,6 @@ class RunDiagnostics(
         val mail = store.getMailSettings()
         val mysDeviceId = store.effectiveMysDeviceId(forceCreate = false)
         val cloudDeviceId = store.effectiveCloudDeviceId(forceCreate = false)
-        val dsConfig = DsConfigRepository.current
 
         log(
             "INFO",
@@ -136,7 +141,6 @@ class RunDiagnostics(
                 append("notifyEnabled=${settings.notifyEnabled}, ")
                 append("mailEnabled=${mail.enabled}, ")
                 append("experiments={$experiments}, ")
-                append("dsConfig={version=${dsConfig.version}, algorithm=${dsConfig.algorithm}, updateTime=${dsConfig.updateTime}}, ")
                 append("mysDeviceId=${if (mysDeviceId.isNotBlank()) "***${mysDeviceId.takeLast(4)}" else "未生成"}, ")
                 append("cloudDeviceId=${if (cloudDeviceId.isNotBlank()) "***${cloudDeviceId.takeLast(4)}" else "未生成"}")
             },

@@ -1,5 +1,8 @@
 package com.questtick.ui.components
 
+/*
+ * 手势冲突处理：消费横向滑动的溢出量，避免嵌套横向滚动与横向翻页互相抢夺手势。
+ */
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

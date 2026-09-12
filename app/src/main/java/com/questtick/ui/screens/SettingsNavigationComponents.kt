@@ -1,5 +1,8 @@
 package com.questtick.ui.screens
 
+/*
+ * 设置页导航构件：详情面板的覆盖层容器与带返回按钮的顶部栏，保证各子页进出动画与层级一致。
+ */
 import com.questtick.i18n.localizedText
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
