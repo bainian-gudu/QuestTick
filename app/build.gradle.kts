@@ -275,7 +275,8 @@ android {
 
     sourceSets {
         // MigrationTestHelper 在 androidTest assets 中查找导出的 schema JSON，用于升级回归测试。
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        // srcDir() 在 AGP 9.2 起被废弃（Gradle 10 会移除），统一改用 directories 可变集合。
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }
 
     androidResources {

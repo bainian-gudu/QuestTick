@@ -274,7 +274,10 @@ fun RecordsScreen(
                     }
                 }
 
-                currentRunSummaries.isNotEmpty() -> {
+                // 取反判断"仍有可见记录"，而不是写 else -> Unit：
+                // when 作为语句使用时，兜底分支里裸写的 Unit 会被编译器判定为无用表达式。
+                // 过滤后没有记录的情况由上方的空态 / 骨架分支负责，这里不需要额外分支。
+                !currentRunSummaries.isEmpty() -> {
                     // LazyColumn 只组合视口附近的运行卡片；详情在展开时按需读取。
                     items(
                         visibleFilteredRuns,
@@ -302,10 +305,6 @@ fun RecordsScreen(
                             )
                         }
                     }
-                }
-
-                else -> {
-                    Unit
                 }
             }
             item(key = "spacer_bottom") { Spacer(Modifier.height(24.dp)) }
