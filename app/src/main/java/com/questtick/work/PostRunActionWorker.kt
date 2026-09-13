@@ -54,21 +54,31 @@ class PostRunActionWorker
             }
         }
 
-        private suspend fun deliver(action: com.questtick.data.db.PostRunActionEntity): Result =
+        private suspend fun deliver(action: com.questtick.data.db.PostRunActionEntity): Result {
+            val actionType =
+                PostRunActionType.entries.firstOrNull { it.name == action.type }
+                    ?: return finishWithoutRetry(action, "unsupported-action-type")
+            return runCatching { RunRecord.fromJson(JSONObject(action.payloadJson)) }.fold(
+                onSuccess = { record -> deliverParsed(action, actionType, record) },
+                onFailure = { error ->
+                    appErrorLogger.record("运行后动作解析", error)
+                    finishWithoutRetry(action, "invalid-action-payload")
+                },
+            )
+        }
+
+        private suspend fun deliverParsed(
+            action: com.questtick.data.db.PostRunActionEntity,
+            actionType: PostRunActionType,
+            record: RunRecord,
+        ): Result =
             try {
-                val record = RunRecord.fromJson(JSONObject(action.payloadJson))
-                when (PostRunActionType.valueOf(action.type)) {
+                when (actionType) {
                     PostRunActionType.NOTIFICATION -> deliverNotification(action.actionId, record)
                     PostRunActionType.EMAIL -> deliverEmail(action, record)
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IllegalArgumentException) {
-                appErrorLogger.record("运行后动作解析", e)
-                finishWithoutRetry(action, "unsupported-action-type")
-            } catch (e: org.json.JSONException) {
-                appErrorLogger.record("运行后动作解析", e)
-                finishWithoutRetry(action, "invalid-action-payload")
             } catch (e: Exception) {
                 appErrorLogger.record("运行后动作投递", e)
                 retryOrFinish(action, e.javaClass.simpleName.ifBlank { "delivery-error" })

@@ -300,6 +300,7 @@ class MainViewModel
             }
         }
 
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
         fun refreshCloudToken(
             account: Account,
             gameKey: String,

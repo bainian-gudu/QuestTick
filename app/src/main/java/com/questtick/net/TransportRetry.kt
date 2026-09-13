@@ -28,8 +28,8 @@ internal enum class TransportRetryPolicy(
     ;
 
     fun requireCompatible(request: Request) {
-        if (this == IDEMPOTENT_READ && request.method !in IDEMPOTENT_METHODS) {
-            throw IllegalArgumentException("IDEMPOTENT_READ only supports GET or HEAD")
+        require(this != IDEMPOTENT_READ || request.method in IDEMPOTENT_METHODS) {
+            "IDEMPOTENT_READ only supports GET or HEAD"
         }
     }
 
@@ -134,6 +134,7 @@ internal class RequestTransmissionTracker : EventListener() {
 }
 
 internal object TransportFailures {
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
     fun classify(
         error: IOException,
         requestMethod: String,

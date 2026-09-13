@@ -9,8 +9,8 @@ import com.questtick.net.HttpRequestConfig
 import com.questtick.net.HttpMethod
 import com.questtick.net.HttpRetryMode
 import com.questtick.net.HttpTransport
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.abs
 
@@ -109,7 +109,14 @@ class ScheduleClock
                     )
                 if (response.code !in 200..499) return@runCatching null
                 val date = response.headerValues("Date").firstOrNull() ?: return@runCatching null
-                val millis = ZonedDateTime.parse(date, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toEpochMilli()
+                // SimpleDateFormat is available on the complete minSdk range (24+).
+                // java.time would require core library desugaring on API 24/25.
+                val millis =
+                    SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
+                        .apply {
+                            isLenient = false
+                        }.parse(date)
+                        ?.time ?: return@runCatching null
                 lastNetworkSample = NetworkSample(millis, receivedElapsed)
                 millis
             }.getOrNull()

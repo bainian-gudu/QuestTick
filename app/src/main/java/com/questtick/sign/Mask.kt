@@ -48,7 +48,7 @@ object Mask {
         )
 
     fun sensitive(text: String?): String {
-        var result = text ?: ""
+        var result = text.orEmpty()
         for ((regex, replacement) in rules) {
             result = regex.replace(result, replacement)
         }

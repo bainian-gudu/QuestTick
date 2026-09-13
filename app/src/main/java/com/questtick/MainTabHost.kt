@@ -70,6 +70,7 @@ internal enum class Tab(
 }
 
 @Composable
+@Suppress("LongMethod")
 internal fun MainTabContent(
     tab: Int,
     warmedTabs: Set<Int>,
