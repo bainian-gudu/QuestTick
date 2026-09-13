@@ -779,7 +779,9 @@ private fun KeepAliveCard(visibleKey: Int) {
                         "关闭「自动管理」→ 手动打开全部三项开关"
                 }
 
-                manufacturer.contains("oppo") || manufacturer.contains("realme") || manufacturer.contains("oneplus") -> {
+                manufacturer.contains("oppo") ||
+                    manufacturer.contains("realme") ||
+                    manufacturer.contains("oneplus") -> {
                     "OPPO / realme / 一加：设置 → 应用管理 → 应用列表 → " +
                         "找到本应用 → 耗电保护 → 允许后台运行"
                 }

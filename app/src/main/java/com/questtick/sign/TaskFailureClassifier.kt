@@ -27,6 +27,7 @@ data class TaskFailureDescriptor(
 
 /** 将接口错误码、HTTP 状态和异常统一转换为稳定失败类别。 */
 internal object TaskFailureClassifier {
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
     fun classify(
         success: Boolean,
         skipped: Boolean,

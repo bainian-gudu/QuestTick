@@ -56,6 +56,7 @@ object Ds {
      * @param algorithm 算法版本
      * @param salt 接口对应的 salt
      */
+    @Suppress("LongParameterList")
     fun generate(
         body: String = "",
         query: String = "",
@@ -98,6 +99,7 @@ object Ds {
      * @param algorithm 算法版本
      * @param salt 接口对应的 salt
      */
+    @Suppress("LongParameterList")
     fun generate(
         timestampSeconds: Long,
         random: String,

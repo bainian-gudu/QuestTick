@@ -205,7 +205,10 @@ class DsTest {
                 .put("act_id", "e202311201442471")
                 .put("region", "cn_gf01")
 
-        assertEquals("{\"act_id\":\"e202311201442471\",\"region\":\"cn_gf01\",\"uid\":\"123\"}", Ds.sortedJsonString(json))
+        assertEquals(
+            "{\"act_id\":\"e202311201442471\",\"region\":\"cn_gf01\",\"uid\":\"123\"}",
+            Ds.sortedJsonString(json),
+        )
     }
 
     @Test

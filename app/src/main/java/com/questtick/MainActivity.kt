@@ -69,14 +69,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         applyLaunchThemeColors(darkLaunchTheme, oledPureBlack, dynamicColorEnabled, customThemeColor)
         enableEdgeToEdge()
-        // Android 16+：接入预测性返回。
-        if (Build.VERSION.SDK_INT >= 36) {
-            onBackInvokedDispatcher.registerOnBackInvokedCallback(
-                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-            ) {
-                moveTaskToBack(false)
-            }
-        }
         applyDisplayTweaks()
         consumeTabIntent(intent)
         setContent {

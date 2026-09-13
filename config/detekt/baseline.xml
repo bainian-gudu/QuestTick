@@ -1059,7 +1059,6 @@
     <ID>TooManyFunctions:SignInRunner.kt$SignInRunner</ID>
     <ID>TooManyFunctions:TrustedRedirects.kt$TrustedRedirects</ID>
     <ID>TooManyFunctions:TrustedUrlPolicy.kt$TrustedUrlPolicy</ID>
-    <ID>UnreachableCatchBlock:PostRunActionWorker.kt$PostRunActionWorker$catch (e: org.json.JSONException) { appErrorLogger.record("运行后动作解析", e) finishWithoutRetry(action, "invalid-action-payload") }</ID>
     <ID>UnusedParameter:AccountEditScreen.kt$done: Boolean = false</ID>
     <ID>UnusedParameter:AppUpdateInstaller.kt$AppUpdateInstaller$context: Context</ID>
     <ID>UnusedParameter:AppUpdateInstaller.kt$AppUpdateInstaller$enforceSha256: Boolean = true</ID>
@@ -1080,9 +1079,6 @@
     <ID>UnusedPrivateProperty:RoomLogStore.kt$RoomLogStore.Companion$private const val TAG = "RoomLogStore"</ID>
     <ID>UseCheckOrError:MailStore.kt$MailStore$throw IllegalStateException("Failed to save mail settings: encrypted commit returned false")</ID>
     <ID>UseCheckOrError:SettingsStore.kt$SettingsStore$throw IllegalStateException("Failed to save app settings: plain commit returned false")</ID>
-    <ID>UseOrEmpty:Mask.kt$Mask$text ?: ""</ID>
-    <ID>UseOrEmpty:Passport.kt$Passport$text ?: ""</ID>
-    <ID>UseRequire:TransportRetry.kt$TransportRetryPolicy$throw IllegalArgumentException("IDEMPOTENT_READ only supports GET or HEAD")</ID>
     <!-- 以下条目为 SignInRunner 拆分（RunDiagnostics/RunFinalizer）平移的既有问题；下次运行 detektBaseline 可自动归位清理。 -->
     <ID>CyclomaticComplexMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>
     <ID>LongMethod:RunDiagnostics.kt$RunDiagnostics$fun logSystemInfo( settings: AppSettings, accounts: List&lt;Account&gt;, rootResultForLog: RootDetectorV2.RootCheckResult?, )</ID>

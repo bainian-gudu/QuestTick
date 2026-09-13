@@ -37,7 +37,7 @@ object Passport {
         }
 
     private fun extractFromKeyValueText(text: String?): String {
-        val source = text ?: ""
+        val source = text.orEmpty()
         val map = HashMap<String, String>()
         val regex = Regex("(?:^|[;,\\s&])([A-Za-z0-9_-]+)=([^;,\\s&]+)")
         for (m in regex.findAll(source)) {
