@@ -377,7 +377,6 @@
     <ID>ReturnCount:Passport.kt$Passport$fun extractPassportId(value: String?): String</ID>
     <ID>ReturnCount:PostRunActionWorker.kt$PostRunActionWorker$private suspend fun deliverEmail( action: com.questtick.data.db.PostRunActionEntity, record: RunRecord, ): Result</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$internal suspend fun exchangeStokenByLoginTicket( uid: String, loginTicket: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;MultiToken&gt;</ID>
-    <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private fun JSONObject?.firstNonBlank(vararg keys: String): String</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private fun buildConfirmedStatus( uid: String, cookieToken: String, ltoken: String, stoken: String, mid: String, loginTicket: String, nickname: String, ): ScanStatus</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun fillCookieTokenByStokenIfNeeded( status: ScanStatus.Confirmed, httpTransport: HttpTransport, ): ScanStatus.Confirmed</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun parseConfirmed( setCookieHeaders: List&lt;String&gt;, data: JSONObject, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): ScanStatus</ID>
@@ -488,7 +487,5 @@
     <ID>TooManyFunctions:SignInRunner.kt$SignInRunner</ID>
     <ID>TooManyFunctions:TrustedRedirects.kt$TrustedRedirects</ID>
     <ID>TooManyFunctions:TrustedUrlPolicy.kt$TrustedUrlPolicy</ID>
-    <ID>UnusedPrivateMember:QRLoginManager.kt$QRLoginManager$private fun JSONObject?.firstNonBlank(vararg keys: String): String</ID>
-    <ID>UnusedPrivateMember:QRLoginManager.kt$QRLoginManager$private fun Map&lt;String, String&gt;.firstNonBlank(vararg keys: String): String</ID>
   </CurrentIssues>
 </SmellBaseline>
