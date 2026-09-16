@@ -10,7 +10,7 @@ object PinningManager {
             .filter { it.host.isNotBlank() && it.pins.isNotEmpty() }
             .forEach { config ->
                 validate(config)
-                builder.add(config.host, *config.pins.toTypedArray())
+                config.pins.forEach { pin -> builder.add(config.host, pin) }
             }
         return builder.build()
     }

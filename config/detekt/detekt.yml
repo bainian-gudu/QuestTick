@@ -13,6 +13,9 @@ naming:
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
 
 style:
+  MaxLineLength:
+    # 与 QUESTTICK_CODE_STYLE.md 的 140 列提示保持一致，避免默认 120 列产生格式噪声。
+    maxLineLength: 140
   ForbiddenMethodCall:
     active: true
     methods:

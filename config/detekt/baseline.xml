@@ -19,7 +19,6 @@
     <ID>CyclomaticComplexMethod:AccountEditScreen.kt$@Composable private fun CloudTab( genshin: String, onGenshin: (String) -&gt; Unit, starrail: String, onStarrail: (String) -&gt; Unit, genshinKeepLogin: Boolean = false, starrailKeepLogin: Boolean = false, refreshingGenshinToken: Boolean = false, genshinTokenRefreshDone: Boolean = false, genshinTokenRefreshFailed: Boolean = false, refreshingStarrailToken: Boolean = false, starrailTokenRefreshDone: Boolean = false, starrailTokenRefreshFailed: Boolean = false, /** 扫码获取云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onStartCloudQR: ((gameKey: String) -&gt; Unit)? = null, /** 手动刷新云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onRefreshCloudToken: ((gameKey: String) -&gt; Unit)? = null, /** 退出云游戏扫码登录；保留当前 Token。 */ onLogoutCloud: ((gameKey: String) -&gt; Unit)? = null, )</ID>
     <ID>CyclomaticComplexMethod:AccountsScreen.kt$@Composable private fun AccountCard( account: Account, onEdit: () -&gt; Unit, onDelete: () -&gt; Unit, onToggle: (Boolean) -&gt; Unit, executionGuard: ExecutionStateRepository.AccountGuard?, onResume: () -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
-    <ID>CyclomaticComplexMethod:AppUpdateChecker.kt$AppUpdateChecker$private fun parseReleasesJson( body: String, currentVersion: String, ): AppUpdateInfo</ID>
     <ID>CyclomaticComplexMethod:CloudQRLoginScreen.kt$@Composable fun CloudQRLoginScreen( gameKey: String, deviceId: String, visible: Boolean = true, onResult: (CloudQRLoginResult) -&gt; Unit, onCancel: () -&gt; Unit, onError: (String) -&gt; Unit = {}, )</ID>
     <ID>CyclomaticComplexMethod:ErrorText.kt$ErrorText$fun fromException(e: Throwable?): String</ID>
     <ID>CyclomaticComplexMethod:HomeAccountCard.kt$@Composable fun HomeAccountCard( account: Account, onToggle: (Boolean) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -189,7 +188,6 @@
     <ID>LongParameterList:StatusBadge.kt$( text: String, color: Color, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(8.dp), horizontalPadding: Dp = 8.dp, verticalPadding: Dp = 3.dp, fontSize: TextUnit = 11.sp, fontWeight: FontWeight = FontWeight.Medium, backgroundAlpha: Float = 0.16f, borderAlpha: Float = 0f, selected: Boolean = false, selectedContentColor: Color = Color.White, selectedBackgroundAlpha: Float = 1f, selectedBorderAlpha: Float = 0f, maxLines: Int = 1, leadingDotColor: Color? = null, leadingDotSize: Dp = 6.dp, leadingDotSpacing: Dp = 6.dp, onClick: (() -&gt; Unit)? = null, )</ID>
     <ID>LongParameterList:SyncedHorizontalPager.kt$( selectedPage: Int, pageCount: Int, modifier: Modifier = Modifier, beyondViewportPageCount: Int = 1, onVisualPagePositionChange: (Float) -&gt; Unit = {}, onPageSettled: (Int) -&gt; Unit, pageContent: @Composable (page: Int, pageVisible: Boolean) -&gt; Unit, )</ID>
     <ID>LongParameterList:Theme.kt$( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
-    <ID>LoopWithTooManyJumpStatements:AppUpdateChecker.kt$AppUpdateChecker$for</ID>
     <ID>LoopWithTooManyJumpStatements:RewardIconCache.kt$RewardIconCache$for</ID>
     <ID>MagicNumber:AccountEditScreen.kt$1200</ID>
     <ID>MagicNumber:AccountEditScreen.kt$300</ID>
@@ -497,63 +495,22 @@
     <ID>MatchingDeclarationName:MainTabHost.kt$Tab</ID>
     <ID>MatchingDeclarationName:QRLoginScreen.kt$QRLoginResult</ID>
     <ID>MatchingDeclarationName:SignInTaskPlanning.kt$CloudGameBinding</ID>
-    <ID>MaxLineLength:AccountEditScreen.kt$)</ID>
-    <ID>MaxLineLength:AccountEditScreen.kt$Icon(Icons.Filled.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))</ID>
-    <ID>MaxLineLength:AccountEditScreen.kt$Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary, modifier = Modifier.padding(start = 2.dp))</ID>
-    <ID>MaxLineLength:AccountEditScreen.kt$if</ID>
-    <ID>MaxLineLength:AccountEditScreen.kt$leadingIcon = { Icon(leading, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(20.dp)) }</ID>
     <ID>MaxLineLength:AccountGameSelection.kt$AnimatedSwitch(checked = mysCoinEnabled, onCheckedChange = onMysCoinEnabledChange, offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))</ID>
-    <ID>MaxLineLength:AccountGameSelection.kt$Box</ID>
-    <ID>MaxLineLength:AccountGameSelection.kt$Text(game.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)</ID>
-    <ID>MaxLineLength:AccountGameSelection.kt$if (enabled) CheckCircle(checked) else Text("待确认", fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)</ID>
     <ID>MaxLineLength:AccountGameSelection.kt$val border = if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)</ID>
     <ID>MaxLineLength:AccountGameSelection.kt$val rowModifier = Modifier.fillMaxWidth().border(1.5.dp, border, RoundedCornerShape(18.dp)).then(if (enabled) Modifier.clickableNoRipple(onToggle) else Modifier)</ID>
-    <ID>MaxLineLength:AccountsScreen.kt$Icon(Icons.Filled.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))</ID>
-    <ID>MaxLineLength:AccountsScreen.kt$Icon(Icons.Filled.Delete, contentDescription = localizedText("删除"), tint = DangerRed, modifier = Modifier.size(13.dp))</ID>
-    <ID>MaxLineLength:AccountsScreen.kt$Icon(Icons.Filled.PersonOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)</ID>
-    <ID>MaxLineLength:AccountsScreen.kt$g.cloud &amp;&amp; g.key == "CloudSR" -&gt; account.starrailToken.isNotBlank() || account.hasStarrailCloudKeepLogin</ID>
-    <ID>MaxLineLength:AccountsScreen.kt$g.cloud &amp;&amp; g.key == "CloudYS" -&gt; account.genshinToken.isNotBlank() || account.hasGenshinCloudKeepLogin</ID>
     <ID>MaxLineLength:ActId.kt$ActId$if (finalUri.scheme != "https" || finalUri.host?.lowercase() != NAVIGATION_HOST || finalUri.path != NAVIGATION_PATH || finalUri.rawQuery != "gids=${source.gids}") return null</ID>
     <ID>MaxLineLength:ActId.kt$ActId$if (raw.isBlank() || raw != raw.trim() || raw.contains('%') || Regex("[\\s\\\\\\u0000-\\u001f\\u007f]").containsMatchIn(raw)) return null</ID>
-    <ID>MaxLineLength:ActId.kt$ActId$val res = httpTransport.getIdempotent(game.actPage, headers, config = HttpRequestConfig(maxResponseBytes = MAX_SCRIPT_BYTES))</ID>
     <ID>MaxLineLength:ActIdInvalid.kt$ActIdInvalid$private fun isClearlyNotActIdMessage(message: String): Boolean</ID>
-    <ID>MaxLineLength:ActIdTest.kt$ActIdTest$ActId.parseFromText("https://act.mihoyo.com/bbs/event/signin/hk4e/index.html?act_id=e202311201442471&amp;lang=zh-cn")</ID>
     <ID>MaxLineLength:ActIdTest.kt$ActIdTest$val body = """{"retcode":0,"data":{"navigator":[{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/index.html?act_id=e202311201442471"}]}}"""</ID>
     <ID>MaxLineLength:ActIdTest.kt$ActIdTest$val duplicate = """{"retcode":0,"data":{"navigator":[{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202311201442471"},{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202304121516551"}]}}"""</ID>
     <ID>MaxLineLength:ActIdTest.kt$ActIdTest$val mismatch = """{"retcode":0,"data":{"navigator":[{"app_path":"https://evil.example/bbs/event/signin/hk4e/?act_id=e202311201442471"}]}}"""</ID>
-    <ID>MaxLineLength:AppLanguage.kt$AppLanguage.Companion$fun fromSetting(value: String): AppLanguage</ID>
     <ID>MaxLineLength:AppUpdateCache.kt$AppUpdateCache$private fun prefs(context: Context): SharedPreferences</ID>
     <ID>MaxLineLength:AppUpdateChecker.kt$AppUpdateChecker$private fun normalizeVersion(raw: String): String</ID>
-    <ID>MaxLineLength:AppUpdateChecker.kt$AppUpdateChecker$val body = fetchBodyOnce(RELEASES_API, "", connectMs, readMs, allowHttpCache = false, httpTransport = httpTransport)</ID>
     <ID>MaxLineLength:AppUpdateNetwork.kt$AppUpdateNetwork$fun</ID>
-    <ID>MaxLineLength:CloudAppVersionFetcher.kt$CloudAppVersionFetcher$suspend fun fetchCloudSr(httpTransport: HttpTransport): Result&lt;String&gt;</ID>
-    <ID>MaxLineLength:CloudAppVersionFetcher.kt$CloudAppVersionFetcher$suspend fun fetchCloudYs(httpTransport: HttpTransport): Result&lt;String&gt;</ID>
-    <ID>MaxLineLength:CloudQRLogin.kt$CloudQRLogin$if (result is ScanStatus.Error) recordError?.invoke("$gameKey queryQRLoginStatus confirmed: ${result.msg}")</ID>
-    <ID>MaxLineLength:CloudQRLogin.kt$CloudQRLogin$recordError?.invoke("$gameKey createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")</ID>
     <ID>MaxLineLength:CloudQRLogin.kt$CloudQRLogin$recordError?.invoke("$gameKey queryQRLoginStatus http=${response.code}, retcode=$retcode, message=${json.optString("message")}")</ID>
-    <ID>MaxLineLength:CloudQRLogin.kt$CloudQRLogin$recordError?.invoke("$gameKey webLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")</ID>
-    <ID>MaxLineLength:CloudQRLoginScreen.kt$val result = withContext(Dispatchers.IO) { CloudQRLogin.createQRCode(gameKey, deviceId, httpTransport, onError) }</ID>
-    <ID>MaxLineLength:CloudSignExecutor.kt$CloudSignExecutor$credentialCoordinator.refreshCloudTokenForRun(currentAccount, game, game.key, webCookie, cloudDeviceId)</ID>
-    <ID>MaxLineLength:CloudSignExecutor.kt$CloudSignExecutor$credentialCoordinator.saveCloudTokenForRun(currentAccount, game, binding, newToken)</ID>
-    <ID>MaxLineLength:CloudSignExecutor.kt$CloudSignExecutor$logOutcome(currentAccount.label, game.name, outcome.success, outcome.skipped, outcome.message, outcome.detail, taskElapsed)</ID>
-    <ID>MaxLineLength:CloudSignIn.kt$CloudSignIn$"CloudSR" -&gt; CloudVersionRepository.effectiveSr().ifBlank { game.gameHeaders["x-rpc-app_version"] ?: "4.3.0" }</ID>
-    <ID>MaxLineLength:CloudSignIn.kt$CloudSignIn$"CloudYS" -&gt; CloudVersionRepository.effectiveYs().ifBlank { game.gameHeaders["x-rpc-app_version"] ?: "6.7.0" }</ID>
-    <ID>MaxLineLength:CloudSignIn.kt$CloudSignIn$val url = "${game.baseURL}/gamer/api/listNotifications?status=NotificationStatusUnread&amp;type=NotificationTypePopup&amp;is_sort=true"</ID>
-    <ID>MaxLineLength:Common.kt$Text(subtitle, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)</ID>
-    <ID>MaxLineLength:Ds.kt$Ds$private fun randomString(length: Int): String</ID>
-    <ID>MaxLineLength:ExecutionStateRepository.kt$ExecutionStateRepository$if</ID>
-    <ID>MaxLineLength:HistoryRepository.kt$HistoryRepository$override suspend fun loadFromStore(): List&lt;RunRecord&gt;</ID>
-    <ID>MaxLineLength:HomeAccountCard.kt$game.cloud &amp;&amp; game.key == "CloudSR" -&gt; account.starrailToken.isNotBlank() || account.hasStarrailCloudKeepLogin</ID>
-    <ID>MaxLineLength:HomeAccountCard.kt$game.cloud &amp;&amp; game.key == "CloudYS" -&gt; account.genshinToken.isNotBlank() || account.hasGenshinCloudKeepLogin</ID>
-    <ID>MaxLineLength:HomeProgressLogicTest.kt$HomeProgressLogicTest$assertEquals(RunTaskStatus.ALREADY_SIGNED, taskStatusFromResult(result("已签", success = true, alreadySigned = true)))</ID>
-    <ID>MaxLineLength:HomeScreen.kt$Text("还没有添加任何账号", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface)</ID>
     <ID>MaxLineLength:HomeThemeDashboard.kt$RunProgressPhase.BLOCKED -&gt; if (isRootCheckFailedBlock) RootBlockMessages.CHECK_FAILED_TITLE else RootBlockMessages.DETECTED_TITLE</ID>
-    <ID>MaxLineLength:HttpTransport.kt$HttpResponse$override fun toString(): String</ID>
-    <ID>MaxLineLength:HttpTransport.kt$HttpResponse.Companion$)</ID>
     <ID>MaxLineLength:HttpTransport.kt$private fun Map&lt;String, List&lt;String&gt;&gt;.immutableCopy(): Map&lt;String, List&lt;String&gt;&gt;</ID>
-    <ID>MaxLineLength:LatestRunCard.kt$Box(Modifier.fillMaxWidth().height(0.5.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)))</ID>
     <ID>MaxLineLength:LogDisplayComponents.kt$AnimatedVisibility</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Column { entries.forEachIndexed { index, entry -&gt; LogEntryRowWithDivider(entry, verbose, searchQuery, index &lt; entries.lastIndex) } }</ID>
     <ID>MaxLineLength:LogDisplayComponents.kt$Icon(Icons.Filled.Close, contentDescription = localizedText("清除搜索"), tint = TextSecondary, modifier = Modifier.size(18.dp))</ID>
     <ID>MaxLineLength:LogDisplayComponents.kt$Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText("收起"), tint = TextSecondary.copy(alpha = 0.65f), modifier = Modifier.size(15.dp).rotate(180f))</ID>
     <ID>MaxLineLength:LogDisplayComponents.kt$Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText(if (expanded) "收起" else "展开"), tint = TextSecondary, modifier = Modifier.size(22.dp).rotate(arrowRotation))</ID>
@@ -562,179 +519,53 @@
     <ID>MaxLineLength:LogDisplayComponents.kt$Text(annotated, modifier = modifier, fontFamily = fontFamily, fontSize = fontSize, lineHeight = lineHeight, color = color, maxLines = maxLines, overflow = overflow)</ID>
     <ID>MaxLineLength:LogDisplayComponents.kt$Text(date, modifier = Modifier.padding(horizontal = 12.dp), fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium)</ID>
     <ID>MaxLineLength:LogDisplayComponents.kt$if (showDivider) HorizontalDivider(Modifier.padding(start = 62.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp)) }</ID>
     <ID>MaxLineLength:LogRepository.kt$LogRepository$fun suggestExportFileName(format: LogExporter.ExportFormat = LogExporter.ExportFormat.TXT): String</ID>
-    <ID>MaxLineLength:LogRepository.kt$LogRepository$override suspend fun loadFromStore(): List&lt;LogEntry&gt;</ID>
     <ID>MaxLineLength:LogsLogic.kt$entries.sortedWith(compareBy&lt;ProcessedLogEntry&gt;({ it.timestamp }, { it.level }, { it.safeMessage }, { it.safeDetail }))</ID>
-    <ID>MaxLineLength:LogsLogic.kt$for</ID>
-    <ID>MaxLineLength:LogsLogic.kt$internal fun logGroupEntryKey(entry: ProcessedLogEntry): String</ID>
-    <ID>MaxLineLength:LogsScreen.kt$Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = null, tint = MaterialTheme.colorScheme.error)</ID>
-    <ID>MaxLineLength:LogsScreen.kt$LogStatChip("DBG ${stats.debug}", TextSecondary, filter == LogFilter.DEBUG) { filter = LogFilter.DEBUG }</ID>
-    <ID>MaxLineLength:LogsScreen.kt$LogStatChip("ℹ ${stats.info}", TextSecondary, filter == LogFilter.INFO) { filter = LogFilter.INFO }</ID>
-    <ID>MaxLineLength:LogsScreen.kt$LogStatChip("✗ ${stats.error}", DangerRed, filter == LogFilter.ERROR) { filter = LogFilter.ERROR }</ID>
-    <ID>MaxLineLength:LogsScreen.kt$Text("导出", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.Medium)</ID>
-    <ID>MaxLineLength:LogsScreen.kt$if (result.isFailure) viewModel.showToast(result.exceptionOrNull()?.message ?: "日志导出失败")</ID>
-    <ID>MaxLineLength:LogsScreen.kt$saveJsonLauncher.launch(LogExporter.suggestFileName(format = LogExporter.ExportFormat.JSON))</ID>
-    <ID>MaxLineLength:LogsScreen.kt$saveTxtLauncher.launch(LogExporter.suggestFileName(format = LogExporter.ExportFormat.TXT))</ID>
-    <ID>MaxLineLength:LogsScreen.kt$saveZipLauncher.launch(LogExporter.suggestFileName(format = LogExporter.ExportFormat.ZIP))</ID>
-    <ID>MaxLineLength:LogsScreen.kt$val result = LogExporter.exportAndShare(context, logs, verbose, LogExporter.ExportFormat.JSON)</ID>
-    <ID>MaxLineLength:LogsScreen.kt$val result = LogExporter.exportAndShare(context, logs, verbose, LogExporter.ExportFormat.TXT)</ID>
-    <ID>MaxLineLength:LogsScreen.kt$val result = LogExporter.exportAndShare(context, logs, verbose, LogExporter.ExportFormat.ZIP)</ID>
-    <ID>MaxLineLength:Mailer.kt$Mailer$)</ID>
     <ID>MaxLineLength:Mailer.kt$Mailer$private fun isCloud(result: TaskResult): Boolean</ID>
-    <ID>MaxLineLength:Mailer.kt$Mailer$text.contains("成功") || text.contains("已签") -&gt; "background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;"</ID>
-    <ID>MaxLineLength:Mailer.kt$Mailer.&lt;no name provided&gt;$override fun getPasswordAuthentication()</ID>
-    <ID>MaxLineLength:MainActivity.kt$MainActivity$modes.filter { it.physicalWidth == mode.physicalWidth &amp;&amp; it.physicalHeight == mode.physicalHeight }</ID>
-    <ID>MaxLineLength:MainActivity.kt$MainActivity$val colorRes = if (darkTheme) android.R.color.system_neutral1_900 else android.R.color.system_neutral1_10</ID>
-    <ID>MaxLineLength:MainViewModel.kt$MainViewModel$fun effectiveCloudDeviceId(forceCreate: Boolean = true): String</ID>
-    <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$"afterBalance=${after?.balance ?: "unknown"}, afterReceived=${after?.receivedToday ?: "unknown"}, "</ID>
-    <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$"beforeBalance=${before?.balance ?: "unknown"}, beforeReceived=${before?.receivedToday ?: "unknown"}, "</ID>
-    <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$StateRead(state, if (state == null) "http=${response.code}, retcode=$retcode, message=$message, 缺少有效余额字段" else "")</ID>
-    <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$message = if (balance &gt;= 0 &amp;&amp; gained &gt;= 0) "原神社区打卡成功，获得 $gained 米游币，余额 $balance" else "原神社区打卡成功，米游币数量暂时无法读取"</ID>
     <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$signDay = firstPositiveInt(it, "sign_day", "signDay", "total_sign_day", "totalSignDay", "continuous_days", "consecutive_days") ?: 0</ID>
-    <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$val balance = findInt(it, "total_points", "totalPoints", "coin_balance", "coinBalance", "balance", "points")</ID>
     <ID>MaxLineLength:MysCoinCheckIn.kt$MysCoinCheckIn$val receivedToday = findInt(it, "already_received_points", "alreadyReceivedPoints", "received_today", "receivedToday", "today_received_points")</ID>
     <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\",\"data\":{\"total_points\":100,\"already_received_points\":0}}")</ID>
     <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\",\"data\":{\"total_points\":130,\"already_received_points\":30}}")</ID>
-    <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$val originalCookie = "account_id_v2=1; stoken_v2=v2-old; mid=MID; ltoken_v2=lt; ltmid_v2=MID; cookie_token=balance-token"</ID>
-    <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$val outcome = MysCoinCheckIn.run("account_id=2; cookie_token=web", "device", "2.109.0", transport, uid = "1")</ID>
-    <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$val outcome = MysCoinCheckIn.run("stoken=s; mid=m; stuid=1; ltoken=l; account_id=1", "device", "2.109.0", transport)</ID>
     <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$val outcome = MysCoinCheckIn.run("stoken=s; mid=m; stuid=1; ltoken=l; account_id=1; cookie_token=test", "DEVICE-ID", "2.109.0", transport)</ID>
     <ID>MaxLineLength:MysSignIn.kt$MysSignIn$MysHeaders.sign(cookie, deviceId, customVersion, ds, referer = referer, origin = "https://webstatic.mihoyo.com").toMutableMap()</ID>
-    <ID>MaxLineLength:MysSignIn.kt$MysSignIn$directKeys.firstNotNullOfOrNull { key -&gt; json.optString(key).trim().takeIf { it.isNotBlank() } }?.let { return it }</ID>
-    <ID>MaxLineLength:MysSignIn.kt$MysSignIn$directKeys.firstNotNullOfOrNull { name -&gt; nested.optString(name).trim().takeIf { it.isNotBlank() } }?.let { return it }</ID>
-    <ID>MaxLineLength:MysSignIn.kt$MysSignIn$private</ID>
-    <ID>MaxLineLength:MysSignIn.kt$MysSignIn$val directKeys = listOf("icon", "icon_url", "iconUrl", "reward_icon", "rewardIcon", "image", "image_url", "imageUrl")</ID>
-    <ID>MaxLineLength:MysSignIn.kt$MysSignIn$val homeData = httpTransport.getIdempotent("${homeUrl(game)}?$homeQuery", signHeaders(cookie, game, homeDs)).json()</ID>
-    <ID>MaxLineLength:MysSignIn.kt$MysSignIn$val infoData = httpTransport.getIdempotent("${infoUrl(game)}?$infoQuery", signHeaders(cookie, game, infoDs)).json()</ID>
     <ID>MaxLineLength:OkHttpTransport.kt$OkHttpTransport.Companion$fun forSameOriginTest(okHttpClient: OkHttpClient): OkHttpTransport</ID>
-    <ID>MaxLineLength:OkHttpTransport.kt$private fun Headers.toImmutableMap(): Map&lt;String, List&lt;String&gt;&gt;</ID>
-    <ID>MaxLineLength:PagerLogicTest.kt$PagerLogicTest$assertEquals(0.25f, pagerVisualPosition(currentPage = 0, currentPageOffsetFraction = 0.25f, pageCount = 5), 0.0001f)</ID>
-    <ID>MaxLineLength:PagerLogicTest.kt$PagerLogicTest$assertEquals(0.6f, pagerVisualPosition(currentPage = 1, currentPageOffsetFraction = -0.4f, pageCount = 5), 0.0001f)</ID>
-    <ID>MaxLineLength:PostRunActionRepository.kt$PostRunActionRepository.Companion$private val TERMINAL_STATUSES = setOf(STATUS_DELIVERED, STATUS_FAILED, STATUS_CANCELLED, STATUS_RESULT_UNKNOWN)</ID>
-    <ID>MaxLineLength:PostRunActionScheduler.kt$PostRunActionScheduler$if (action.type == PostRunActionType.EMAIL.name) NetworkType.CONNECTED else NetworkType.NOT_REQUIRED</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$"?login_ticket=${urlEncode(loginTicket)}&amp;token_types=$MULTI_TOKEN_TYPES_STOKEN&amp;uid=${urlEncode(uid)}"</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$parseConfirmed(response.headerValues("Set-Cookie"), confirmedData, httpTransport, recordError)</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$recordError?.invoke("createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$recordError?.invoke("getMultiTokenByLoginTicket http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$recordError?.invoke("queryQRLoginStatus http=${response.code}, retcode=$retcode, message=${json.optString("message")}")</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$tokenName == "cookie_token" || tokenName == "cookie_token_v2" || tokenType == TOKEN_TYPE_COOKIE_TOKEN</ID>
-    <ID>MaxLineLength:QRLoginManager.kt$QRLoginManager$val named = parsed.copy(nickname = parsed.nickname.ifBlank { fetchMysUserNickname(parsed.uid, httpTransport, recordError) })</ID>
-    <ID>MaxLineLength:RecordsScreen.kt$Icon(Icons.Filled.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.error)</ID>
-    <ID>MaxLineLength:RewardIconCache.kt$RewardIconCache$val processingParameters = setOf("x-oss-process", "imageMogr2/thumbnail", "thumbnail", "resize", "format", "quality")</ID>
-    <ID>MaxLineLength:RiskStateTest.kt$RiskStateTest$private fun runRecord(results: List&lt;TaskResult&gt;): RunRecord</ID>
-    <ID>MaxLineLength:RootCheckCache.kt$RootCheckCache$fun forceCheck(context: Context): RootDetectorV2.RootCheckResult</ID>
-    <ID>MaxLineLength:RootDetectorV2.kt$RootDetectorV2$private fun detectRootManagementApps(context: Context?): List&lt;String&gt;</ID>
-    <ID>MaxLineLength:RootDetectorV2.kt$RootDetectorV2$private fun detectRootRiskApps(context: Context?): List&lt;String&gt;</ID>
-    <ID>MaxLineLength:RunDao.kt$RunDao$@Query("UPDATE sign_runs SET completedTasks = :completedTasks, updatedAt = :updatedAt WHERE runId = :runId AND status = 'RUNNING'")</ID>
-    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"${settings.scheduleHour.toString().padStart(2, '0')}:${settings.scheduleMinute.toString().padStart(2, '0')}"</ID>
     <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
     <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
-    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0L)).versionName</ID>
-    <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$calendarTaskStatesFromRecord(record.copy(timestamp = run.startedAt)).forEach(::upsertMergedCalendarState)</ID>
-    <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$check(existing.resultJson.isNotBlank()) { "Terminal task has no result snapshot: ${result.taskId}" }</ID>
-    <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$check(persisted == result) { "Terminal task result changed after first completion: ${result.taskId}" }</ID>
-    <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$detail = "runId=${run.runId}, uncertain=${tasks.count { it.status == TASK_STATUS_RESULT_UNKNOWN }}"</ID>
     <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$fun</ID>
     <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$fun uncertainTaskIdsForDay(timestamp: Long): Set&lt;String&gt;</ID>
     <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) "process-interrupted" else "internal-error"</ID>
-    <ID>MaxLineLength:SecurityModule.kt$SecurityModule$fun</ID>
-    <ID>MaxLineLength:SettingsAboutPage.kt$LazyColumn</ID>
-    <ID>MaxLineLength:SettingsAboutPage.kt$WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$.</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$CustomColorOption(settings.customThemeColor, settings.customThemeColor, customEnabled, onSelect = {}, compact = true)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$HslSlider("明度", "${percent(value.lightness)}%", value.lightness, 0f..1f) { onValueChange(value.copy(lightness = it)) }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$HslSlider("饱和度", "${percent(value.saturation)}%", value.saturation, 0f..1f) { onValueChange(value.copy(saturation = it)) }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$LazyColumn</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$Text("动态配色开启时暂时停用，关闭后自动恢复已保存的自定义颜色。", fontSize = 12.sp, color = if (customEnabled) TextSecondary else TextSecondary.copy(alpha = 0.55f))</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$Text(preset.name, fontSize = 9.sp, color = if (enabled) TextSecondary else TextSecondary.copy(alpha = 0.45f), maxLines = 1)</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$ThemeModeOptionChip("浅色", "LIGHT", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$ThemeModeOptionChip("深色", "DARK", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$ThemeModeOptionChip("跟随系统", "SYSTEM", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$ThemePreset(preset.name, preset.primary, preset.secondary, preset.tertiary, isCustom = true)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$color = if (selected &amp;&amp; enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$customThemeColor = if (deletingCurrent) "" else settings.customThemeColor</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$customThemeName = if (deletingCurrent) "" else settings.customThemeName</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$customThemeSecondaryColor = if (deletingCurrent) "" else settings.customThemeSecondaryColor</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$customThemeTertiaryColor = if (deletingCurrent) "" else settings.customThemeTertiaryColor</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$if (colorHex.isBlank()) Text("自", fontSize = 10.sp, color = if (enabled) MaterialTheme.colorScheme.onSurface else Color.DarkGray)</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$if (normalized.matches(Regex("#[0-9A-F]{6}"))) onSave(settings.copy(customThemeColor = normalized))</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$listOf("P" to hslToHex(primary), "S" to hslToHex(secondary), "T" to hslToHex(tertiary))</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$private fun String.toComposeColor(): Color</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$settings.customThemeSecondaryColor.equals(preset.secondary, true)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$settings.customThemeTertiaryColor.equals(preset.tertiary, true)</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$val color = if (colorHex.isBlank()) MaterialTheme.colorScheme.outline else runCatching { Color(android.graphics.Color.parseColor(colorHex)) }.getOrDefault(MaterialTheme.colorScheme.outline)</ID>
     <ID>MaxLineLength:SettingsAppearancePage.kt$val customTextColor = if (customEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$val normalized = customHex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$val savedPreset = com.questtick.data.SavedThemePreset(name, primaryHex, secondaryHex, tertiaryHex)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$var customHex by remember(settings.customThemeColor) { mutableStateOf(settings.customThemeColor) }</ID>
     <ID>MaxLineLength:SettingsMailPage.kt$FieldBox(port, { port = it.filter(Char::isDigit).take(5) }, "465", Modifier.fillMaxWidth(), number = true)</ID>
-    <ID>MaxLineLength:SettingsMailPage.kt$LazyColumn</ID>
-    <ID>MaxLineLength:SettingsMailPage.kt$WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))</ID>
     <ID>MaxLineLength:SettingsMailPage.kt$onSave(mail.copy(enabled = enabled, smtpServer = server.trim(), smtpPort = port.toIntOrNull() ?: 465, username = username.trim(), password = password, mailTo = mailTo.trim()))</ID>
     <ID>MaxLineLength:SettingsMailPage.kt$onTest(mail.copy(enabled = true, smtpServer = server.trim(), smtpPort = port.toIntOrNull() ?: 465, username = username.trim(), password = password, mailTo = mailTo.trim()))</ID>
-    <ID>MaxLineLength:SettingsNavigationComponents.kt$Icon(Icons.Filled.Close, contentDescription = localizedText("返回"), tint = MaterialTheme.colorScheme.onBackground)</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$LaunchedEffect(settings.notifyEnabled) { if (notifyEnabled != settings.notifyEnabled) notifyEnabled = settings.notifyEnabled }</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$LaunchedEffect(settings.parallelEnabled) { if (parallelEnabled != settings.parallelEnabled) parallelEnabled = settings.parallelEnabled }</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$LaunchedEffect(settings.scheduleEnabled) { if (scheduleEnabled != settings.scheduleEnabled) scheduleEnabled = settings.scheduleEnabled }</ID>
     <ID>MaxLineLength:SettingsScreen.kt$SettingsPage</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))</ID>
-    <ID>MaxLineLength:SettingsSecurityPage.kt$WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))</ID>
-    <ID>MaxLineLength:SettingsStoragePages.kt$Box</ID>
-    <ID>MaxLineLength:SettingsStoragePages.kt$Icon(Icons.Filled.Close, contentDescription = localizedText("关闭"), tint = MaterialTheme.colorScheme.onBackground)</ID>
-    <ID>MaxLineLength:SettingsStoragePages.kt$Text(cacheCategoryDescription(item.category), fontSize = 12.sp, lineHeight = 18.sp, color = TextSecondary)</ID>
     <ID>MaxLineLength:SettingsStoragePages.kt$Text(cacheCategoryTitle(item.category), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)</ID>
     <ID>MaxLineLength:SettingsStoragePages.kt$Text(formatCacheSize(item.sizeBytes), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)</ID>
-    <ID>MaxLineLength:SettingsStoragePages.kt$WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))</ID>
-    <ID>MaxLineLength:SettingsVersionPages.kt$FieldBox(srVersion, { srVersion = it }, CloudVersionRepository.effectiveSr(), Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:SettingsVersionPages.kt$FieldBox(version, { version = it }, MysAppVersionRepository.currentVersion, Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:SettingsVersionPages.kt$FieldBox(ysVersion, { ysVersion = it }, CloudVersionRepository.effectiveYs(), Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:SettingsVersionPages.kt$LazyColumn</ID>
-    <ID>MaxLineLength:SettingsVersionPages.kt$Row</ID>
-    <ID>MaxLineLength:SettingsVersionPages.kt$onSave(settings.copy(cloudVersionAutoFetch = autoFetch, cloudYsVersion = trimmedYs, cloudSrVersion = trimmedSr))</ID>
     <ID>MaxLineLength:SettingsVersionPages.kt$private</ID>
-    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$AppLog.d(TAG, "fresh update check done: latestVersion=${info.latestVersion}, hasUpdate=${info.hasUpdate}")</ID>
-    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$private fun canTouchUpdatePrompt(manualGeneration: Int): Boolean</ID>
-    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$val percent = if (safeTotal &gt; 0L) ((downloaded * 100L) / safeTotal).toInt().coerceIn(0, 100) else 0</ID>
     <ID>MaxLineLength:SignInCalendarRepository.kt$SignInCalendarRepository$override suspend fun loadFromStore(): List&lt;SignInCalendarDay&gt;</ID>
     <ID>MaxLineLength:SignInCalendarRepository.kt$SignInCalendarRepository$override suspend fun saveToStore(data: List&lt;SignInCalendarDay&gt;): Unit</ID>
-    <ID>MaxLineLength:SignInResultSupport.kt$)</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner$"completeness=${it.completeness}, checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS}, "</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner$"enabled=${acc.enabled}, hasMysCookie=${acc.mysCookie.isNotBlank()}, hasMysKeepLogin=${acc.hasMysKeepLogin}, "</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner$"enabledAccounts=${accounts.size}, totalAccounts=${allAccounts.size}, workerParallelism=$workerParallelism, "</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner$"hasGenshinToken=${account.genshinToken.isNotBlank()}, hasStarrailToken=${account.starrailToken.isNotBlank()}, "</ID>
     <ID>MaxLineLength:SignInRunner.kt$SignInRunner$"rootEvidence=${it.rootEvidenceTriggers.take(5).joinToString()}, triggers=${it.triggers.take(5).joinToString()}"</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner$append("effective=${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion).ifBlank { "&lt;empty&gt;" }}}, ")</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner${ taskId -&gt; !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) }</ID>
-    <ID>MaxLineLength:SignInTaskPlanning.kt$internal fun Account.selectedCloudBindings(bindings: List&lt;CloudGameBinding&gt;): List&lt;CloudGameBinding&gt;</ID>
-    <ID>MaxLineLength:SignInWorkerPolicyTest.kt$SignInWorkerPolicyTest$val decision = decideSignInWorkerResult(record(FailureCategory.RESULT_UNKNOWN, retryable = false, skipped = true), 0, 3)</ID>
-    <ID>MaxLineLength:StatefulRepository.kt$StatefulRepository$private fun stateFor(value: T): RepositoryLoadState</ID>
     <ID>MaxLineLength:StreamingHttpTransport.kt$HttpResponseStream$override fun toString(): String</ID>
-    <ID>MaxLineLength:SyncedHorizontalPager.kt$val animationStartPage = pagerAnimationStartPage(pagerState.currentPage, safeSelectedPage, safePageCount)</ID>
-    <ID>MaxLineLength:Theme.kt$if (customThemeSecondaryColor.isBlank()) customColor else Color(android.graphics.Color.parseColor(customThemeSecondaryColor))</ID>
-    <ID>MaxLineLength:Theme.kt$if (customThemeTertiaryColor.isBlank()) customColor else Color(android.graphics.Color.parseColor(customThemeTertiaryColor))</ID>
-    <ID>MaxLineLength:Theme.kt$primaryContainer = blendColor(scheme.primaryContainer, customColor, if (darkTheme) 0.32f else 0.16f)</ID>
-    <ID>MaxLineLength:TrustedRedirects.kt$TrustedRedirects$private fun HttpUrl.sameOrigin(other: HttpUrl): Boolean</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$"https://release-assets.githubusercontent.com/github-production-release-asset/1337123825/asset.apk?token=signed"</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateAssetRedirect(source, "https://release-assets.githubusercontent.com/other/file"))</ID>
     <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com.evil.example/bainian-gudu/QuestTick/releases/download/v1/app.apk"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/other/QuestTick/releases/download/v1/app.apk"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://objects.githubusercontent.com/github-production-release-asset/app.apk"))</ID>
     <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com.evil.example/repos/bainian-gudu/QuestTick/releases/latest"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=100"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20&amp;x=1"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/other/QuestTick/releases/latest"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertTrue(TrustedUrlPolicy.isBusinessRequestUrl("https://api-cloudgame.mihoyo.com/hk4e_cg_cn/wallet/wallet/get"))</ID>
-    <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertTrue(TrustedUrlPolicy.isUpdateReleasePageUrl("https://github.com/bainian-gudu/QuestTick/releases/tag/v1.2.3"))</ID>
     <ID>NestedBlockDepth:CloudSignExecutor.kt$CloudSignExecutor$suspend fun runAccount( acc: Account, cloudGameBindings: List&lt;CloudGameBinding&gt;, cloudDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>NestedBlockDepth:CloudSignIn.kt$CloudSignIn$private suspend fun listNotifications( game: GameConfig, token: String, version: String, clientType: String, ): Notifications</ID>
     <ID>NestedBlockDepth:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
     <ID>NestedBlockDepth:MysCoinCheckIn.kt$MysCoinCheckIn$private fun findInt( json: JSONObject, vararg keys: String, ): Int?</ID>
     <ID>NestedBlockDepth:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>NestedBlockDepth:MysSignIn.kt$MysSignIn$suspend fun signIn( cookie: String, game: GameConfig, role: Role, retryOnActIdInvalid: Boolean = true, ): SignResult</ID>
-    <ID>NestedBlockDepth:QrBitmap.kt$internal fun generateQrBitmap( content: String, size: Int = DEFAULT_QR_BITMAP_SIZE, ): Bitmap?</ID>
     <ID>NestedBlockDepth:RewardIconCache.kt$RewardIconCache$private fun maybeCleanup(context: Context)</ID>
     <ID>NestedBlockDepth:TrustedRedirects.kt$TrustedRedirects$fun &lt;T&gt; executeMapped( client: OkHttpClient, request: Request, policy: RedirectTrustPolicy, retryPolicy: TransportRetryPolicy = TransportRetryPolicy.NEVER, transform: (Response) -&gt; T, ): T</ID>
     <ID>RedundantSuspendModifier:AccountRepository.kt$AccountRepository$suspend</ID>
@@ -825,7 +656,6 @@
     <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$fun isUpdateAssetRedirect( initialRawUrl: String, candidateRawUrl: String, ): Boolean</ID>
     <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$private fun isDirectUpdateMetadataUrl(rawUrl: String): Boolean</ID>
     <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$private fun parseHttps(rawUrl: String): HttpUrl?</ID>
-    <ID>SpreadOperator:PinningManager.kt$PinningManager$(config.host, *config.pins.toTypedArray())</ID>
     <ID>ThrowsCount:AppUpdateInstaller.kt$AppUpdateInstaller$private suspend fun downloadFromCandidates( urls: List&lt;String&gt;, tmp: File, onProgress: (downloadedBytes: Long, totalBytes: Long) -&gt; Unit, streamingHttpTransport: StreamingHttpTransport, )</ID>
     <ID>ThrowsCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ThrowsCount:TrustedRedirects.kt$TrustedRedirects$internal fun resolveLocation(response: Response): HttpUrl</ID>

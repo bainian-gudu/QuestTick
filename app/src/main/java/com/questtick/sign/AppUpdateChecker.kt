@@ -271,22 +271,27 @@ object AppUpdateChecker {
         var bestVersion = ""
         var bestPublishedAt = ""
         for (i in 0 until arr.length()) {
-            val release = arr.optJSONObject(i) ?: continue
-            if (release.optBoolean("draft") || release.optBoolean("prerelease")) continue
-            val rawVersion = release.optString("tag_name").ifBlank { release.optString("name") }
-            if (isLikelyPreReleaseVersion(rawVersion)) continue
+            val release = arr.optJSONObject(i)
+            val rawVersion = release?.optString("tag_name").orEmpty().ifBlank { release?.optString("name").orEmpty() }
             val version = normalizeVersion(rawVersion)
-            if (version.isBlank()) continue
-            if (findApkAsset(release.optJSONArray("assets"), version) == null) continue
-            val publishedAt = release.optString("published_at")
-            val shouldReplace =
-                best == null ||
-                    compareVersions(version, bestVersion) > 0 ||
-                    (compareVersions(version, bestVersion) == 0 && publishedAt > bestPublishedAt)
-            if (shouldReplace) {
-                best = release
-                bestVersion = version
-                bestPublishedAt = publishedAt
+            val candidate =
+                release?.takeIf {
+                    !it.optBoolean("draft") &&
+                        !it.optBoolean("prerelease") &&
+                        !isLikelyPreReleaseVersion(rawVersion) &&
+                        version.isNotBlank()
+                }
+            if (candidate != null && findApkAsset(candidate.optJSONArray("assets"), version) != null) {
+                val publishedAt = candidate.optString("published_at")
+                val shouldReplace =
+                    best == null ||
+                        compareVersions(version, bestVersion) > 0 ||
+                        (compareVersions(version, bestVersion) == 0 && publishedAt > bestPublishedAt)
+                if (shouldReplace) {
+                    best = candidate
+                    bestVersion = version
+                    bestPublishedAt = publishedAt
+                }
             }
         }
         return best?.let { parseJson(it, currentVersion) } ?: noReleaseInfo(currentVersion)
@@ -345,20 +350,26 @@ object AppUpdateChecker {
         val normalizedExpected = normalizeVersion(expectedVersion)
         val candidates = mutableListOf<ApkAsset>()
         for (i in 0 until assets.length()) {
-            val o = assets.optJSONObject(i) ?: continue
-            val name = o.optString("name")
-            val url = o.optString("browser_download_url")
-            if (!name.endsWith(".apk", true) || !TrustedUrlPolicy.isUpdateAssetUrl(url)) continue
-            if (name.contains("unsigned", true)) continue
-            val sha =
-                o
-                    .optString("digest")
-                    .removePrefix("sha256:")
-                    .lowercase()
-                    .takeIf { SHA256_PATTERN.matches(it) }
-                    .orEmpty()
-            if (sha.isBlank()) continue
-            candidates.add(ApkAsset(name, url, sha))
+            val o = assets.optJSONObject(i)
+            val name = o?.optString("name").orEmpty()
+            val url = o?.optString("browser_download_url").orEmpty()
+            val isApkAsset =
+                o != null &&
+                    name.endsWith(".apk", true) &&
+                    TrustedUrlPolicy.isUpdateAssetUrl(url) &&
+                    !name.contains("unsigned", true)
+            if (isApkAsset) {
+                val sha =
+                    o
+                        .optString("digest")
+                        .removePrefix("sha256:")
+                        .lowercase()
+                        .takeIf { SHA256_PATTERN.matches(it) }
+                        .orEmpty()
+                if (sha.isNotBlank()) {
+                    candidates.add(ApkAsset(name, url, sha))
+                }
+            }
         }
         return candidates.firstOrNull { asset ->
             VERSION_PATTERN.findAll(asset.name).any { match ->
