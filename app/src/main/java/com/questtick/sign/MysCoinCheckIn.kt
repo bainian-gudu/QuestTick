@@ -20,6 +20,11 @@ internal object MysCoinCheckIn {
     private const val SIGN_URL = "https://bbs-api.miyoushe.com/apihub/app/api/signIn"
     private const val STATE_URL = "https://bbs-api.miyoushe.com/apihub/wapi/getUserMissionsState?point_sn=myb"
     private const val GENSHIN_GIDS = "2"
+    private const val DEFAULT_RETCODE = -999
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
+    private const val STATE_SCAN_MAX_DEPTH = 3
+    private const val BALANCE_REFRESH_DELAY_MS = 400L
 
     /** 米游社接口统一的“今日已签到/已打卡”错误码。 */
     private const val RETCODE_ALREADY_DONE = -5003
@@ -82,14 +87,14 @@ internal object MysCoinCheckIn {
                     body,
                 )
             val json = response.json()
-            val retcode = json.optInt("retcode", -999)
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
             val serverMessage = json.optString("message").ifBlank { "未知错误" }
-            val httpSuccess = response.code in 200..299
+            val httpSuccess = response.code in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX
             // 文案兜底只接受成功码，避免限流文案（如“请勿重复打卡”）被误判为已打卡。
             val already =
                 httpSuccess &&
                     (retcode == RETCODE_ALREADY_DONE || (retcode == 0 && ALREADY_DONE.containsMatchIn(serverMessage)))
-            if (httpSuccess && (retcode == 0 || already)) delay(400)
+            if (httpSuccess && (retcode == 0 || already)) delay(BALANCE_REFRESH_DELAY_MS)
             val afterRead = fetchState(coinCookie, httpTransport)
             val after = afterRead.state
             val balance = after?.balance ?: -1
@@ -170,9 +175,9 @@ internal object MysCoinCheckIn {
         try {
             val response = httpTransport.getIdempotent(STATE_URL, MysHeaders.coinState(cookie))
             val json = response.json()
-            val retcode = json.optInt("retcode", -999)
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
             val message = json.optString("message").ifBlank { "未知错误" }
-            if (response.code !in 200..299 || retcode != 0) {
+            if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX || retcode != 0) {
                 StateRead(null, "http=${response.code}, retcode=$retcode, message=$message")
             } else {
                 val data = json.optJSONObject("data") ?: json
@@ -214,7 +219,7 @@ internal object MysCoinCheckIn {
             value: Any?,
             depth: Int,
         ): Int? {
-            if (depth > 3 || value == null) return null
+            if (depth > STATE_SCAN_MAX_DEPTH || value == null) return null
             if (value is JSONObject) {
                 wanted.forEach { key ->
                     if (value.has(key) && !value.isNull(key)) {

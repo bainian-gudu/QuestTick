@@ -23,6 +23,8 @@ object CloudAppVersionFetcher {
     private const val LOOKUP_BASE_URL = "https://itunes.apple.com/cn/lookup?id="
     private const val CLOUD_YS_APP_ID = "1569029742"
     private const val CLOUD_SR_APP_ID = "6475038985"
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
     private val VERSION_PATTERN = Regex("""^\d+(?:\.\d+){1,3}$""")
 
     data class CloudVersions(
@@ -57,7 +59,7 @@ object CloudAppVersionFetcher {
                                 "Accept-Language" to "zh-CN,zh;q=0.9",
                             ),
                     )
-                if (response.code !in 200..299) error("HTTP ${response.code}")
+                if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) error("HTTP ${response.code}")
                 val version =
                     response
                         .json()

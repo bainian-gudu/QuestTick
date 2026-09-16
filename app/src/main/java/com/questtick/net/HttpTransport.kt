@@ -222,7 +222,7 @@ suspend fun HttpTransport.postJsonResult(
 suspend fun HttpTransport.executeResult(request: HttpRequest): ApiResult<HttpResponse> =
     try {
         val response = execute(request)
-        if (response.code in 200..299) {
+        if (response.code in HTTP_SUCCESS_CODE_MIN..HTTP_SUCCESS_CODE_MAX) {
             ApiResult.Success(response)
         } else {
             ApiResult.Error(
@@ -245,3 +245,5 @@ suspend fun HttpTransport.executeResult(request: HttpRequest): ApiResult<HttpRes
 private fun Map<String, List<String>>.immutableCopy(): Map<String, List<String>> = entries.associate { (name, values) -> name to values.toList() }
 
 private const val JSON_CONTENT_TYPE = "application/json;charset=utf-8"
+private const val HTTP_SUCCESS_CODE_MIN = 200
+private const val HTTP_SUCCESS_CODE_MAX = 299

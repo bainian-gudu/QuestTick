@@ -41,13 +41,26 @@ object AppUpdateChecker {
             RegexOption.IGNORE_CASE,
         )
     private val SHA256_PATTERN = Regex("""^[a-fA-F0-9]{64}$""")
+    private const val SHORT_TIMEOUT_MS = 2_000L
+    private const val MEDIUM_TIMEOUT_MS = 5_000L
+    private const val LONG_TIMEOUT_MS = 10_000L
+    private const val FAST_CONNECT_TIMEOUT_MS = 800L
+    private const val NORMAL_CONNECT_TIMEOUT_MS = 1_500L
+    private const val NORMAL_READ_TIMEOUT_MS = 3_000L
+    private const val SLOW_CONNECT_TIMEOUT_MS = 2_500L
+    private const val OFFLINE_CONNECT_TIMEOUT_MS = 500L
+    private const val OFFLINE_READ_TIMEOUT_MS = 800L
+    private const val HTTP_STATUS_NOT_MODIFIED = 304
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
+    private const val CALL_TIMEOUT_MARGIN_MS = 300L
 
     private fun getDynamicTimeout(level: AppUpdateNetwork.NetLevel): Long =
         when (level) {
-            AppUpdateNetwork.NetLevel.FAST -> 2000L
-            AppUpdateNetwork.NetLevel.NORMAL -> 5000L
-            AppUpdateNetwork.NetLevel.SLOW -> 10000L
-            AppUpdateNetwork.NetLevel.OFFLINE -> 2000L
+            AppUpdateNetwork.NetLevel.FAST -> SHORT_TIMEOUT_MS
+            AppUpdateNetwork.NetLevel.NORMAL -> MEDIUM_TIMEOUT_MS
+            AppUpdateNetwork.NetLevel.SLOW -> LONG_TIMEOUT_MS
+            AppUpdateNetwork.NetLevel.OFFLINE -> SHORT_TIMEOUT_MS
         }
 
     data class AppUpdateInfo(
@@ -195,10 +208,10 @@ object AppUpdateChecker {
 
     private fun updateTimeouts(context: Context): Pair<Long, Long> =
         when (AppUpdateNetwork.networkLevel(context.applicationContext)) {
-            AppUpdateNetwork.NetLevel.FAST -> 800L to 2000L
-            AppUpdateNetwork.NetLevel.NORMAL -> 1500L to 3000L
-            AppUpdateNetwork.NetLevel.SLOW -> 2500L to 5000L
-            AppUpdateNetwork.NetLevel.OFFLINE -> 500L to 800L
+            AppUpdateNetwork.NetLevel.FAST -> FAST_CONNECT_TIMEOUT_MS to SHORT_TIMEOUT_MS
+            AppUpdateNetwork.NetLevel.NORMAL -> NORMAL_CONNECT_TIMEOUT_MS to NORMAL_READ_TIMEOUT_MS
+            AppUpdateNetwork.NetLevel.SLOW -> SLOW_CONNECT_TIMEOUT_MS to MEDIUM_TIMEOUT_MS
+            AppUpdateNetwork.NetLevel.OFFLINE -> OFFLINE_CONNECT_TIMEOUT_MS to OFFLINE_READ_TIMEOUT_MS
         }
 
     private suspend fun refreshNow(
@@ -245,11 +258,11 @@ object AppUpdateChecker {
                             maxResponseBytes = MAX_METADATA_BYTES,
                             connectTimeoutMillis = connectMs,
                             readTimeoutMillis = readMs,
-                            callTimeoutMillis = connectMs + readMs + 300,
+                            callTimeoutMillis = connectMs + readMs + CALL_TIMEOUT_MARGIN_MS,
                         ),
                 )
-            if (response.code == 304) throw NotModified()
-            if (response.code !in 200..299) error("HTTP ${response.code}")
+            if (response.code == HTTP_STATUS_NOT_MODIFIED) throw NotModified()
+            if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) error("HTTP ${response.code}")
             if (response.body.isBlank()) error("empty")
             FetchBodyResult(response.body, response.headerValues("ETag").singleOrNull().orEmpty())
         }

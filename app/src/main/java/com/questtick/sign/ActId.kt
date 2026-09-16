@@ -46,6 +46,13 @@ object ActId {
     private const val NAVIGATION_HOST = "bbs-api.miyoushe.com"
     private const val NAVIGATION_PATH = "/apihub/api/home/new"
     private const val MAX_NAVIGATION_BYTES = 1024 * 1024
+    private const val DEFAULT_HTTPS_PORT = 443
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
+    private const val GID_HONKAI2 = 3
+    private const val GID_TEARS_OF_THEMIS = 4
+    private const val GID_STAR_RAIL = 6
+    private const val GID_ZZZ = 8
 
     /** 米游社首页导航中的游戏签到入口配置。 */
     private data class NavigationSource(
@@ -57,12 +64,12 @@ object ActId {
 
     private val NAVIGATION_SOURCES =
         mapOf(
-            "Honkai2" to NavigationSource(3, "webstatic.mihoyo.com", "/bbs/event/signin/bh2/"),
+            "Honkai2" to NavigationSource(GID_HONKAI2, "webstatic.mihoyo.com", "/bbs/event/signin/bh2/"),
             "Honkai3rd" to NavigationSource(1, "webstatic.mihoyo.com", "/bbs/event/signin/bh3/"),
-            "TearsOfThemis" to NavigationSource(4, "webstatic.mihoyo.com", "/bbs/event/signin/nxx/"),
+            "TearsOfThemis" to NavigationSource(GID_TEARS_OF_THEMIS, "webstatic.mihoyo.com", "/bbs/event/signin/nxx/"),
             "Genshin" to NavigationSource(2, "act.mihoyo.com", "/bbs/event/signin/hk4e/"),
-            "StarRail" to NavigationSource(6, "act.mihoyo.com", "/bbs/event/signin/hkrpg/", true),
-            "ZZZ" to NavigationSource(8, "act.mihoyo.com", "/bbs/event/signin/zzz/", true),
+            "StarRail" to NavigationSource(GID_STAR_RAIL, "act.mihoyo.com", "/bbs/event/signin/hkrpg/", true),
+            "ZZZ" to NavigationSource(GID_ZZZ, "act.mihoyo.com", "/bbs/event/signin/zzz/", true),
         )
 
     fun isValid(actId: String?): Boolean {
@@ -150,7 +157,7 @@ object ActId {
                 return null
             }
         if (uri.scheme != "https") return null
-        if (uri.port != -1 && uri.port != 443) return null
+        if (uri.port != -1 && uri.port != DEFAULT_HTTPS_PORT) return null
         if (!uri.userInfo.isNullOrBlank() || !uri.rawFragment.isNullOrBlank()) return null
         if (uri.host?.lowercase() != source.host.lowercase()) return null
         val query = uri.rawQuery ?: return null
@@ -186,7 +193,7 @@ object ActId {
                     headers = mapOf("User-Agent" to Endpoints.USER_AGENT, "Accept" to "application/json"),
                     config = HttpRequestConfig(maxResponseBytes = MAX_NAVIGATION_BYTES),
                 )
-            if (response.code !in 200..299) return null
+            if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) return null
             val final = response.finalUrl.ifBlank { url }
             val finalUri = URI(final)
             if (finalUri.scheme != "https") return null

@@ -24,7 +24,13 @@ object RewardIconCache {
     private const val DIR_NAME = "reward_icons"
     private const val MAX_ICON_BYTES = 2 * 1024 * 1024
     private const val MAX_CACHE_BYTES = 10L * 1024 * 1024 // 10MB 上限
-    private const val MAX_AGE_MILLIS = 30L * 24 * 60 * 60 * 1000 // 30天
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
+    private const val MINUTES_PER_HOUR = 60
+    private const val HOURS_PER_DAY = 24
+    private const val MILLIS_PER_SECOND = 1_000L
+    private const val MILLIS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * MINUTES_PER_HOUR * MILLIS_PER_SECOND
+    private const val MAX_AGE_MILLIS = 30L * MILLIS_PER_DAY // 30天
     private val locks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
 
     @Volatile private var lastCleanup = 0L
@@ -107,7 +113,7 @@ object RewardIconCache {
                     onFailure?.invoke("奖励图片请求异常 candidate=$candidate: ${ErrorText.detailOf(error)}")
                     continue
                 }
-            if (response.code !in 200..299) {
+            if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
                 onFailure?.invoke("奖励图片请求失败 candidate=$candidate http=${response.code}")
                 continue
             }
@@ -177,7 +183,7 @@ object RewardIconCache {
     private fun maybeCleanup(context: Context) {
         val now = System.currentTimeMillis()
         // 最多每天清理一次，避免频繁触发额外 IO。
-        if (now - lastCleanup < 24 * 60 * 60 * 1000L) return
+        if (now - lastCleanup < MILLIS_PER_DAY) return
         lastCleanup = now
         try {
             val dir = File(context.applicationContext.filesDir, DIR_NAME)

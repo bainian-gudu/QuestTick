@@ -87,6 +87,10 @@ class MysSignIn(
 
     companion object {
         private const val TAG = "MysSignIn"
+        private const val DEFAULT_RETCODE = -999
+        private const val HTTP_SUCCESS_MIN = 200
+        private const val HTTP_SUCCESS_MAX = 299
+        private const val RETCODE_ALREADY_SIGNED = -5003
 
         val GAMES: Map<String, GameConfig> =
             linkedMapOf(
@@ -174,10 +178,10 @@ class MysSignIn(
                     headers,
                 )
             val data = res.json()
-            val retcode = data.optInt("retcode", -999)
-            if (res.code !in 200..299 || retcode != 0) {
+            val retcode = data.optInt("retcode", DEFAULT_RETCODE)
+            if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX || retcode != 0) {
                 val friendly =
-                    if (res.code !in 200..299) {
+                    if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
                         "角色查询服务暂时不可用，请稍后重试"
                     } else {
                         ErrorText.fromRetcode(retcode) ?: "登录校验失败，请检查 Cookie 是否有效"
@@ -189,7 +193,7 @@ class MysSignIn(
                         "getUserGameRolesByCookie http=${res.code}, retcode=$retcode, " +
                             "message=${data.optString("message")}",
                     failure =
-                        if (res.code !in 200..299) {
+                        if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
                             TaskFailureClassifier.fromHttpCode(res.code)
                         } else {
                             TaskFailureClassifier.fromRetcode(retcode)
@@ -283,9 +287,9 @@ class MysSignIn(
             val res = httpTransport.postJson(signUrl(game), signHeaders(cookie, game, ds), body)
             val data = res.json()
             val message = data.optString("message", "Unknown")
-            val retcode = data.optInt("retcode", -999)
+            val retcode = data.optInt("retcode", DEFAULT_RETCODE)
             // 通用 luna 接口中 data.success == 1 表示需要验证码。
-            val httpSuccess = res.code in 200..299
+            val httpSuccess = res.code in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX
             val captchaRequired = httpSuccess && data.optJSONObject("data")?.optInt("success", 0) == 1
             if (captchaRequired) {
                 return SignResult(
@@ -298,7 +302,7 @@ class MysSignIn(
             }
             // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
             // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
-            val already = httpSuccess && (retcode == -5003 || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
+            val already = httpSuccess && (retcode == RETCODE_ALREADY_SIGNED || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
             when {
                 already -> {
                     SignResult(true, true, "今日已签到")
@@ -320,7 +324,7 @@ class MysSignIn(
                         ok = false,
                         already = false,
                         message =
-                            if (res.code !in 200..299) {
+                            if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
                                 "签到服务暂时不可用，请稍后重试"
                             } else {
                                 ErrorText.fromRetcode(retcode) ?: "签到失败：$message"
@@ -418,8 +422,8 @@ class MysSignIn(
             val homeDs = Ds.generateWeb()
             val homeData = httpTransport.getIdempotent("${homeUrl(game)}?$homeQuery", signHeaders(cookie, game, homeDs)).json()
 
-            val infoRetcode = infoData.optInt("retcode", -999)
-            val homeRetcode = homeData.optInt("retcode", -999)
+            val infoRetcode = infoData.optInt("retcode", DEFAULT_RETCODE)
+            val homeRetcode = homeData.optInt("retcode", DEFAULT_RETCODE)
             if (infoRetcode != 0 || homeRetcode != 0) {
                 AppLog.w(TAG, "getReward failed: ${game.key}, infoRetcode=$infoRetcode, homeRetcode=$homeRetcode")
                 onLog(
