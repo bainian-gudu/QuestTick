@@ -9,6 +9,8 @@ import kotlinx.coroutines.withContext
 /** 从 App Store 查询米游社最新版本号，用作 x-rpc-app_version 候选值。 */
 object MysAppVersionFetcher {
     private const val LOOKUP_URL = "https://itunes.apple.com/cn/lookup?id=1470182559"
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
     private val VERSION_PATTERN = Regex("^\\d+(?:\\.\\d+){1,3}$")
 
     suspend fun fetchLatest(httpTransport: HttpTransport): Result<String> =
@@ -24,7 +26,7 @@ object MysAppVersionFetcher {
                                 "Accept-Language" to "zh-CN,zh;q=0.9",
                             ),
                     )
-                if (response.code !in 200..299) {
+                if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
                     error("HTTP ${response.code}")
                 }
 

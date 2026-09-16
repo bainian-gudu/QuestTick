@@ -179,13 +179,6 @@
     <ID>MagicNumber:AccountEditScreen.kt$300</ID>
     <ID>MagicNumber:AccountsScreen.kt$0xFFE0A22B</ID>
     <ID>MagicNumber:AccountsScreen.kt$6</ID>
-    <ID>MagicNumber:ActId.kt$ActId$200</ID>
-    <ID>MagicNumber:ActId.kt$ActId$299</ID>
-    <ID>MagicNumber:ActId.kt$ActId$3</ID>
-    <ID>MagicNumber:ActId.kt$ActId$4</ID>
-    <ID>MagicNumber:ActId.kt$ActId$443</ID>
-    <ID>MagicNumber:ActId.kt$ActId$6</ID>
-    <ID>MagicNumber:ActId.kt$ActId$8</ID>
     <ID>MagicNumber:AnimatedSwitch.kt$0xFF2C2747</ID>
     <ID>MagicNumber:AnimatedSwitch.kt$0xFFB8C0CC</ID>
     <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF0B1120</ID>
@@ -200,34 +193,9 @@
     <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF93C5FD</ID>
     <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF9CA3AF</ID>
     <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFFE5E7EB</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$10000L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$1500L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$200</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$2000L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$2500L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$299</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$3000L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$304</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$5000L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$500L</ID>
-    <ID>MagicNumber:AppUpdateChecker.kt$AppUpdateChecker$800L</ID>
-    <ID>MagicNumber:AppUpdateInstaller.kt$AppUpdateInstaller$1024</ID>
-    <ID>MagicNumber:AppUpdateInstaller.kt$AppUpdateInstaller$200</ID>
-    <ID>MagicNumber:AppUpdateInstaller.kt$AppUpdateInstaller$256</ID>
-    <ID>MagicNumber:AppUpdateInstaller.kt$AppUpdateInstaller$299</ID>
-    <ID>MagicNumber:AppUpdateInstaller.kt$AppUpdateInstaller$400L</ID>
-    <ID>MagicNumber:AppUpdateNetwork.kt$AppUpdateNetwork$1200L</ID>
-    <ID>MagicNumber:AppUpdateNetwork.kt$AppUpdateNetwork$800L</ID>
     <ID>MagicNumber:AuthRepository.kt$AuthRepository$50</ID>
-    <ID>MagicNumber:CloudAppVersionFetcher.kt$CloudAppVersionFetcher$200</ID>
-    <ID>MagicNumber:CloudAppVersionFetcher.kt$CloudAppVersionFetcher$299</ID>
     <ID>MagicNumber:CloudSignExecutor.kt$CloudSignExecutor$1000L</ID>
     <ID>MagicNumber:CloudSignExecutor.kt$CloudSignExecutor$5</ID>
-    <ID>MagicNumber:CloudSignIn.kt$CloudSignIn$200</ID>
-    <ID>MagicNumber:CloudSignIn.kt$CloudSignIn$299</ID>
-    <ID>MagicNumber:CloudSignIn.kt$CloudSignIn$6</ID>
-    <ID>MagicNumber:CloudSignIn.kt$CloudSignIn$60</ID>
-    <ID>MagicNumber:CloudSignIn.kt$CloudSignIn$999</ID>
     <ID>MagicNumber:Common.kt$0.72f</ID>
     <ID>MagicNumber:CookieRefresher.kt$CookieRefresher$999</ID>
     <ID>MagicNumber:CrashHandler.kt$CrashHandler$10</ID>
@@ -252,8 +220,6 @@
     <ID>MagicNumber:HomeThemeDashboard.kt$0.46f</ID>
     <ID>MagicNumber:HomeThemeDashboard.kt$10</ID>
     <ID>MagicNumber:HomeThemeDashboard.kt$24</ID>
-    <ID>MagicNumber:HttpTransport.kt$200</ID>
-    <ID>MagicNumber:HttpTransport.kt$299</ID>
     <ID>MagicNumber:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$256</ID>
     <ID>MagicNumber:LatestRunCard.kt$180f</ID>
     <ID>MagicNumber:LogDisplayComponents.kt$180f</ID>
@@ -269,20 +235,9 @@
     <ID>MagicNumber:MainUpdateHosts.kt$50</ID>
     <ID>MagicNumber:Mask.kt$Mask$3</ID>
     <ID>MagicNumber:Mask.kt$Mask$4</ID>
-    <ID>MagicNumber:MysAppVersionFetcher.kt$MysAppVersionFetcher$200</ID>
-    <ID>MagicNumber:MysAppVersionFetcher.kt$MysAppVersionFetcher$299</ID>
-    <ID>MagicNumber:MysCoinCheckIn.kt$MysCoinCheckIn$200</ID>
-    <ID>MagicNumber:MysCoinCheckIn.kt$MysCoinCheckIn$299</ID>
-    <ID>MagicNumber:MysCoinCheckIn.kt$MysCoinCheckIn$3</ID>
-    <ID>MagicNumber:MysCoinCheckIn.kt$MysCoinCheckIn$400</ID>
-    <ID>MagicNumber:MysCoinCheckIn.kt$MysCoinCheckIn$999</ID>
     <ID>MagicNumber:MysSignExecutor.kt$MysSignExecutor$1000L</ID>
     <ID>MagicNumber:MysSignExecutor.kt$MysSignExecutor$5</ID>
     <ID>MagicNumber:MysSignExecutor.kt$MysSignExecutor$50</ID>
-    <ID>MagicNumber:MysSignIn.kt$MysSignIn$200</ID>
-    <ID>MagicNumber:MysSignIn.kt$MysSignIn$299</ID>
-    <ID>MagicNumber:MysSignIn.kt$MysSignIn$5003</ID>
-    <ID>MagicNumber:MysSignIn.kt$MysSignIn$999</ID>
     <ID>MagicNumber:Notifier.kt$Notifier$36</ID>
     <ID>MagicNumber:Notifier.kt$Notifier$8</ID>
     <ID>MagicNumber:OkHttpClientFactory.kt$OkHttpClientFactory$10</ID>
@@ -304,11 +259,6 @@
     <ID>MagicNumber:RecordsScreen.kt$12</ID>
     <ID>MagicNumber:RecordsScreen.kt$180f</ID>
     <ID>MagicNumber:RecordsViewModel.kt$RecordsViewModel$5_000L</ID>
-    <ID>MagicNumber:RewardIconCache.kt$RewardIconCache$1000L</ID>
-    <ID>MagicNumber:RewardIconCache.kt$RewardIconCache$200</ID>
-    <ID>MagicNumber:RewardIconCache.kt$RewardIconCache$24</ID>
-    <ID>MagicNumber:RewardIconCache.kt$RewardIconCache$299</ID>
-    <ID>MagicNumber:RewardIconCache.kt$RewardIconCache$60</ID>
     <ID>MagicNumber:RootDetectorV2.kt$RootDetectorV2$10</ID>
     <ID>MagicNumber:RootDetectorV2.kt$RootDetectorV2$100</ID>
     <ID>MagicNumber:RootDetectorV2.kt$RootDetectorV2$12</ID>

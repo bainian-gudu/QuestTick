@@ -39,6 +39,11 @@ class CloudSignIn(
 
         private const val DEFAULT_CLIENT_TYPE = "17"
         private const val WALLET_REFRESH_DELAY_MS = 1_200L
+        private const val DEFAULT_RETCODE = -999
+        private const val HTTP_SUCCESS_MIN = 200
+        private const val HTTP_SUCCESS_MAX = 299
+        private const val NOTIFICATION_ID_KEEP_LENGTH = 6
+        private const val MINUTES_PER_HOUR = 60
 
         internal fun calculateClaimedFreeTime(
             beforeFreeTime: Int,
@@ -257,7 +262,7 @@ class CloudSignIn(
             val headers = buildHeaders(game, token, version, clientType)
             val res = httpTransport.getIdempotent("${game.baseURL}/wallet/wallet/get", headers)
             val data = res.json()
-            val retcode = data.optInt("retcode", -999)
+            val retcode = data.optInt("retcode", DEFAULT_RETCODE)
             val walletData = data.optJSONObject("data")
             val freeTimeData = walletData?.optJSONObject("free_time")
             val free = freeTimeData?.optInt("free_time", 0) ?: 0
@@ -322,7 +327,7 @@ class CloudSignIn(
             val url = "${game.baseURL}/gamer/api/listNotifications?status=NotificationStatusUnread&type=NotificationTypePopup&is_sort=true"
             val res = httpTransport.getIdempotent(url, headers)
             val data = res.json()
-            val retcode = data.optInt("retcode", -999)
+            val retcode = data.optInt("retcode", DEFAULT_RETCODE)
             val message = data.optString("message")
             if (isSuccessfulResponse(res.code, retcode, message)) {
                 val arr = data.optJSONObject("data")?.optJSONArray("list")
@@ -368,7 +373,7 @@ class CloudSignIn(
                     JSONObject().put("id", id),
                 )
             val data = res.json()
-            val retcode = data.optInt("retcode", -999)
+            val retcode = data.optInt("retcode", DEFAULT_RETCODE)
             val message = data.optString("message")
             if (isSuccessfulResponse(res.code, retcode, message)) {
                 AckResult(true, "ackNotification(${maskNotificationId(id)}) ok")
@@ -393,7 +398,7 @@ class CloudSignIn(
         retcode: Int,
     ): TaskFailureDescriptor =
         when {
-            httpCode !in 200..299 -> TaskFailureClassifier.fromHttpCode(httpCode)
+            httpCode !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX -> TaskFailureClassifier.fromHttpCode(httpCode)
             retcode != 0 -> TaskFailureClassifier.fromRetcode(retcode)
             else -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "missing-data", retryable = true)
         }
@@ -402,7 +407,7 @@ class CloudSignIn(
         code: Int,
         retcode: Int,
         message: String,
-    ): Boolean = code in 200..299 && (retcode == 0 || message == "OK")
+    ): Boolean = code in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX && (retcode == 0 || message == "OK")
 
     private fun buildWalletDetail(
         httpCode: Int,
@@ -433,14 +438,14 @@ class CloudSignIn(
 
     private fun maskNotificationId(id: String): String =
         when {
-            id.length <= 6 -> id
-            else -> "***" + id.takeLast(6)
+            id.length <= NOTIFICATION_ID_KEEP_LENGTH -> id
+            else -> "***" + id.takeLast(NOTIFICATION_ID_KEEP_LENGTH)
         }
 
     private fun formatMinutes(minutes: Int): String {
         if (minutes <= 0) return "0分钟"
-        val h = minutes / 60
-        val m = minutes % 60
+        val h = minutes / MINUTES_PER_HOUR
+        val m = minutes % MINUTES_PER_HOUR
         return when {
             h > 0 && m > 0 -> "${h}小时${m}分钟"
             h > 0 -> "${h}小时"

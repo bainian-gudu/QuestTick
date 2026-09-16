@@ -32,9 +32,14 @@ object AppUpdateInstaller {
     private const val DIR_NAME = "apk_updates"
     private const val APK_MIME = "application/vnd.android.package-archive"
 
-    private const val DOWNLOAD_BUFFER_SIZE = 128 * 1024
+    private const val KIB = 1024
+    private const val DOWNLOAD_BUFFER_SIZE = 128 * KIB
     private const val PROGRESS_EMIT_INTERVAL_MS = 250L
-    private const val MAX_APK_BYTES = 512 * 1024 * 1024
+    private const val MAX_APK_BYTES = 512 * KIB * KIB
+    private const val FILE_OUTPUT_BUFFER_BYTES = 256 * KIB
+    private const val CANDIDATE_RETRY_DELAY_MS = 400L
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
 
     private val preparedUrlCache = ConcurrentHashMap<String, List<String>>()
 
@@ -208,7 +213,7 @@ object AppUpdateInstaller {
             } catch (e: HttpTransportException) {
                 runCatching { tmp.delete() }
                 if (!e.failure.retryable || e.failure.outcomeUnknown || index == urls.lastIndex) throw e
-                delay(400L)
+                delay(CANDIDATE_RETRY_DELAY_MS)
             } catch (e: UpdateCandidateHttpException) {
                 runCatching { tmp.delete() }
                 if (index == urls.lastIndex) throw e
@@ -248,9 +253,9 @@ object AppUpdateInstaller {
                         callTimeoutMillis = 60_000,
                     ),
             )
-        tmp.outputStream().buffered(256 * 1024).use { output ->
+        tmp.outputStream().buffered(FILE_OUTPUT_BUFFER_BYTES).use { output ->
             streamingHttpTransport.executeStreaming(request) { response ->
-                if (response.code !in 200..299) {
+                if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
                     throw UpdateCandidateHttpException(response.code)
                 }
                 val totalBytes = response.contentLength.coerceAtLeast(0L)

@@ -9,6 +9,9 @@ import com.questtick.net.TrustedUrlPolicy
 object AppUpdateNetwork {
     enum class NetLevel { FAST, NORMAL, SLOW, OFFLINE }
 
+    private const val OFFLINE_CONNECT_TIMEOUT_MS = 800L
+    private const val OFFLINE_READ_TIMEOUT_MS = 1_200L
+
     fun networkLevel(context: Context): NetLevel =
         try {
             val cm =
@@ -40,7 +43,7 @@ object AppUpdateNetwork {
             NetLevel.FAST -> baseConnectMs / 2 to baseReadMs / 2
             NetLevel.NORMAL -> baseConnectMs to baseReadMs
             NetLevel.SLOW -> baseConnectMs * 2 to baseReadMs * 2
-            NetLevel.OFFLINE -> 800L to 1200L
+            NetLevel.OFFLINE -> OFFLINE_CONNECT_TIMEOUT_MS to OFFLINE_READ_TIMEOUT_MS
         }
 
     /** 只返回官方 GitHub URL，供检查器和安装器统一处理候选地址。 */
