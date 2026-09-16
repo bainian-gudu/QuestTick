@@ -23,9 +23,8 @@ object AppUpdateCache {
     private const val KEY_ETAG = "last_etag"
     private const val KEY_CURRENT_VERSION = "last_current_version"
 
-    // 强缓存保留 5 分钟，弱缓存保留 60 分钟。
+    // 强缓存保留 5 分钟；超过该时间仍可展示，但调用方应安排后台刷新。
     private const val STRONG_CACHE_MS = 5 * 60 * 1000L
-    private const val STALE_CACHE_MS = 60 * 60 * 1000L
 
     private data class MemoryEntry(
         val info: AppUpdateChecker.AppUpdateInfo,

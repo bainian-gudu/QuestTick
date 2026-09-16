@@ -87,7 +87,6 @@ internal class RoomLogStore(
     }
 
     companion object {
-        private const val TAG = "RoomLogStore"
         private const val LOG_RETENTION_MILLIS = 30L * 24 * 60 * 60 * 1000
 
         // 以 30 天为业务保留边界；数量上限只防止异常日志风暴拖垮列表和数据库。

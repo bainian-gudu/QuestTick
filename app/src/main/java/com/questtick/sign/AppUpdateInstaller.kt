@@ -81,18 +81,15 @@ object AppUpdateInstaller {
         }
     }
 
+    /** 预计算并缓存受信任的下载地址；实际网络下载和 SHA-256 校验在 [downloadApk] 中完成。 */
     suspend fun prepareDownloadLinks(
-        context: Context,
         info: AppUpdateChecker.AppUpdateInfo,
-        streamingHttpTransport: StreamingHttpTransport,
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatchingCancellable {
                 if (info.apkUrl.isBlank()) return@runCatchingCancellable
                 require(TrustedUrlPolicy.isUpdateAssetUrl(info.apkUrl)) { "更新地址不受信任" }
-                val appContext = context.applicationContext
-                val enforceSha = isSha256Enforced(info)
-                preparedUrlCache[cacheKey(info)] = downloadUrlCandidates(appContext, info.apkUrl, enforceSha)
+                preparedUrlCache[cacheKey(info)] = downloadUrlCandidates(info.apkUrl)
             }
         }
 
@@ -119,8 +116,7 @@ object AppUpdateInstaller {
 
                 val candidates =
                     preparedUrlCache[cacheKey(info)] ?: run {
-                        val enforceSha = isSha256Enforced(info)
-                        val selected = downloadUrlCandidates(appContext, url, enforceSha)
+                        val selected = downloadUrlCandidates(url)
                         preparedUrlCache[cacheKey(info)] = selected
                         selected
                     }
@@ -292,9 +288,7 @@ object AppUpdateInstaller {
     }
 
     private fun downloadUrlCandidates(
-        context: Context,
         url: String,
-        enforceSha256: Boolean = true,
     ): List<String> {
         if (!TrustedUrlPolicy.isUpdateAssetUrl(url)) return emptyList()
         return AppUpdateNetwork
@@ -449,11 +443,6 @@ object AppUpdateInstaller {
         val actual = sha256(file)
         return actual.equals(expected, ignoreCase = true)
     }
-
-    /**
-     * 判断当前更新信息是否携带有效的 SHA-256 校验值。
-     */
-    private fun isSha256Enforced(info: AppUpdateChecker.AppUpdateInfo): Boolean = info.apkSha256.isNotBlank() && info.apkSha256.matches(Regex("^[a-fA-F0-9]{64}$"))
 
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
