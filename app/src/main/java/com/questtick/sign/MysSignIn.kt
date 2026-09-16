@@ -310,11 +310,9 @@ class MysSignIn(
 
                 else -> {
                     // act_id 疑似失效时尝试动态刷新并重试一次。
-                    if (httpSuccess &&
-                        retryOnActIdInvalid &&
-                        actIdAutoRefresh &&
-                        ActIdInvalid.isInvalid(retcode, message)
-                    ) {
+                    val canRefreshActId = httpSuccess && retryOnActIdInvalid
+                    val shouldRefreshActId = canRefreshActId && actIdAutoRefresh && ActIdInvalid.isInvalid(retcode, message)
+                    if (shouldRefreshActId) {
                         val retryResult = refreshActIdAndRetry(cookie, game, role, actId)
                         if (retryResult != null) return retryResult
                     }

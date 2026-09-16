@@ -200,12 +200,11 @@ class AddAccountViewModel
                     latestAccount.hasMysKeepLogin ||
                         latestAccount.hasGenshinCloudKeepLogin ||
                         latestAccount.hasStarrailCloudKeepLogin
+                val hasMysCredential = cookieTrimmed.isNotBlank()
+                val hasCloudCredential = genshinTrimmed.isNotBlank() || starrailTrimmed.isNotBlank()
+                val hasAnyCredential = hasMysCredential || hasCloudCredential
 
-                if (cookieTrimmed.isBlank() &&
-                    genshinTrimmed.isBlank() &&
-                    starrailTrimmed.isBlank() &&
-                    !hasPreservedKeepLogin
-                ) {
+                if (!hasAnyCredential && !hasPreservedKeepLogin) {
                     _uiState.update { it.copy(saveError = "请至少填写米游社 Cookie、云游戏 Token 或保留扫码登录凭证中的一项") }
                     return@launch
                 }

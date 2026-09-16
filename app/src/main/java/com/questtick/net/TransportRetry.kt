@@ -238,24 +238,28 @@ internal object TransportFailures {
         var current: Throwable = error
         val seen = mutableSetOf<Throwable>()
         while (seen.add(current)) {
-            if (
-                current is ResponseTooLargeException ||
-                current is UnknownHostException ||
-                current is ConnectException ||
-                current is NoRouteToHostException ||
-                current is SocketTimeoutException ||
-                current is SSLException ||
-                current is EOFException ||
-                current is ProtocolException ||
-                current is SocketException ||
-                current is InterruptedIOException
-            ) {
-                return current
-            }
+            if (isRelevantCause(current)) return current
             current = current.cause ?: break
         }
         return error
     }
+
+    private fun isRelevantCause(cause: Throwable): Boolean =
+        when (cause) {
+            is ResponseTooLargeException,
+            is UnknownHostException,
+            is ConnectException,
+            is NoRouteToHostException,
+            is SocketTimeoutException,
+            is SSLException,
+            is EOFException,
+            is ProtocolException,
+            is SocketException,
+            is InterruptedIOException,
+            -> true
+
+            else -> false
+        }
 
     fun shouldRetry(
         failure: IOException,

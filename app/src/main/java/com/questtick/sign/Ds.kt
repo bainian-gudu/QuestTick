@@ -243,7 +243,9 @@ object Ds {
 
             is Number -> {
                 // JSON 不允许 NaN / Infinity
-                if ((value is Double && !value.isFinite()) || (value is Float && !value.isFinite())) {
+                val isNonFiniteDouble = value is Double && !value.isFinite()
+                val isNonFiniteFloat = value is Float && !value.isFinite()
+                if (isNonFiniteDouble || isNonFiniteFloat) {
                     "null"
                 } else {
                     value.toString()

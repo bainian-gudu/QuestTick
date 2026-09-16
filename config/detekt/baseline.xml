@@ -2,20 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ComplexCondition:ActId.kt$ActId$finalUri.scheme != "https" || finalUri.host?.lowercase() != NAVIGATION_HOST || finalUri.path != NAVIGATION_PATH || finalUri.rawQuery != "gids=${source.gids}"</ID>
-    <ID>ComplexCondition:ActId.kt$ActId$raw.isBlank() || raw != raw.trim() || raw.contains('%') || Regex("[\\s\\\\\\u0000-\\u001f\\u007f]").containsMatchIn(raw)</ID>
-    <ID>ComplexCondition:ActId.kt$ActId$uri.scheme != "https" || (uri.port != -1 &amp;&amp; uri.port != 443) || !uri.userInfo.isNullOrBlank() || !uri.rawFragment.isNullOrBlank() || uri.host?.lowercase() != source.host.lowercase()</ID>
-    <ID>ComplexCondition:AddAccountViewModel.kt$AddAccountViewModel$cookieTrimmed.isBlank() &amp;&amp; genshinTrimmed.isBlank() &amp;&amp; starrailTrimmed.isBlank() &amp;&amp; !hasPreservedKeepLogin</ID>
-    <ID>ComplexCondition:AppUpdateInstaller.kt$AppUpdateInstaller$file.isFile &amp;&amp; file.name != keepName &amp;&amp; (file.name.endsWith(".apk") || file.name.endsWith(".tmp"))</ID>
-    <ID>ComplexCondition:CloudSignIn.kt$CloudSignIn$res.code in 200..299 &amp;&amp; (retcode == 0 || message == "OK") &amp;&amp; walletData != null</ID>
-    <ID>ComplexCondition:Ds.kt$Ds$(value is Double &amp;&amp; !value.isFinite()) || (value is Float &amp;&amp; !value.isFinite())</ID>
-    <ID>ComplexCondition:Mailer.kt$Mailer$settings.mailTo.isBlank() || settings.smtpServer.isBlank() || settings.username.isBlank() || settings.password.isBlank()</ID>
-    <ID>ComplexCondition:MainViewModel.kt$MainViewModel$account.genshinToken.isNotBlank() || account.starrailToken.isNotBlank() || account.hasGenshinCloudKeepLogin || account.hasStarrailCloudKeepLogin</ID>
-    <ID>ComplexCondition:MysSignIn.kt$MysSignIn$httpSuccess &amp;&amp; retryOnActIdInvalid &amp;&amp; actIdAutoRefresh &amp;&amp; ActIdInvalid.isInvalid(retcode, message)</ID>
-    <ID>ComplexCondition:PostRunActionWorker.kt$PostRunActionWorker$settings.mailTo.isBlank() || settings.smtpServer.isBlank() || settings.username.isBlank() || settings.password.isBlank()</ID>
-    <ID>ComplexCondition:RecordsViewModel.kt$RecordsViewModel$!mail.enabled || mail.mailTo.isBlank() || mail.smtpServer.isBlank() || mail.username.isBlank() || mail.password.isBlank()</ID>
-    <ID>ComplexCondition:TransportRetry.kt$TransportFailures$current is ResponseTooLargeException || current is UnknownHostException || current is ConnectException || current is NoRouteToHostException || current is SocketTimeoutException || current is SSLException || current is EOFException || current is ProtocolException || current is SocketException || current is InterruptedIOException</ID>
-    <ID>ComplexCondition:TrustedRedirects.kt$TrustedRedirects$location.isBlank() || location != location.trim() || '\\' in location || location.any { it.isISOControl() || it.isWhitespace() }</ID>
     <ID>CyclomaticComplexMethod:AccountEditScreen.kt$@Composable private fun CloudTab( genshin: String, onGenshin: (String) -&gt; Unit, starrail: String, onStarrail: (String) -&gt; Unit, genshinKeepLogin: Boolean = false, starrailKeepLogin: Boolean = false, refreshingGenshinToken: Boolean = false, genshinTokenRefreshDone: Boolean = false, genshinTokenRefreshFailed: Boolean = false, refreshingStarrailToken: Boolean = false, starrailTokenRefreshDone: Boolean = false, starrailTokenRefreshFailed: Boolean = false, /** 扫码获取云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onStartCloudQR: ((gameKey: String) -&gt; Unit)? = null, /** 手动刷新云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onRefreshCloudToken: ((gameKey: String) -&gt; Unit)? = null, /** 退出云游戏扫码登录；保留当前 Token。 */ onLogoutCloud: ((gameKey: String) -&gt; Unit)? = null, )</ID>
     <ID>CyclomaticComplexMethod:AccountsScreen.kt$@Composable private fun AccountCard( account: Account, onEdit: () -&gt; Unit, onDelete: () -&gt; Unit, onToggle: (Boolean) -&gt; Unit, executionGuard: ExecutionStateRepository.AccountGuard?, onResume: () -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
@@ -498,8 +484,6 @@
     <ID>MaxLineLength:AccountGameSelection.kt$AnimatedSwitch(checked = mysCoinEnabled, onCheckedChange = onMysCoinEnabledChange, offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))</ID>
     <ID>MaxLineLength:AccountGameSelection.kt$val border = if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)</ID>
     <ID>MaxLineLength:AccountGameSelection.kt$val rowModifier = Modifier.fillMaxWidth().border(1.5.dp, border, RoundedCornerShape(18.dp)).then(if (enabled) Modifier.clickableNoRipple(onToggle) else Modifier)</ID>
-    <ID>MaxLineLength:ActId.kt$ActId$if (finalUri.scheme != "https" || finalUri.host?.lowercase() != NAVIGATION_HOST || finalUri.path != NAVIGATION_PATH || finalUri.rawQuery != "gids=${source.gids}") return null</ID>
-    <ID>MaxLineLength:ActId.kt$ActId$if (raw.isBlank() || raw != raw.trim() || raw.contains('%') || Regex("[\\s\\\\\\u0000-\\u001f\\u007f]").containsMatchIn(raw)) return null</ID>
     <ID>MaxLineLength:ActIdInvalid.kt$ActIdInvalid$private fun isClearlyNotActIdMessage(message: String): Boolean</ID>
     <ID>MaxLineLength:ActIdTest.kt$ActIdTest$val body = """{"retcode":0,"data":{"navigator":[{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/index.html?act_id=e202311201442471"}]}}"""</ID>
     <ID>MaxLineLength:ActIdTest.kt$ActIdTest$val duplicate = """{"retcode":0,"data":{"navigator":[{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202311201442471"},{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202304121516551"}]}}"""</ID>

@@ -90,13 +90,7 @@ class RecordsViewModel
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     val mail = settingsRepository.getMailSettings()
-                    if (
-                        !mail.enabled ||
-                        mail.mailTo.isBlank() ||
-                        mail.smtpServer.isBlank() ||
-                        mail.username.isBlank() ||
-                        mail.password.isBlank()
-                    ) {
+                    if (!mail.enabled || !mail.isConfigured) {
                         appStateRepository.triggerToast("请先在设置中启用并完善邮件配置")
                         return@launch
                     }

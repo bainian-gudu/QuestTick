@@ -111,12 +111,7 @@ class PostRunActionWorker
                 repository.markCancelled(action.actionId, "mail-disabled")
                 return Result.success()
             }
-            if (
-                settings.mailTo.isBlank() ||
-                settings.smtpServer.isBlank() ||
-                settings.username.isBlank() ||
-                settings.password.isBlank()
-            ) {
+            if (!settings.isConfigured) {
                 repository.markCancelled(action.actionId, "mail-configuration-incomplete")
                 return Result.success()
             }

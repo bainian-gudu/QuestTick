@@ -300,17 +300,19 @@ internal object TrustedRedirects {
             throw UntrustedRedirectException("redirect response must have exactly one Location")
         }
         val location = locations.single()
-        if (
-            location.isBlank() ||
-            location != location.trim() ||
-            '\\' in location ||
-            location.any { it.isISOControl() || it.isWhitespace() }
-        ) {
+        if (hasInvalidRedirectLocationSyntax(location) || hasUnsafeRedirectLocationCharacters(location)) {
             throw UntrustedRedirectException("invalid redirect Location")
         }
         return response.request.url.resolve(location)
             ?: throw UntrustedRedirectException("invalid redirect Location")
     }
+
+    private fun hasInvalidRedirectLocationSyntax(location: String): Boolean =
+        location.isBlank() ||
+            location != location.trim() ||
+            '\\' in location
+
+    private fun hasUnsafeRedirectLocationCharacters(location: String): Boolean = location.any { it.isISOControl() || it.isWhitespace() }
 
     internal fun redirectedRequest(
         request: Request,

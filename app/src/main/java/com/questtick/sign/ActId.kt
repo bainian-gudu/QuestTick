@@ -35,6 +35,7 @@ object ActId {
         )
 
     private val SCRIPT_SRC = Regex("<script[^>]+src=[\"']([^\"']+)[\"']", RegexOption.IGNORE_CASE)
+    private val UNSAFE_NAVIGATION_CHARS = Regex("[\\s\\\\\\u0000-\\u001f\\u007f]")
 
     /** 单个 JS 文件最多读取的字节数。 */
     private const val MAX_SCRIPT_BYTES = 2 * 1024 * 1024
@@ -141,21 +142,17 @@ object ActId {
         raw: String,
         source: NavigationSource,
     ): String? {
-        if (raw.isBlank() || raw != raw.trim() || raw.contains('%') || Regex("[\\s\\\\\\u0000-\\u001f\\u007f]").containsMatchIn(raw)) return null
+        if (hasInvalidNavigationEncoding(raw) || UNSAFE_NAVIGATION_CHARS.containsMatchIn(raw)) return null
         val uri =
             try {
                 URI(raw)
             } catch (_: Exception) {
                 return null
             }
-        if (uri.scheme != "https" ||
-            (uri.port != -1 && uri.port != 443) ||
-            !uri.userInfo.isNullOrBlank() ||
-            !uri.rawFragment.isNullOrBlank() ||
-            uri.host?.lowercase() != source.host.lowercase()
-        ) {
-            return null
-        }
+        if (uri.scheme != "https") return null
+        if (uri.port != -1 && uri.port != 443) return null
+        if (!uri.userInfo.isNullOrBlank() || !uri.rawFragment.isNullOrBlank()) return null
+        if (uri.host?.lowercase() != source.host.lowercase()) return null
         val query = uri.rawQuery ?: return null
         val pairs = query.split('&').filter { it.isNotEmpty() }
         val actPairs = pairs.filter { it.substringBefore('=') == "act_id" }
@@ -172,6 +169,8 @@ object ActId {
         if (filenameId != null && filenameId != candidate) return null
         return candidate
     }
+
+    private fun hasInvalidNavigationEncoding(raw: String): Boolean = raw.isBlank() || raw != raw.trim() || raw.contains('%')
 
     private suspend fun fetchFromNavigation(
         game: MysSignIn.GameConfig,
@@ -190,7 +189,9 @@ object ActId {
             if (response.code !in 200..299) return null
             val final = response.finalUrl.ifBlank { url }
             val finalUri = URI(final)
-            if (finalUri.scheme != "https" || finalUri.host?.lowercase() != NAVIGATION_HOST || finalUri.path != NAVIGATION_PATH || finalUri.rawQuery != "gids=${source.gids}") return null
+            if (finalUri.scheme != "https") return null
+            if (finalUri.host?.lowercase() != NAVIGATION_HOST) return null
+            if (finalUri.path != NAVIGATION_PATH || finalUri.rawQuery != "gids=${source.gids}") return null
             parseFromNavigation(response.body, game.key)
         } catch (e: Exception) {
             e.throwIfCancellation()

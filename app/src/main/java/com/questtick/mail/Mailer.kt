@@ -58,11 +58,7 @@ object Mailer {
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             if (!settings.enabled) return@withContext Result.success(Unit)
-            if (settings.mailTo.isBlank() ||
-                settings.smtpServer.isBlank() ||
-                settings.username.isBlank() ||
-                settings.password.isBlank()
-            ) {
+            if (!settings.isConfigured) {
                 return@withContext Result.failure(IllegalStateException("SMTP 配置不完整"))
             }
 

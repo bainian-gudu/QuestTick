@@ -266,7 +266,7 @@ class CloudSignIn(
             val playCard = walletData?.optJSONObject("play_card")?.optString("short_msg").orEmpty()
             val coin = walletData?.optJSONObject("coin")?.optInt("coin_num", 0) ?: 0
             val message = data.optString("message")
-            if (res.code in 200..299 && (retcode == 0 || message == "OK") && walletData != null) {
+            if (isSuccessfulResponse(res.code, retcode, message) && walletData != null) {
                 Wallet(
                     ok = true,
                     freeTime = free,
@@ -324,7 +324,7 @@ class CloudSignIn(
             val data = res.json()
             val retcode = data.optInt("retcode", -999)
             val message = data.optString("message")
-            if (res.code in 200..299 && (retcode == 0 || message == "OK")) {
+            if (isSuccessfulResponse(res.code, retcode, message)) {
                 val arr = data.optJSONObject("data")?.optJSONArray("list")
                 val ids = ArrayList<String>()
                 if (arr != null) {
@@ -370,7 +370,7 @@ class CloudSignIn(
             val data = res.json()
             val retcode = data.optInt("retcode", -999)
             val message = data.optString("message")
-            if (res.code in 200..299 && (retcode == 0 || message == "OK")) {
+            if (isSuccessfulResponse(res.code, retcode, message)) {
                 AckResult(true, "ackNotification(${maskNotificationId(id)}) ok")
             } else {
                 val detail =
@@ -397,6 +397,12 @@ class CloudSignIn(
             retcode != 0 -> TaskFailureClassifier.fromRetcode(retcode)
             else -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "missing-data", retryable = true)
         }
+
+    private fun isSuccessfulResponse(
+        code: Int,
+        retcode: Int,
+        message: String,
+    ): Boolean = code in 200..299 && (retcode == 0 || message == "OK")
 
     private fun buildWalletDetail(
         httpCode: Int,

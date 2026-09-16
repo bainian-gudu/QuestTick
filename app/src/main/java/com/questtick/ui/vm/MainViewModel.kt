@@ -95,11 +95,9 @@ class MainViewModel
             if (account.mysCookie.isNotBlank() || account.hasMysKeepLogin) {
                 secureStore.effectiveMysDeviceId(forceCreate = true)
             }
-            if (account.genshinToken.isNotBlank() ||
-                account.starrailToken.isNotBlank() ||
-                account.hasGenshinCloudKeepLogin ||
-                account.hasStarrailCloudKeepLogin
-            ) {
+            val hasCloudToken = account.genshinToken.isNotBlank() || account.starrailToken.isNotBlank()
+            val hasCloudKeepLogin = account.hasGenshinCloudKeepLogin || account.hasStarrailCloudKeepLogin
+            if (hasCloudToken || hasCloudKeepLogin) {
                 secureStore.effectiveCloudDeviceId(forceCreate = true)
             }
         }
