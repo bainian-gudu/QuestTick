@@ -29,7 +29,20 @@ internal class UntrustedRedirectException(
 internal object TrustedRedirects {
     const val MAX_REDIRECTS = 5
 
-    private val redirectCodes = setOf(301, 302, 303, 307, 308)
+    private const val HTTP_MOVED_PERMANENTLY = 301
+    private const val HTTP_FOUND = 302
+    private const val HTTP_SEE_OTHER = 303
+    private const val HTTP_TEMPORARY_REDIRECT = 307
+    private const val HTTP_PERMANENT_REDIRECT = 308
+
+    private val redirectCodes =
+        setOf(
+            HTTP_MOVED_PERMANENTLY,
+            HTTP_FOUND,
+            HTTP_SEE_OTHER,
+            HTTP_TEMPORARY_REDIRECT,
+            HTTP_PERMANENT_REDIRECT,
+        )
     private val redirectableMethods = setOf("GET", "HEAD")
     private val crossOriginSafeHeaders =
         setOf(

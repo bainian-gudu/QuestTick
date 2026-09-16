@@ -14,7 +14,7 @@ internal class SettingsStore(
         val result =
             AppSettings(
                 scheduleEnabled = prefs.getBoolean("scheduleEnabled", false),
-                scheduleHour = prefs.getInt("scheduleHour", 8),
+                scheduleHour = prefs.getInt("scheduleHour", DEFAULT_SCHEDULE_HOUR),
                 scheduleMinute = prefs.getInt("scheduleMinute", 0),
                 notifyEnabled = prefs.getBoolean("notifyEnabled", true),
                 appThemeMode = prefs.getString("appThemeMode", "SYSTEM").orEmpty().normalizeThemeMode(),
@@ -80,6 +80,7 @@ internal class SettingsStore(
 
     companion object {
         private const val TAG = "SettingsStore"
+        private const val DEFAULT_SCHEDULE_HOUR = 8
 
         private fun String.normalizeThemeMode(): String =
             when (uppercase()) {

@@ -113,6 +113,10 @@ class SettingsViewModel
             const val HTTP_CACHE_DIR = "http_cache"
             const val APK_UPDATE_DIR = "apk_updates"
             const val LOG_EXPORT_DIR = "exports"
+            const val PROGRESS_EMIT_INTERVAL_NANOS = 250_000_000L
+            const val NANOS_PER_SECOND = 1_000_000_000L
+            const val PERCENT_SCALE = 100L
+            const val PERCENT_MAX = 100
             val MANAGED_CACHE_DIRS = setOf(COIL_CACHE_DIR, HTTP_CACHE_DIR, APK_UPDATE_DIR, LOG_EXPORT_DIR)
         }
 
@@ -556,11 +560,16 @@ class SettingsViewModel
                     if (downloadStartNanos == 0L) downloadStartNanos = now
                     val safeTotal = total.coerceAtLeast(0L)
                     val finished = safeTotal > 0L && downloaded >= safeTotal
-                    if (finished || now - lastEmitNanos >= 250_000_000L) {
+                    if (finished || now - lastEmitNanos >= PROGRESS_EMIT_INTERVAL_NANOS) {
                         lastEmitNanos = now
                         val elapsedNanos = (now - downloadStartNanos).coerceAtLeast(1L)
-                        val speed = (downloaded * 1_000_000_000L / elapsedNanos).coerceAtLeast(0L)
-                        val percent = if (safeTotal > 0L) ((downloaded * 100L) / safeTotal).toInt().coerceIn(0, 100) else 0
+                        val speed = (downloaded * NANOS_PER_SECOND / elapsedNanos).coerceAtLeast(0L)
+                        val percent =
+                            if (safeTotal > 0L) {
+                                ((downloaded * PERCENT_SCALE) / safeTotal).toInt().coerceIn(0, PERCENT_MAX)
+                            } else {
+                                0
+                            }
                         _updateDownloadProgress.value =
                             AppUpdateDownloadProgress(
                                 version = info.latestVersion,

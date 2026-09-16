@@ -16,6 +16,9 @@ object TrustedUrlPolicy {
     private const val GITHUB_REPOSITORY_ID = "1337123825"
     private const val GITHUB_RELEASE_ASSET_PATH_PREFIX =
         "/github-production-release-asset/$GITHUB_REPOSITORY_ID/"
+    private const val HTTPS_PORT = 443
+    private const val IPV4_PART_COUNT = 4
+    private const val MAX_IPV4_OCTET = 255
 
     // internal：供 CertificatePinningTest 断言每个业务主机都已登记证书 Pin 或显式豁免。
     internal val businessRequestHosts =
@@ -161,7 +164,7 @@ object TrustedUrlPolicy {
         if (rawUrl.isBlank() || rawUrl != rawUrl.trim()) return null
         if (rawUrl.any { it.isISOControl() || it.isWhitespace() } || '\\' in rawUrl) return null
         val url = rawUrl.toHttpUrlOrNull() ?: return null
-        if (url.scheme != "https" || url.port != 443) return null
+        if (url.scheme != "https" || url.port != HTTPS_PORT) return null
         if (url.username.isNotEmpty() || url.password.isNotEmpty()) return null
         if (url.fragment != null) return null
         if (isIpLiteral(url.host)) return null
@@ -171,9 +174,9 @@ object TrustedUrlPolicy {
     private fun isIpLiteral(host: String): Boolean {
         if (':' in host) return true
         val parts = host.split('.')
-        return parts.size == 4 &&
+        return parts.size == IPV4_PART_COUNT &&
             parts.all { part ->
-                part.isNotEmpty() && part.all(Char::isDigit) && part.toIntOrNull() in 0..255
+                part.isNotEmpty() && part.all(Char::isDigit) && part.toIntOrNull() in 0..MAX_IPV4_OCTET
             }
     }
 }

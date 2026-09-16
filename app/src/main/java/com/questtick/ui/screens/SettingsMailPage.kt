@@ -40,6 +40,14 @@ import com.questtick.ui.components.GalaxyBackground
 import com.questtick.ui.components.PanelCard
 import com.questtick.ui.theme.AppMotion
 
+private const val SMTP_SSL_PORT = 465
+private const val SMTP_STARTTLS_PORT = 587
+private const val SMTP_PORT_MAX_DIGITS = 5
+private const val QQ_MAIL_COLOR = 0xFFE64A5F
+private const val NETEASE_MAIL_COLOR = 0xFFF08A24
+private const val GMAIL_COLOR = 0xFF4285F4
+private const val OUTLOOK_COLOR = 0xFF7357C8
+
 /** 邮件推送设置页面。 */
 @Composable
 internal fun MailDetailPage(
@@ -86,10 +94,10 @@ internal fun MailDetailPage(
                                 Spacer(Modifier.height(10.dp))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     listOf(
-                                        Triple("QQ 邮箱", "smtp.qq.com" to 465, Color(0xFFE64A5F)),
-                                        Triple("163 邮箱", "smtp.163.com" to 465, Color(0xFFF08A24)),
-                                        Triple("Gmail", "smtp.gmail.com" to 465, Color(0xFF4285F4)),
-                                        Triple("Outlook", "smtp.office365.com" to 587, Color(0xFF7357C8)),
+                                        Triple("QQ 邮箱", "smtp.qq.com" to SMTP_SSL_PORT, Color(QQ_MAIL_COLOR)),
+                                        Triple("163 邮箱", "smtp.163.com" to SMTP_SSL_PORT, Color(NETEASE_MAIL_COLOR)),
+                                        Triple("Gmail", "smtp.gmail.com" to SMTP_SSL_PORT, Color(GMAIL_COLOR)),
+                                        Triple("Outlook", "smtp.office365.com" to SMTP_STARTTLS_PORT, Color(OUTLOOK_COLOR)),
                                     ).forEach { (label, preset, tint) ->
                                         OutlinedButton(
                                             onClick = {
@@ -113,7 +121,13 @@ internal fun MailDetailPage(
                                     SettingsFieldLabel("SMTP 服务器")
                                     FieldBox(server, { server = it }, "smtp.qq.com", Modifier.fillMaxWidth())
                                     SettingsFieldLabel("SMTP 端口")
-                                    FieldBox(port, { port = it.filter(Char::isDigit).take(5) }, "465", Modifier.fillMaxWidth(), number = true)
+                                    FieldBox(
+                                        port,
+                                        { port = it.filter(Char::isDigit).take(SMTP_PORT_MAX_DIGITS) },
+                                        "465",
+                                        Modifier.fillMaxWidth(),
+                                        number = true,
+                                    )
                                     SettingsFieldLabel("发件邮箱")
                                     FieldBox(username, { username = it }, "your@email.com", Modifier.fillMaxWidth())
                                     SettingsFieldLabel("授权码 / 密码")
@@ -125,13 +139,31 @@ internal fun MailDetailPage(
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Box(Modifier.weight(1f)) {
                                     PrimaryButton("保存") {
-                                        onSave(mail.copy(enabled = enabled, smtpServer = server.trim(), smtpPort = port.toIntOrNull() ?: 465, username = username.trim(), password = password, mailTo = mailTo.trim()))
+                                        val updated =
+                                            mail.copy(
+                                                enabled = enabled,
+                                                smtpServer = server.trim(),
+                                                smtpPort = port.toIntOrNull() ?: SMTP_SSL_PORT,
+                                                username = username.trim(),
+                                                password = password,
+                                                mailTo = mailTo.trim(),
+                                            )
+                                        onSave(updated)
                                         onBack()
                                     }
                                 }
                                 Box(Modifier.weight(1f)) {
                                     PrimaryButton("发送测试") {
-                                        onTest(mail.copy(enabled = true, smtpServer = server.trim(), smtpPort = port.toIntOrNull() ?: 465, username = username.trim(), password = password, mailTo = mailTo.trim()))
+                                        val updated =
+                                            mail.copy(
+                                                enabled = true,
+                                                smtpServer = server.trim(),
+                                                smtpPort = port.toIntOrNull() ?: SMTP_SSL_PORT,
+                                                username = username.trim(),
+                                                password = password,
+                                                mailTo = mailTo.trim(),
+                                            )
+                                        onTest(updated)
                                     }
                                 }
                             }
