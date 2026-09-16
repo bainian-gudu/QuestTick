@@ -159,7 +159,7 @@ object AppUpdateCache {
         return prefs(context).getString(KEY_ETAG, "").orEmpty()
     }
 
-    private fun prefs(context: Context): SharedPreferences = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private fun prefs(ctx: Context): SharedPreferences = ctx.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
     // 轻量版本比较，避免为简单比较引入额外对象分配。
     private fun isVersionNewerFast(

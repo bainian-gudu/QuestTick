@@ -96,11 +96,21 @@ internal fun CacheDetailPage(
                     SettingsCard {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(cacheCategoryTitle(item.category), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                                Text(
+                                    cacheCategoryTitle(item.category),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
                                 Spacer(Modifier.height(4.dp))
                                 Text(cacheCategoryDescription(item.category), fontSize = 12.sp, lineHeight = 18.sp, color = TextSecondary)
                                 Spacer(Modifier.height(4.dp))
-                                Text(formatCacheSize(item.sizeBytes), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    formatCacheSize(item.sizeBytes),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             }
                             Spacer(Modifier.width(8.dp))
                             TextButton(onClick = { onClearCategory(item.category) }, enabled = canClear) {
