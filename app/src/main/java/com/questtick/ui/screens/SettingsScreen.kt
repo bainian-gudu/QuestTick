@@ -84,6 +84,18 @@ import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.SettingsViewModel
 
+private const val SCHEDULE_ICON_COLOR = 0xFF2F6BDB
+private const val APPEARANCE_ICON_COLOR = 0xFF20B8D8
+private const val MAIL_ICON_COLOR = 0xFF5BA8DF
+private const val MYS_VERSION_ICON_COLOR = 0xFF8650C6
+private const val CLOUD_VERSION_ICON_COLOR = 0xFF0AAFC1
+private const val SECURITY_ICON_COLOR = 0xFFEF5B63
+private const val DEVICE_ICON_COLOR = 0xFFE6A832
+private const val EXPERIMENT_ICON_COLOR = 0xFFB24BC5
+private const val ACT_ID_ICON_COLOR = 0xFFD66D2B
+private const val CACHE_ICON_COLOR = 0xFF2A9D8F
+private const val ABOUT_ICON_COLOR = 0xFF64748B
+
 private enum class SettingsPage {
     None,
     Schedule,
@@ -179,7 +191,7 @@ fun SettingsScreen(
                 item(key = "row_schedule") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Schedule,
-                        iconColor = Color(0xFF2F6BDB),
+                        iconColor = Color(SCHEDULE_ICON_COLOR),
                         title = "定时任务",
                     ) { openSettingsPage(SettingsPage.Schedule) }
                 }
@@ -187,7 +199,7 @@ fun SettingsScreen(
                 item(key = "row_appearance") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Palette,
-                        iconColor = Color(0xFF20B8D8),
+                        iconColor = Color(APPEARANCE_ICON_COLOR),
                         title = "外观",
                     ) { openSettingsPage(SettingsPage.Appearance) }
                 }
@@ -204,7 +216,7 @@ fun SettingsScreen(
                 item(key = "row_mail") {
                     SettingsEntryCard(
                         icon = Icons.Outlined.Email,
-                        iconColor = Color(0xFF5BA8DF),
+                        iconColor = Color(MAIL_ICON_COLOR),
                         title = "邮件推送",
                     ) { openSettingsPage(SettingsPage.Mail) }
                 }
@@ -212,7 +224,7 @@ fun SettingsScreen(
                 item(key = "row_mys_version") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Description,
-                        iconColor = Color(0xFF8650C6),
+                        iconColor = Color(MYS_VERSION_ICON_COLOR),
                         title = "米游社版本",
                     ) { openSettingsPage(SettingsPage.MysVersion) }
                 }
@@ -220,7 +232,7 @@ fun SettingsScreen(
                 item(key = "row_cloud_version") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Cloud,
-                        iconColor = Color(0xFF0AAFC1),
+                        iconColor = Color(CLOUD_VERSION_ICON_COLOR),
                         title = "云游戏版本",
                     ) { openSettingsPage(SettingsPage.CloudVersion) }
                 }
@@ -228,7 +240,7 @@ fun SettingsScreen(
                 item(key = "row_security") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Lock,
-                        iconColor = Color(0xFFEF5B63),
+                        iconColor = Color(SECURITY_ICON_COLOR),
                         title = "安全检测",
                     ) { openSettingsPage(SettingsPage.Security) }
                 }
@@ -236,7 +248,7 @@ fun SettingsScreen(
                 item(key = "row_device") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Memory,
-                        iconColor = Color(0xFFE6A832),
+                        iconColor = Color(DEVICE_ICON_COLOR),
                         title = "设备 ID",
                     ) { openSettingsPage(SettingsPage.Device) }
                 }
@@ -244,7 +256,7 @@ fun SettingsScreen(
                 item(key = "row_experiment") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Science,
-                        iconColor = Color(0xFFB24BC5),
+                        iconColor = Color(EXPERIMENT_ICON_COLOR),
                         title = "实验功能",
                     ) { openSettingsPage(SettingsPage.Experiment) }
                 }
@@ -252,7 +264,7 @@ fun SettingsScreen(
                 item(key = "row_act_id") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Autorenew,
-                        iconColor = Color(0xFFD66D2B),
+                        iconColor = Color(ACT_ID_ICON_COLOR),
                         title = "ACT_ID 自动刷新",
                     ) { openSettingsPage(SettingsPage.ActId) }
                 }
@@ -260,7 +272,7 @@ fun SettingsScreen(
                 item(key = "row_cache") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Storage,
-                        iconColor = Color(0xFF2A9D8F),
+                        iconColor = Color(CACHE_ICON_COLOR),
                         title = "缓存管理",
                     ) { openSettingsPage(SettingsPage.Cache) }
                 }
@@ -268,7 +280,7 @@ fun SettingsScreen(
                 item(key = "row_about") {
                     SettingsEntryCard(
                         icon = Icons.Filled.Info,
-                        iconColor = Color(0xFF64748B),
+                        iconColor = Color(ABOUT_ICON_COLOR),
                         title = "关于",
                     ) { openSettingsPage(SettingsPage.About) }
                 }
