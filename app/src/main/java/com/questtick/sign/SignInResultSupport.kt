@@ -6,6 +6,9 @@ import com.questtick.data.Account
 import com.questtick.data.FailureCategory
 import com.questtick.data.TaskResult
 
+private const val MILLIS_PER_SECOND = 1_000L
+private const val MILLIS_PER_MINUTE = 60_000L
+
 internal fun buildMysTaskResult(
     game: String,
     gameKey: String,
@@ -120,9 +123,9 @@ internal fun buildMysOutcomeDetail(outcome: MysSignIn.Outcome): String {
 
 internal fun formatSignInElapsed(ms: Long): String =
     when {
-        ms < 1000 -> "${ms}ms"
-        ms < 60_000 -> "%.1fs".format(ms / 1000.0)
-        else -> "%dm%ds".format(ms / 60_000, (ms % 60_000) / 1000)
+        ms < MILLIS_PER_SECOND -> "${ms}ms"
+        ms < MILLIS_PER_MINUTE -> "%.1fs".format(ms / MILLIS_PER_SECOND.toDouble())
+        else -> "%dm%ds".format(ms / MILLIS_PER_MINUTE, (ms % MILLIS_PER_MINUTE) / MILLIS_PER_SECOND)
     }
 
 internal fun buildFailedTaskResults(

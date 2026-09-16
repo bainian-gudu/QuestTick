@@ -223,35 +223,15 @@
     <ID>MagicNumber:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$256</ID>
     <ID>MagicNumber:LatestRunCard.kt$180f</ID>
     <ID>MagicNumber:LogDisplayComponents.kt$180f</ID>
-    <ID>MagicNumber:LogExporter.kt$LogExporter$10</ID>
-    <ID>MagicNumber:LogExporter.kt$LogExporter$1000</ID>
-    <ID>MagicNumber:LogExporter.kt$LogExporter$24</ID>
-    <ID>MagicNumber:LogExporter.kt$LogExporter$60</ID>
-    <ID>MagicNumber:LogExporter.kt$LogExporter$7L</ID>
     <ID>MagicNumber:LogsScreen.kt$250</ID>
     <ID>MagicNumber:Mailer.kt$Mailer$465</ID>
-    <ID>MagicNumber:MainActivity.kt$MainActivity$1_500L</ID>
     <ID>MagicNumber:MainTabHost.kt$0.5f</ID>
     <ID>MagicNumber:MainUpdateHosts.kt$50</ID>
     <ID>MagicNumber:Mask.kt$Mask$3</ID>
     <ID>MagicNumber:Mask.kt$Mask$4</ID>
-    <ID>MagicNumber:MysSignExecutor.kt$MysSignExecutor$1000L</ID>
     <ID>MagicNumber:MysSignExecutor.kt$MysSignExecutor$5</ID>
-    <ID>MagicNumber:MysSignExecutor.kt$MysSignExecutor$50</ID>
-    <ID>MagicNumber:Notifier.kt$Notifier$36</ID>
-    <ID>MagicNumber:Notifier.kt$Notifier$8</ID>
-    <ID>MagicNumber:OkHttpClientFactory.kt$OkHttpClientFactory$10</ID>
-    <ID>MagicNumber:OkHttpClientFactory.kt$OkHttpClientFactory$25</ID>
-    <ID>MagicNumber:OkHttpClientFactory.kt$OkHttpClientFactory$3</ID>
-    <ID>MagicNumber:OkHttpClientFactory.kt$OkHttpClientFactory$4</ID>
-    <ID>MagicNumber:OkHttpClientFactory.kt$OkHttpClientFactory$90</ID>
-    <ID>MagicNumber:Passport.kt$Passport$16</ID>
-    <ID>MagicNumber:Passport.kt$Passport$3</ID>
-    <ID>MagicNumber:Passport.kt$Passport$6</ID>
-    <ID>MagicNumber:Passport.kt$Passport$8</ID>
     <ID>MagicNumber:PostRunActionRepository.kt$PostRunActionRepository$10</ID>
     <ID>MagicNumber:PostRunActionRepository.kt$PostRunActionRepository$80</ID>
-    <ID>MagicNumber:PostRunActionScheduler.kt$PostRunActionScheduler$30L</ID>
     <ID>MagicNumber:QrLoginScaffold.kt$0.3f</ID>
     <ID>MagicNumber:QuestTickApp.kt$QuestTickApp$0.18</ID>
     <ID>MagicNumber:QuestTickApp.kt$QuestTickApp$1024</ID>
@@ -271,16 +251,6 @@
     <ID>MagicNumber:RootDetectorV2.kt$RootDetectorV2$50</ID>
     <ID>MagicNumber:RootDetectorV2.kt$RootDetectorV2$70</ID>
     <ID>MagicNumber:RootDetectorV2.kt$RootDetectorV2$8</ID>
-    <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$3</ID>
-    <ID>MagicNumber:RunDiagnostics.kt$RunDiagnostics$4</ID>
-    <ID>MagicNumber:ScheduleClock.kt$ScheduleClock$200</ID>
-    <ID>MagicNumber:ScheduleClock.kt$ScheduleClock$499</ID>
-    <ID>MagicNumber:Scheduler.kt$23</ID>
-    <ID>MagicNumber:Scheduler.kt$59</ID>
-    <ID>MagicNumber:Scheduler.kt$Scheduler$10</ID>
-    <ID>MagicNumber:Scheduler.kt$Scheduler$23</ID>
-    <ID>MagicNumber:Scheduler.kt$Scheduler$5</ID>
-    <ID>MagicNumber:Scheduler.kt$Scheduler$59</ID>
     <ID>MagicNumber:SettingsAppearancePage.kt$0.45f</ID>
     <ID>MagicNumber:SettingsAppearancePage.kt$0.5f</ID>
     <ID>MagicNumber:SettingsAppearancePage.kt$0.65f</ID>
@@ -313,17 +283,6 @@
     <ID>MagicNumber:SettingsScreen.kt$59</ID>
     <ID>MagicNumber:SettingsScreen.kt$6</ID>
     <ID>MagicNumber:SignInGuardStore.kt$SignInGuardStore$999</ID>
-    <ID>MagicNumber:SignInResultSupport.kt$1000</ID>
-    <ID>MagicNumber:SignInResultSupport.kt$1000.0</ID>
-    <ID>MagicNumber:SignInResultSupport.kt$60_000</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$1024</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$250L</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$3501L</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$4</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$5</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$701L</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$8</ID>
-    <ID>MagicNumber:SignInRunner.kt$SignInRunner$800L</ID>
     <ID>MagicNumber:Theme.kt$0.035f</ID>
     <ID>MagicNumber:Theme.kt$0.06f</ID>
     <ID>MagicNumber:Theme.kt$0.08f</ID>
@@ -377,8 +336,6 @@
     <ID>MaxLineLength:MysCoinCheckInTest.kt$MysCoinCheckInTest$val outcome = MysCoinCheckIn.run("stoken=s; mid=m; stuid=1; ltoken=l; account_id=1; cookie_token=test", "DEVICE-ID", "2.109.0", transport)</ID>
     <ID>MaxLineLength:MysSignIn.kt$MysSignIn$MysHeaders.sign(cookie, deviceId, customVersion, ds, referer = referer, origin = "https://webstatic.mihoyo.com").toMutableMap()</ID>
     <ID>MaxLineLength:OkHttpTransport.kt$OkHttpTransport.Companion$fun forSameOriginTest(okHttpClient: OkHttpClient): OkHttpTransport</ID>
-    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
-    <ID>MaxLineLength:RunDiagnostics.kt$RunDiagnostics$"Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"</ID>
     <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$fun</ID>
     <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$fun uncertainTaskIdsForDay(timestamp: Long): Set&lt;String&gt;</ID>
     <ID>MaxLineLength:RunPersistenceRepository.kt$RunPersistenceRepository$if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) "process-interrupted" else "internal-error"</ID>
@@ -401,7 +358,6 @@
     <ID>MaxLineLength:SettingsVersionPages.kt$private</ID>
     <ID>MaxLineLength:SignInCalendarRepository.kt$SignInCalendarRepository$override suspend fun loadFromStore(): List&lt;SignInCalendarDay&gt;</ID>
     <ID>MaxLineLength:SignInCalendarRepository.kt$SignInCalendarRepository$override suspend fun saveToStore(data: List&lt;SignInCalendarDay&gt;): Unit</ID>
-    <ID>MaxLineLength:SignInRunner.kt$SignInRunner$"rootEvidence=${it.rootEvidenceTriggers.take(5).joinToString()}, triggers=${it.triggers.take(5).joinToString()}"</ID>
     <ID>MaxLineLength:StreamingHttpTransport.kt$HttpResponseStream$override fun toString(): String</ID>
     <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com.evil.example/bainian-gudu/QuestTick/releases/download/v1/app.apk"))</ID>
     <ID>MaxLineLength:TrustedUrlPolicyTest.kt$TrustedUrlPolicyTest$assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com.evil.example/repos/bainian-gudu/QuestTick/releases/latest"))</ID>

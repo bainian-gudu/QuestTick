@@ -16,6 +16,8 @@ import kotlin.math.abs
 
 private const val NETWORK_TIME_URL = "https://www.ntsc.ac.cn/"
 private const val AGREEMENT_WINDOW_MILLIS = 5L * 60 * 1000
+private const val HTTP_STATUS_MIN = 200
+private const val HTTP_STATUS_MAX = 499
 
 internal data class ScheduleTimeSources(
     val systemMillis: Long,
@@ -107,7 +109,7 @@ class ScheduleClock
                                 ),
                         ),
                     )
-                if (response.code !in 200..499) return@runCatching null
+                if (response.code !in HTTP_STATUS_MIN..HTTP_STATUS_MAX) return@runCatching null
                 val date = response.headerValues("Date").firstOrNull() ?: return@runCatching null
                 // SimpleDateFormat is available on the complete minSdk range (24+).
                 // java.time would require core library desugaring on API 24/25.

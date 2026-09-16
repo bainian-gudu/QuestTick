@@ -18,6 +18,10 @@ import javax.inject.Singleton
 
 private const val MINIMUM_SCHEDULE_DELAY_MS = 60_000L
 private const val MAXIMUM_SCHEDULE_JITTER_MS = 30L * 60 * 1000
+private const val MAX_SCHEDULE_HOUR = 23
+private const val MAX_SCHEDULE_MINUTE = 59
+private const val WORK_STATE_QUERY_TIMEOUT_SECONDS = 10L
+private const val INITIAL_BACKOFF_MINUTES = 5L
 
 internal fun computeScheduleTargetMillis(
     hour: Int,
@@ -25,8 +29,8 @@ internal fun computeScheduleTargetMillis(
     nowMillis: Long = System.currentTimeMillis(),
     timeZone: TimeZone = TimeZone.getDefault(),
 ): Long {
-    val targetHour = hour.coerceIn(0, 23)
-    val targetMinute = minute.coerceIn(0, 59)
+    val targetHour = hour.coerceIn(0, MAX_SCHEDULE_HOUR)
+    val targetMinute = minute.coerceIn(0, MAX_SCHEDULE_MINUTE)
     val now = Calendar.getInstance(timeZone).apply { timeInMillis = nowMillis }
     val next =
         Calendar.getInstance(timeZone).apply {
@@ -88,8 +92,8 @@ class Scheduler
             hour: Int,
             minute: Int,
         ) {
-            val safeHour = hour.coerceIn(0, 23)
-            val safeMinute = minute.coerceIn(0, 59)
+            val safeHour = hour.coerceIn(0, MAX_SCHEDULE_HOUR)
+            val safeMinute = minute.coerceIn(0, MAX_SCHEDULE_MINUTE)
             val metadataMatches =
                 context.getSharedPreferences(PREFERENCES_FILE, Context.MODE_PRIVATE).let { prefs ->
                     prefs.getInt(KEY_HOUR, -1) == safeHour &&
@@ -101,7 +105,7 @@ class Scheduler
                     WorkManager
                         .getInstance(context)
                         .getWorkInfosByTag(generationTag(currentGeneration()))
-                        .get(10, TimeUnit.SECONDS)
+                        .get(WORK_STATE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .any { info ->
                             info.state == WorkInfo.State.ENQUEUED ||
                                 info.state == WorkInfo.State.RUNNING ||
@@ -130,8 +134,8 @@ class Scheduler
             generation: Long,
         ): Boolean =
             generation == currentGeneration() &&
-                hour in 0..23 &&
-                minute in 0..59 &&
+                hour in 0..MAX_SCHEDULE_HOUR &&
+                minute in 0..MAX_SCHEDULE_MINUTE &&
                 timeZoneId == TimeZone.getDefault().id
 
         private suspend fun enqueueNext(
@@ -140,8 +144,8 @@ class Scheduler
             generation: Long,
             previousTargetAt: Long? = null,
         ) {
-            val safeHour = hour.coerceIn(0, 23)
-            val safeMinute = minute.coerceIn(0, 59)
+            val safeHour = hour.coerceIn(0, MAX_SCHEDULE_HOUR)
+            val safeMinute = minute.coerceIn(0, MAX_SCHEDULE_MINUTE)
             val now = scheduleClock.nowMillis()
             val zone = TimeZone.getDefault()
             val targetAt = computeNextTargetMillis(safeHour, safeMinute, now, zone, previousTargetAt)
@@ -170,7 +174,7 @@ class Scheduler
                     .setConstraints(constraints)
                     .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                     // 从 5 分钟开始指数退避；持久化 notBefore 继续限制网络故障与 HTTP 429 重放。
-                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 5, TimeUnit.MINUTES)
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, INITIAL_BACKOFF_MINUTES, TimeUnit.MINUTES)
                     .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
@@ -201,8 +205,8 @@ class Scheduler
                 Calendar.getInstance(timeZone).apply {
                     timeInMillis = previousTargetAt
                     add(Calendar.DAY_OF_MONTH, 1)
-                    set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
-                    set(Calendar.MINUTE, minute.coerceIn(0, 59))
+                    set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, MAX_SCHEDULE_HOUR))
+                    set(Calendar.MINUTE, minute.coerceIn(0, MAX_SCHEDULE_MINUTE))
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }

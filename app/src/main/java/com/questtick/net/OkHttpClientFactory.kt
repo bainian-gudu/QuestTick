@@ -11,12 +11,19 @@ import java.util.concurrent.TimeUnit
 
 /** 网络层工厂，集中提供 CertificatePinner 与 OkHttpClient。 */
 object OkHttpClientFactory {
-    private val cpuCores = Runtime.getRuntime().availableProcessors().coerceIn(2, 4)
+    private const val MAX_CPU_PARALLELISM = 4
+    private const val MAX_REQUESTS_PER_HOST = 3
+    private const val CONNECTION_POOL_SIZE = MAX_REQUESTS_PER_HOST
+    private const val CONNECTION_KEEP_ALIVE_SECONDS = 90L
+    private const val DEFAULT_TIMEOUT_SECONDS = 10L
+    private const val DEFAULT_CALL_TIMEOUT_SECONDS = 25L
+
+    private val cpuCores = Runtime.getRuntime().availableProcessors().coerceIn(2, MAX_CPU_PARALLELISM)
 
     private val connectionPool =
         ConnectionPool(
-            3,
-            90,
+            CONNECTION_POOL_SIZE,
+            CONNECTION_KEEP_ALIVE_SECONDS,
             TimeUnit.SECONDS,
         )
 
@@ -24,7 +31,7 @@ object OkHttpClientFactory {
         Dispatcher().apply {
             // 控制并发上限，避免后台任务在弱网或风控场景下过度堆积请求。
             maxRequests = cpuCores * 2
-            maxRequestsPerHost = 3
+            maxRequestsPerHost = MAX_REQUESTS_PER_HOST
         }
 
     fun provideCertificatePinner(): CertificatePinner = PinningManager.provideCertificatePinner()
@@ -36,10 +43,10 @@ object OkHttpClientFactory {
         val builder =
             OkHttpClient
                 .Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
-                .callTimeout(25, TimeUnit.SECONDS)
+                .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .callTimeout(DEFAULT_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 // 重定向由 TrustedRedirects 逐跳校验，禁止 OkHttp 在校验前自动发出下一跳请求。
                 .followRedirects(false)
                 .followSslRedirects(false)

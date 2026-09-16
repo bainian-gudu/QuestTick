@@ -29,6 +29,8 @@ import com.questtick.i18n.localizeText
 object Notifier {
     private const val CHANNEL_ID = "signin_results"
     private const val NOTIFY_ID = 1001
+    private const val MAX_RESULT_LINES = 8
+    private const val MAX_REASON_CHARS = 36
 
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -117,7 +119,7 @@ object Notifier {
             )
 
         val lines =
-            record.results.take(8).joinToString("\n") {
+            record.results.take(MAX_RESULT_LINES).joinToString("\n") {
                 val flag =
                     when {
                         it.failureCategory == FailureCategory.RESULT_UNKNOWN -> "⚠️"
@@ -131,7 +133,7 @@ object Notifier {
                 val reward = if (it.rewardName.isNotBlank()) " · ${it.rewardName}×${it.rewardCount}" else ""
                 val reason =
                     if ((it.skipped || !it.success) && it.message.isNotBlank()) {
-                        " · ${localizeText(it.message.take(36), language)}"
+                        " · ${localizeText(it.message.take(MAX_REASON_CHARS), language)}"
                     } else {
                         ""
                     }

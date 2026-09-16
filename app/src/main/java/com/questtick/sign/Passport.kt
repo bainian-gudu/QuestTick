@@ -9,6 +9,11 @@ import java.security.MessageDigest
  * 同时避免在日志中输出完整 ID。
  */
 object Passport {
+    private const val SHORT_ID_MAX_LENGTH = 6
+    private const val MEDIUM_ID_MAX_LENGTH = 8
+    private const val MASK_PREFIX_LENGTH = 3
+    private const val PASSPORT_HASH_LENGTH = 16
+
     private val passportKeys =
         listOf(
             "account_id",
@@ -64,9 +69,9 @@ object Passport {
         val text = value?.trim().orEmpty()
         if (text.isEmpty()) return ""
         return when {
-            text.length <= 6 -> "${text.take(2)}****"
-            text.length <= 8 -> "${text.take(3)}****${text.takeLast(2)}"
-            else -> "${text.take(3)}****${text.takeLast(3)}"
+            text.length <= SHORT_ID_MAX_LENGTH -> "${text.take(2)}****"
+            text.length <= MEDIUM_ID_MAX_LENGTH -> "${text.take(MASK_PREFIX_LENGTH)}****${text.takeLast(2)}"
+            else -> "${text.take(MASK_PREFIX_LENGTH)}****${text.takeLast(MASK_PREFIX_LENGTH)}"
         }
     }
 
@@ -75,7 +80,7 @@ object Passport {
         val text = value?.trim().orEmpty()
         if (text.isEmpty()) return ""
         val digest = MessageDigest.getInstance("SHA-256").digest(text.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }.take(16)
+        return digest.joinToString("") { "%02x".format(it) }.take(PASSPORT_HASH_LENGTH)
     }
 
     data class SafeInfo(
