@@ -184,11 +184,28 @@ internal object MysCoinCheckIn {
                 val state =
                     data.let {
                         val balance = findInt(it, "total_points", "totalPoints", "coin_balance", "coinBalance", "balance", "points")
-                        val receivedToday = findInt(it, "already_received_points", "alreadyReceivedPoints", "received_today", "receivedToday", "today_received_points")
+                        val receivedToday =
+                            findInt(
+                                it,
+                                "already_received_points",
+                                "alreadyReceivedPoints",
+                                "received_today",
+                                "receivedToday",
+                                "today_received_points",
+                            )
                         CoinState(
                             balance = balance ?: -1,
                             receivedToday = receivedToday,
-                            signDay = firstPositiveInt(it, "sign_day", "signDay", "total_sign_day", "totalSignDay", "continuous_days", "consecutive_days") ?: 0,
+                            signDay =
+                                firstPositiveInt(
+                                    it,
+                                    "sign_day",
+                                    "signDay",
+                                    "total_sign_day",
+                                    "totalSignDay",
+                                    "continuous_days",
+                                    "consecutive_days",
+                                ) ?: 0,
                         ).takeIf { value -> value.balance >= 0 }
                     }
                 StateRead(state, if (state == null) "http=${response.code}, retcode=$retcode, message=$message, 缺少有效余额字段" else "")

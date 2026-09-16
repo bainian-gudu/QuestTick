@@ -155,6 +155,14 @@ object Mailer {
                 ""
             }
 
+        val bodyStyle =
+            "margin:0;padding:16px;background:${DefaultMailPalette.PAGE_BACKGROUND};" +
+                "font-family:Arial,'Microsoft YaHei','PingFang SC',sans-serif;" +
+                "color:${DefaultMailPalette.TEXT};"
+        val headerBackgroundStyle =
+            "background:${DefaultMailPalette.PRIMARY};" +
+                "background:linear-gradient(135deg,${DefaultMailPalette.PRIMARY},${DefaultMailPalette.PRIMARY_LIGHT});"
+
         return """
             <!DOCTYPE html>
 <html lang="zh-CN">
@@ -162,14 +170,14 @@ object Mailer {
   <meta charset="UTF-8">
   <title>${escape(titleInfo.pageTitle)}</title>
 </head>
-<body style="margin:0;padding:16px;background:${DefaultMailPalette.PAGE_BACKGROUND};font-family:Arial,'Microsoft YaHei','PingFang SC',sans-serif;color:${DefaultMailPalette.TEXT};">
+<body style="$bodyStyle">
   <div
     style="max-width:720px;margin:0 auto;background:${DefaultMailPalette.SURFACE};
            border:1px solid ${DefaultMailPalette.PRIMARY_BORDER};border-radius:16px;padding:18px;
            box-shadow:0 4px 18px rgba(37,99,235,.10);">
 
     <div
-      style="background:${DefaultMailPalette.PRIMARY};background:linear-gradient(135deg,${DefaultMailPalette.PRIMARY},${DefaultMailPalette.PRIMARY_LIGHT});
+      style="$headerBackgroundStyle
              border-radius:13px;padding:16px 12px;text-align:center;color:${DefaultMailPalette.SURFACE};">
       <div style="font-size:19px;font-weight:bold;line-height:1.4;letter-spacing:.5px;">
         ${escape(titleInfo.mainTitle)}
@@ -608,7 +616,10 @@ object Mailer {
         return result.replace("lang=\"zh-CN\"", "lang=\"$languageTag\"")
     }
 
-    private fun isCloud(result: TaskResult): Boolean = result.gameKey == "CloudYS" || result.gameKey == "CloudSR" || result.game.startsWith("云")
+    private fun isCloud(result: TaskResult): Boolean =
+        result.gameKey == "CloudYS" ||
+            result.gameKey == "CloudSR" ||
+            result.game.startsWith("云")
 
     private fun escape(s: String): String =
         s

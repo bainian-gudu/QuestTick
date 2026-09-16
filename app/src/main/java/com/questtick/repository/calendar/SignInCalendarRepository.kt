@@ -4,6 +4,7 @@ import com.questtick.data.RunRecord
 import com.questtick.data.SecureStore
 import com.questtick.data.SignInCalendarDay
 import com.questtick.repository.base.StatefulRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -18,9 +19,12 @@ class SignInCalendarRepository
     ) : StatefulRepository<List<SignInCalendarDay>>(emptyList(), List<SignInCalendarDay>::isEmpty) {
         val days: StateFlow<List<SignInCalendarDay>> = state
 
-        override suspend fun loadFromStore(): List<SignInCalendarDay> = withContext(kotlinx.coroutines.Dispatchers.IO) { store.getSignInCalendarDays() }
+        override suspend fun loadFromStore(): List<SignInCalendarDay> = withContext(Dispatchers.IO) { store.getSignInCalendarDays() }
 
-        override suspend fun saveToStore(data: List<SignInCalendarDay>): Unit = throw UnsupportedOperationException("SignInCalendarRepository saves incrementally; use updateFromRecord()")
+        override suspend fun saveToStore(data: List<SignInCalendarDay>): Unit =
+            throw UnsupportedOperationException(
+                "SignInCalendarRepository saves incrementally; use updateFromRecord()",
+            )
 
         suspend fun updateFromRecord(record: RunRecord) {
             withContext(kotlinx.coroutines.Dispatchers.IO) { store.updateSignInCalendar(record) }

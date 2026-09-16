@@ -197,7 +197,10 @@ object CloudQRLogin {
                 }
             val retcode = json.optInt("retcode", DEFAULT_RETCODE)
             if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX || retcode != 0) {
-                recordError?.invoke("$gameKey queryQRLoginStatus http=${response.code}, retcode=$retcode, message=${json.optString("message")}")
+                recordError?.invoke(
+                    "$gameKey queryQRLoginStatus http=${response.code}, retcode=$retcode, " +
+                        "message=${json.optString("message")}",
+                )
             }
 
             val data = json.optJSONObject("data")

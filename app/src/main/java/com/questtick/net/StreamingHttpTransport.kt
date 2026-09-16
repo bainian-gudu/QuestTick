@@ -77,7 +77,9 @@ class HttpResponseStream internal constructor(
         return bytesRead
     }
 
-    override fun toString(): String = "HttpResponseStream(code=$code, contentLength=$contentLength, bytesRead=$bytesRead, sensitiveFields=redacted)"
+    override fun toString(): String =
+        "HttpResponseStream(code=$code, contentLength=$contentLength, " +
+            "bytesRead=$bytesRead, sensitiveFields=redacted)"
 }
 
 /** 大响应的可注入流式传输边界；响应流不会逃逸出回调作用域。 */
