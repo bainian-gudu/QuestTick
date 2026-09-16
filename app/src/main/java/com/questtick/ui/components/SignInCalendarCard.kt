@@ -44,6 +44,9 @@ import java.util.Locale
 import java.util.TimeZone
 
 private const val MILLIS_PER_DAY = 86_400_000L
+private const val CALENDAR_COLUMNS = 7
+private const val CALENDAR_WEEKDAY_OFFSET = 5
+private const val CALENDAR_MAX_CELLS = 42
 
 /** 首页签到日历：按月展示每日签到状态。 */
 @Composable
@@ -277,16 +280,16 @@ private fun buildCalendarUi(
     val daysInMonth = monthStart.getActualMaximum(Calendar.DAY_OF_MONTH)
     val firstDayOfWeek = monthStart.get(Calendar.DAY_OF_WEEK)
     // 日历以周一为第一列：Mon=0 ... Sun=6。
-    val leadingBlanks = (firstDayOfWeek + 5) % 7
+    val leadingBlanks = (firstDayOfWeek + CALENDAR_WEEKDAY_OFFSET) % CALENDAR_COLUMNS
 
-    val cells = ArrayList<CalendarDayUi?>(42)
+    val cells = ArrayList<CalendarDayUi?>(CALENDAR_MAX_CELLS)
     repeat(leadingBlanks) { cells.add(null) }
     for (day in 1..daysInMonth) {
         val key = dayKey(year, month, day)
         val (status, tasks) = statusByDay[key] ?: (DayStatus.None to 0)
         cells.add(CalendarDayUi(day, status, tasks, key == todayKey))
     }
-    while (cells.size % 7 != 0) cells.add(null)
+    while (cells.size % CALENDAR_COLUMNS != 0) cells.add(null)
 
     val signedKeysThisMonth =
         (1..daysInMonth).count { day ->
@@ -307,7 +310,7 @@ private fun buildCalendarUi(
         monthTitle = java.text.SimpleDateFormat("yyyy/MM", Locale.ROOT).format(monthStart.time),
         signedDays = signedKeysThisMonth,
         streakDays = streak,
-        rows = cells.chunked(7),
+        rows = cells.chunked(CALENDAR_COLUMNS),
     )
 }
 

@@ -27,6 +27,24 @@ data class TaskFailureDescriptor(
 
 /** 将接口错误码、HTTP 状态和异常统一转换为稳定失败类别。 */
 internal object TaskFailureClassifier {
+    private const val RETCODE_AUTH_EXPIRED = -100
+    private const val RETCODE_AUTH_EXPIRED_RELOGIN = -101
+    private const val RETCODE_AUTH_EXPIRED_ACCOUNT = 10001
+    private const val RETCODE_AUTH_EXPIRED_ACCOUNT_ALT = 10103
+    private const val RETCODE_NO_ROLE = 1008
+    private const val RETCODE_CAPTCHA_REQUIRED = 1034
+    private const val RETCODE_CAPTCHA_REQUIRED_ALT = 5003
+    private const val RETCODE_RATE_LIMITED = -1004
+    private const val RETCODE_SERVER_ERROR = -502
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
+    private const val HTTP_UNAUTHORIZED = 401
+    private const val HTTP_FORBIDDEN = 403
+    private const val HTTP_REQUEST_TIMEOUT = 408
+    private const val HTTP_TOO_MANY_REQUESTS = 429
+    private const val HTTP_SERVER_ERROR_MIN = 500
+    private const val HTTP_SERVER_ERROR_MAX = 599
+
     @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
     fun classify(
         success: Boolean,
@@ -114,23 +132,29 @@ internal object TaskFailureClassifier {
 
     fun fromRetcode(retcode: Int): TaskFailureDescriptor =
         when (retcode) {
-            -100, -101, 10001, 10103 -> {
+            RETCODE_AUTH_EXPIRED,
+            RETCODE_AUTH_EXPIRED_RELOGIN,
+            RETCODE_AUTH_EXPIRED_ACCOUNT,
+            RETCODE_AUTH_EXPIRED_ACCOUNT_ALT,
+            -> {
                 TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED, "retcode:$retcode")
             }
 
-            1008 -> {
+            RETCODE_NO_ROLE -> {
                 TaskFailureDescriptor(FailureCategory.NO_ROLE, "retcode:$retcode")
             }
 
-            1034, 5003 -> {
+            RETCODE_CAPTCHA_REQUIRED,
+            RETCODE_CAPTCHA_REQUIRED_ALT,
+            -> {
                 TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode")
             }
 
-            -1004 -> {
+            RETCODE_RATE_LIMITED -> {
                 TaskFailureDescriptor(FailureCategory.RATE_LIMITED, "retcode:$retcode", retryable = true)
             }
 
-            -502 -> {
+            RETCODE_SERVER_ERROR -> {
                 TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "retcode:$retcode", retryable = true)
             }
 
@@ -143,16 +167,32 @@ internal object TaskFailureClassifier {
         httpCode: Int,
         retcode: Int,
     ): TaskFailureDescriptor =
-        (if (httpCode !in 200..299) fromHttpCode(httpCode) else fromRetcode(retcode))
+        (if (httpCode !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) fromHttpCode(httpCode) else fromRetcode(retcode))
             .copy(retryable = false)
 
     fun fromHttpCode(code: Int): TaskFailureDescriptor =
         when (code) {
-            401, 403 -> TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED, "http:$code")
-            408 -> TaskFailureDescriptor(FailureCategory.NETWORK_TIMEOUT, "http:$code", retryable = true)
-            429 -> TaskFailureDescriptor(FailureCategory.RATE_LIMITED, "http:$code", retryable = true)
-            in 500..599 -> TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "http:$code", retryable = true)
-            else -> TaskFailureDescriptor(FailureCategory.HTTP_ERROR, "http:$code")
+            HTTP_UNAUTHORIZED,
+            HTTP_FORBIDDEN,
+            -> {
+                TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED, "http:$code")
+            }
+
+            HTTP_REQUEST_TIMEOUT -> {
+                TaskFailureDescriptor(FailureCategory.NETWORK_TIMEOUT, "http:$code", retryable = true)
+            }
+
+            HTTP_TOO_MANY_REQUESTS -> {
+                TaskFailureDescriptor(FailureCategory.RATE_LIMITED, "http:$code", retryable = true)
+            }
+
+            in HTTP_SERVER_ERROR_MIN..HTTP_SERVER_ERROR_MAX -> {
+                TaskFailureDescriptor(FailureCategory.SERVER_ERROR, "http:$code", retryable = true)
+            }
+
+            else -> {
+                TaskFailureDescriptor(FailureCategory.HTTP_ERROR, "http:$code")
+            }
         }
 
     fun fromException(error: Throwable?): TaskFailureDescriptor =
