@@ -186,19 +186,6 @@
     <ID>MagicNumber:ActId.kt$ActId$443</ID>
     <ID>MagicNumber:ActId.kt$ActId$6</ID>
     <ID>MagicNumber:ActId.kt$ActId$8</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$100</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10001</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10002</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10003</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10004</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10005</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10006</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10007</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$10008</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$1001</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$1002</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$1034</ID>
-    <ID>MagicNumber:ActIdInvalid.kt$ActIdInvalid$500001</ID>
     <ID>MagicNumber:AnimatedSwitch.kt$0xFF2C2747</ID>
     <ID>MagicNumber:AnimatedSwitch.kt$0xFFB8C0CC</ID>
     <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF0B1120</ID>
@@ -234,17 +221,6 @@
     <ID>MagicNumber:AuthRepository.kt$AuthRepository$50</ID>
     <ID>MagicNumber:CloudAppVersionFetcher.kt$CloudAppVersionFetcher$200</ID>
     <ID>MagicNumber:CloudAppVersionFetcher.kt$CloudAppVersionFetcher$299</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$0xff</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$1.25</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$16</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$160</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$200</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$299</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$3501</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$3505</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$500L</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$600L</ID>
-    <ID>MagicNumber:CloudQRLogin.kt$CloudQRLogin$999</ID>
     <ID>MagicNumber:CloudSignExecutor.kt$CloudSignExecutor$1000L</ID>
     <ID>MagicNumber:CloudSignExecutor.kt$CloudSignExecutor$5</ID>
     <ID>MagicNumber:CloudSignIn.kt$CloudSignIn$200</ID>
@@ -257,17 +233,6 @@
     <ID>MagicNumber:CrashHandler.kt$CrashHandler$10</ID>
     <ID>MagicNumber:CryptoStore.kt$CryptoStore$256</ID>
     <ID>MagicNumber:Ds.kt$Ds$1000</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$100</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$10001</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$1004</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$1008</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$101</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$10103</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$1034</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$4</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$5003</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$502</ID>
-    <ID>MagicNumber:ErrorText.kt$ErrorText$8</ID>
     <ID>MagicNumber:Games.kt$Games$0xFF0891B2</ID>
     <ID>MagicNumber:Games.kt$Games$0xFF10B981</ID>
     <ID>MagicNumber:Games.kt$Games$0xFF38BDF8</ID>
@@ -332,16 +297,6 @@
     <ID>MagicNumber:PostRunActionRepository.kt$PostRunActionRepository$10</ID>
     <ID>MagicNumber:PostRunActionRepository.kt$PostRunActionRepository$80</ID>
     <ID>MagicNumber:PostRunActionScheduler.kt$PostRunActionScheduler$30L</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$1.25</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$160</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$200</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$299</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$3501</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$3505</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$500L</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$53</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$600L</ID>
-    <ID>MagicNumber:QRLoginManager.kt$QRLoginManager$999</ID>
     <ID>MagicNumber:QrLoginScaffold.kt$0.3f</ID>
     <ID>MagicNumber:QuestTickApp.kt$QuestTickApp$0.18</ID>
     <ID>MagicNumber:QuestTickApp.kt$QuestTickApp$1024</ID>

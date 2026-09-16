@@ -43,6 +43,17 @@ object QRLoginManager {
         "https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket"
 
     private const val MAX_QR_RESPONSE_BYTES = 1024 * 1024
+    private const val DEFAULT_RETCODE = -999
+    private const val HTTP_SUCCESS_MIN = 200
+    private const val HTTP_SUCCESS_MAX = 299
+    private const val QR_RETCODE_EXPIRED = -3501
+    private const val QR_RETCODE_CANCELLED = -3505
+    private const val MIN_POLL_INTERVAL_MS = 500L
+    private const val SCANNED_POLL_INTERVAL_MS = 600L
+    private const val POLL_JITTER_MAX_MS = 160L
+    private const val POLL_BACKOFF_MULTIPLIER = 1.25
+    private const val POLL_MAX_ATTEMPTS = 160
+    private const val QR_DEVICE_ID_LENGTH = 53
 
     data class QRCode(
         val ticket: String,
@@ -89,7 +100,7 @@ object QRLoginManager {
             val headers = qrPassportHeaders(deviceId)
             val resp = httpTransport.postJson(CREATE_URL, headers, JSONObject())
             val json = resp.json()
-            val retcode = json.optInt("retcode", -999)
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
             if (retcode != 0) {
                 recordError?.invoke("createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
                 AppLog.w(TAG, "createQRCode failed: retcode=$retcode")
@@ -141,8 +152,8 @@ object QRLoginManager {
                     )
                     JSONObject()
                 }
-            val retcode = json.optInt("retcode", -999)
-            if (response.code !in 200..299 || retcode != 0) {
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
+            if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX || retcode != 0) {
                 recordError?.invoke("queryQRLoginStatus http=${response.code}, retcode=$retcode, message=${json.optString("message")}")
             }
 
@@ -179,7 +190,7 @@ object QRLoginManager {
     ): Flow<ScanStatus> =
         flow {
             var attempts = 0
-            var currentInterval = intervalMs.coerceAtLeast(500L)
+            var currentInterval = intervalMs.coerceAtLeast(MIN_POLL_INTERVAL_MS)
             while (true) {
                 val status = queryStatus(ticket, deviceId, httpTransport, recordError)
                 emit(status)
@@ -195,12 +206,12 @@ object QRLoginManager {
                     // 终态，结束轮询。
                     else -> {
                         attempts++
-                        val waitMs = if (status is ScanStatus.Scanned) 600L else currentInterval
-                        val jitter = kotlin.random.Random.nextLong(0, 160)
+                        val waitMs = if (status is ScanStatus.Scanned) SCANNED_POLL_INTERVAL_MS else currentInterval
+                        val jitter = kotlin.random.Random.nextLong(0, POLL_JITTER_MAX_MS)
                         delay(waitMs + jitter)
-                        currentInterval = (currentInterval * 1.25).toLong().coerceAtMost(maxIntervalMs)
+                        currentInterval = (currentInterval * POLL_BACKOFF_MULTIPLIER).toLong().coerceAtMost(maxIntervalMs)
                         // 二维码通常 180s 过期，超时主动结束防止无限轮询。
-                        if (attempts >= 160) {
+                        if (attempts >= POLL_MAX_ATTEMPTS) {
                             emit(ScanStatus.Error("轮询超时，请刷新二维码重试"))
                             return@flow
                         }
@@ -216,8 +227,8 @@ object QRLoginManager {
         confirmed: ScanStatus,
     ): ScanStatus =
         when {
-            retcode == -3501 -> ScanStatus.Expired
-            retcode == -3505 -> ScanStatus.Cancelled
+            retcode == QR_RETCODE_EXPIRED -> ScanStatus.Expired
+            retcode == QR_RETCODE_CANCELLED -> ScanStatus.Cancelled
             retcode != 0 -> ScanStatus.Error(message.ifBlank { "retcode=$retcode" })
             dataStatus == "Created" -> ScanStatus.Created
             dataStatus == "Scanned" -> ScanStatus.Scanned
@@ -439,7 +450,7 @@ object QRLoginManager {
                 )
             val resp = httpTransport.get(url, headers)
             val json = resp.json()
-            val retcode = json.optInt("retcode", -999)
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
             if (retcode != 0) {
                 recordError?.invoke("getMultiTokenByLoginTicket http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
                 return Result.failure(
@@ -491,8 +502,8 @@ object QRLoginManager {
     private fun normalizeQrDeviceId(deviceId: String): String {
         val seed = deviceId.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }.ifBlank { "mysqrcode" }
         return buildString {
-            while (length < 53) append(seed)
-        }.take(53)
+            while (length < QR_DEVICE_ID_LENGTH) append(seed)
+        }.take(QR_DEVICE_ID_LENGTH)
     }
 
     private suspend fun fetchMysUserNickname(
@@ -508,7 +519,7 @@ object QRLoginManager {
                     MysHeaders.account(""),
                 )
             val json = resp.json()
-            if (json.optInt("retcode", -999) == 0) parseMysUserNickname(json) else ""
+            if (json.optInt("retcode", DEFAULT_RETCODE) == 0) parseMysUserNickname(json) else ""
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("二维码账号昵称获取失败: ${ErrorText.detailOf(e)}")

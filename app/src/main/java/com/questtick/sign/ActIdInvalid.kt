@@ -6,8 +6,22 @@ package com.questtick.sign
  * 规则保持保守，避免把登录过期、风控验证码、角色不存在等问题误判为 act_id 失效。
  */
 object ActIdInvalid {
+    private const val RETCODE_ACT_ID_INVALID = -500001
+    private const val RETCODE_ACT_ID_INVALID_ONE = 1001
+    private const val RETCODE_ACT_ID_INVALID_TWO = 1002
+    private const val RETCODE_NOT_ACT_ID_AUTH = -100
+    private const val RETCODE_NOT_ACT_ID_ONE = -10001
+    private const val RETCODE_NOT_ACT_ID_TWO = -10002
+    private const val RETCODE_NOT_ACT_ID_THREE = -10003
+    private const val RETCODE_NOT_ACT_ID_FOUR = -10004
+    private const val RETCODE_NOT_ACT_ID_FIVE = -10005
+    private const val RETCODE_NOT_ACT_ID_SIX = -10006
+    private const val RETCODE_NOT_ACT_ID_SEVEN = -10007
+    private const val RETCODE_NOT_ACT_ID_EIGHT = -10008
+    private const val RETCODE_CAPTCHA_REQUIRED = 1034
+
     /** 可视为 act_id 疑似失效的 retcode。 */
-    private val INVALID_RETCODES = setOf(-500001, 1001, 1002)
+    private val INVALID_RETCODES = setOf(RETCODE_ACT_ID_INVALID, RETCODE_ACT_ID_INVALID_ONE, RETCODE_ACT_ID_INVALID_TWO)
 
     /**
      * 明确不属于 act_id 失效的 retcode。
@@ -17,16 +31,16 @@ object ActIdInvalid {
         setOf(
             0,
             -1,
-            -100,
-            -10001,
-            -10002,
-            -10003,
-            -10004,
-            -10005,
-            -10006,
-            -10007,
-            -10008,
-            1034,
+            RETCODE_NOT_ACT_ID_AUTH,
+            RETCODE_NOT_ACT_ID_ONE,
+            RETCODE_NOT_ACT_ID_TWO,
+            RETCODE_NOT_ACT_ID_THREE,
+            RETCODE_NOT_ACT_ID_FOUR,
+            RETCODE_NOT_ACT_ID_FIVE,
+            RETCODE_NOT_ACT_ID_SIX,
+            RETCODE_NOT_ACT_ID_SEVEN,
+            RETCODE_NOT_ACT_ID_EIGHT,
+            RETCODE_CAPTCHA_REQUIRED,
         )
 
     /** 与 act_id 无关的错误特征，例如登录态、风控、角色或 DS 问题。 */

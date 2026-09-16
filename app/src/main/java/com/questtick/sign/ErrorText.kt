@@ -20,6 +20,18 @@ import javax.net.ssl.SSLException
 
 /** 将底层异常与米游社 retcode 转换为中文提示，同时保留详细日志所需的技术细节。 */
 object ErrorText {
+    private const val RETCODE_AUTH_EXPIRED = -100
+    private const val RETCODE_AUTH_EXPIRED_RELOGIN = -101
+    private const val RETCODE_AUTH_EXPIRED_ACCOUNT = 10001
+    private const val RETCODE_AUTH_EXPIRED_ACCOUNT_ALT = 10103
+    private const val RETCODE_NO_ROLE = 1008
+    private const val RETCODE_CAPTCHA_REQUIRED = 1034
+    private const val RETCODE_CAPTCHA_REQUIRED_ALT = 5003
+    private const val RETCODE_RATE_LIMITED = -1004
+    private const val RETCODE_SERVER_ERROR = -502
+    private const val DETAIL_CAUSE_INITIAL_CAPACITY = 4
+    private const val DETAIL_CAUSE_LIMIT = 8
+
     /** 将异常转换为用户可读的中文提示。 */
     fun fromException(e: Throwable?): String =
         when (e) {
@@ -150,10 +162,10 @@ object ErrorText {
         includeStackTrace: Boolean = false,
     ): String {
         if (e == null) return ""
-        val causes = ArrayList<String>(4)
+        val causes = ArrayList<String>(DETAIL_CAUSE_INITIAL_CAPACITY)
         val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
         var current: Throwable? = e
-        while (current != null && seen.add(current) && causes.size < 8) {
+        while (current != null && seen.add(current) && causes.size < DETAIL_CAUSE_LIMIT) {
             val name = current.javaClass.name
             val message = current.message.orEmpty()
             causes += if (message.isBlank()) name else "$name: $message"
@@ -170,11 +182,22 @@ object ErrorText {
      */
     fun fromRetcode(retcode: Int): String? =
         when (retcode) {
-            -100, -101, 10001, 10103 -> "登录状态已失效，请重新获取并填写 Cookie"
-            1008 -> "该账号未绑定此游戏角色"
-            1034, 5003 -> "触发风控校验，需要手动完成验证码，请前往米游社 App 手动签到一次"
-            -1004 -> "操作过于频繁，请稍后重试"
-            -502 -> "米游社服务器繁忙，请稍后重试"
+            RETCODE_AUTH_EXPIRED,
+            RETCODE_AUTH_EXPIRED_RELOGIN,
+            RETCODE_AUTH_EXPIRED_ACCOUNT,
+            RETCODE_AUTH_EXPIRED_ACCOUNT_ALT,
+            -> "登录状态已失效，请重新获取并填写 Cookie"
+
+            RETCODE_NO_ROLE -> "该账号未绑定此游戏角色"
+
+            RETCODE_CAPTCHA_REQUIRED,
+            RETCODE_CAPTCHA_REQUIRED_ALT,
+            -> "触发风控校验，需要手动完成验证码，请前往米游社 App 手动签到一次"
+
+            RETCODE_RATE_LIMITED -> "操作过于频繁，请稍后重试"
+
+            RETCODE_SERVER_ERROR -> "米游社服务器繁忙，请稍后重试"
+
             else -> null
         }
 }
