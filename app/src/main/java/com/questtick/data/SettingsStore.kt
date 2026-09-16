@@ -74,9 +74,7 @@ internal class SettingsStore(
                 .putString("cloudSrVersion", settings.cloudSrVersion.trim())
                 .putBoolean("cloudVersionAutoFetch", settings.cloudVersionAutoFetch)
                 .commitSafely(TAG, "save app settings")
-        if (!success) {
-            throw IllegalStateException("Failed to save app settings: plain commit returned false")
-        }
+        check(success) { "Failed to save app settings: plain commit returned false" }
         cache = settings
     }
 

@@ -85,7 +85,7 @@ fun HomeThemeDashboard(
                 .padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            DashboardHeader(theme = theme, running = running, hasAccounts = totalAccounts > 0)
+            DashboardHeader(running = running, hasAccounts = totalAccounts > 0)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 DashboardTimeBlock(
                     clockText = clockText,
@@ -112,7 +112,6 @@ fun HomeThemeDashboard(
 
 @Composable
 private fun DashboardHeader(
-    theme: AppUiThemePalette,
     running: Boolean,
     hasAccounts: Boolean,
 ) {

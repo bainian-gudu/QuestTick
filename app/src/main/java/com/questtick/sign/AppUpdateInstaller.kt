@@ -248,9 +248,7 @@ object AppUpdateInstaller {
                         callTimeoutMillis = 60_000,
                     ),
             )
-        val output = tmp.outputStream().buffered(256 * 1024)
-        var failure: Throwable? = null
-        try {
+        tmp.outputStream().buffered(256 * 1024).use { output ->
             streamingHttpTransport.executeStreaming(request) { response ->
                 if (response.code !in 200..299) {
                     throw UpdateCandidateHttpException(response.code)
@@ -269,20 +267,6 @@ object AppUpdateInstaller {
                 output.flush()
                 onProgress(downloadedBytes, totalBytes.coerceAtLeast(downloadedBytes))
                 Unit
-            }
-        } catch (error: Throwable) {
-            failure = error
-            throw error
-        } finally {
-            try {
-                output.close()
-            } catch (closeError: java.io.IOException) {
-                if (failure is kotlinx.coroutines.CancellationException) {
-                    failure.addSuppressed(closeError)
-                    throw failure
-                }
-                failure?.let(closeError::addSuppressed)
-                throw closeError
             }
         }
     }

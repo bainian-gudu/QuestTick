@@ -2,6 +2,7 @@ package com.questtick.sign
 
 import org.json.JSONObject
 import java.security.MessageDigest
+import java.util.Locale
 import kotlin.random.Random
 
 /**
@@ -41,7 +42,7 @@ object Ds {
 
     private fun md5(input: String): String {
         val bytes = MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { "%02x".format(it) }
+        return bytes.joinToString("") { String.format(Locale.ROOT, "%02x", it) }
     }
 
     private fun randomString(length: Int): String = (1..length).map { CHARS[Random.nextInt(CHARS.length)] }.joinToString("")
@@ -220,7 +221,7 @@ object Ds {
 
                 else -> {
                     if (c < ' ') {
-                        sb.append(String.format("\\u%04x", c.code))
+                        sb.append(String.format(Locale.ROOT, "\\u%04x", c.code))
                     } else {
                         sb.append(c)
                     }

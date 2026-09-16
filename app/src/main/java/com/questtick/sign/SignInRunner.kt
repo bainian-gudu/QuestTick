@@ -616,9 +616,10 @@ class SignInRunner(
                                         )
                                     } catch (e: CancellationException) {
                                         throw e
+                                    } catch (e: RunPersistenceException) {
+                                        throw e
                                     } catch (e: Exception) {
                                         e.throwIfCancellation()
-                                        if (e is RunPersistenceException) throw e
                                         log(
                                             "ERROR",
                                             "[${acc.label}] 账号处理异常终止",
@@ -654,9 +655,10 @@ class SignInRunner(
                             )
                         } catch (e: CancellationException) {
                             throw e
+                        } catch (e: RunPersistenceException) {
+                            throw e
                         } catch (e: Exception) {
                             e.throwIfCancellation()
-                            if (e is RunPersistenceException) throw e
                             log(
                                 "ERROR",
                                 "[${acc.label}] 账号处理异常终止",

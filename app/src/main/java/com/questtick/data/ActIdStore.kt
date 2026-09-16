@@ -9,7 +9,7 @@ internal class ActIdStore(
     private val prefs: SharedPreferences,
     private val key: String,
 ) {
-    @Volatile private var cache: MutableMap<String, String>? = null
+    @Volatile private var cache: Map<String, String>? = null
     private val lock = Any()
 
     fun get(): MutableMap<String, String> =
@@ -40,7 +40,7 @@ internal class ActIdStore(
                 AppLog.w(TAG, "Failed to clear act_id cache, keeping existing in-memory cache")
                 return@synchronized
             }
-            cache = mutableMapOf()
+            cache = emptyMap()
             return@synchronized
         }
         val trimmed =
@@ -60,7 +60,7 @@ internal class ActIdStore(
             AppLog.w(TAG, "Failed to save act_id cache, keeping existing in-memory cache")
             return@synchronized
         }
-        cache = trimmed.toMutableMap()
+        cache = trimmed.toMap()
     }
 
     companion object {
