@@ -47,5 +47,9 @@ object AppUpdateNetwork {
         }
 
     /** 只返回官方 GitHub URL，供检查器和安装器统一处理候选地址。 */
-    fun buildCandidateUrls(originalUrl: String): List<String> = originalUrl.takeIf(TrustedUrlPolicy::isUpdateSourceUrl)?.let { listOf(it) }.orEmpty()
+    fun buildCandidateUrls(originalUrl: String): List<String> =
+        originalUrl
+            .takeIf(TrustedUrlPolicy::isUpdateSourceUrl)
+            ?.let { listOf(it) }
+            .orEmpty()
 }

@@ -84,7 +84,21 @@ import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.SettingsViewModel
 
-private enum class SettingsPage { None, Schedule, Mail, Device, ActId, Experiment, MysVersion, CloudVersion, Security, Appearance, Language, Cache, About }
+private enum class SettingsPage {
+    None,
+    Schedule,
+    Mail,
+    Device,
+    ActId,
+    Experiment,
+    MysVersion,
+    CloudVersion,
+    Security,
+    Appearance,
+    Language,
+    Cache,
+    About,
+}
 
 @Composable
 fun SettingsScreen(

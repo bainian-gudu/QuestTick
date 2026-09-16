@@ -57,7 +57,11 @@ class TrustedUrlPolicyTest {
         assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/other/QuestTick/releases/latest"))
         assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=100"))
         assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com/repos/bainian-gudu/QuestTick/releases?per_page=20&x=1"))
-        assertFalse(TrustedUrlPolicy.isUpdateMetadataUrl("https://api.github.com.evil.example/repos/bainian-gudu/QuestTick/releases/latest"))
+        assertFalse(
+            TrustedUrlPolicy.isUpdateMetadataUrl(
+                "https://api.github.com.evil.example/repos/bainian-gudu/QuestTick/releases/latest",
+            ),
+        )
     }
 
     @Test
@@ -68,7 +72,11 @@ class TrustedUrlPolicyTest {
         assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/other/QuestTick/releases/download/v1/app.apk"))
         assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com/bainian-gudu/QuestTick/archive/main.zip"))
         assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://objects.githubusercontent.com/github-production-release-asset/app.apk"))
-        assertFalse(TrustedUrlPolicy.isUpdateAssetUrl("https://github.com.evil.example/bainian-gudu/QuestTick/releases/download/v1/app.apk"))
+        assertFalse(
+            TrustedUrlPolicy.isUpdateAssetUrl(
+                "https://github.com.evil.example/bainian-gudu/QuestTick/releases/download/v1/app.apk",
+            ),
+        )
     }
 
     @Test

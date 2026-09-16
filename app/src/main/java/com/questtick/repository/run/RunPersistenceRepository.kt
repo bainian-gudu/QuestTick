@@ -117,10 +117,16 @@ class RunPersistenceRepository
             check(activeRunIds.add(runId)) { "Run is already active in this process: $runId" }
         }
 
-        fun uncertainTaskIdsForDay(timestamp: Long): Set<String> = calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_RESULT_UNKNOWN).toSet()
+        fun uncertainTaskIdsForDay(timestamp: Long): Set<String> =
+            calendarDao
+                .getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_RESULT_UNKNOWN)
+                .toSet()
 
         /** 返回当天已经确认成功的任务，供定时签到跳过手动完成的任务。 */
-        fun signedTaskIdsForDay(timestamp: Long): Set<String> = calendarDao.getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_SIGNED).toSet()
+        fun signedTaskIdsForDay(timestamp: Long): Set<String> =
+            calendarDao
+                .getTaskIdsByStatus(dayKey(timestamp), CALENDAR_TASK_STATUS_SIGNED)
+                .toSet()
 
         fun isTaskRunning(
             runId: String,
@@ -439,7 +445,11 @@ class RunPersistenceRepository
                                 now,
                             )
                             val interruptedPrefix =
-                                if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) "process-interrupted" else "internal-error"
+                                if (terminationReason == RunTerminationReason.PROCESS_INTERRUPTED) {
+                                    "process-interrupted"
+                                } else {
+                                    "internal-error"
+                                }
                             runDao.transitionUnfinishedAttempts(
                                 runId = run.runId,
                                 expectedStatuses = listOf(ATTEMPT_STATUS_RUNNING),

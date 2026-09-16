@@ -223,4 +223,9 @@ private fun remainingFetchingMillis(startedAtNanos: Long): Long {
 }
 
 @Composable
-private fun settingsPageInsets() = WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
+private fun settingsPageInsets() =
+    WindowInsets.statusBars.union(
+        WindowInsets.displayCutout.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
+        ),
+    )

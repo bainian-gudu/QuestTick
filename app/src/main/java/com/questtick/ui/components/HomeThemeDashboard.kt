@@ -290,12 +290,33 @@ fun HomeThemeProgressCard(
         progress.phase == RunProgressPhase.BLOCKED && progress.message == RootBlockMessages.CHECK_FAILED_CONTENT
     val headline =
         when (progress.phase) {
-            RunProgressPhase.FINISHED -> "签到完成"
-            RunProgressPhase.BLOCKED -> if (isRootCheckFailedBlock) RootBlockMessages.CHECK_FAILED_TITLE else RootBlockMessages.DETECTED_TITLE
-            RunProgressPhase.CANCELLED -> "签到已取消"
-            RunProgressPhase.FAILED -> "签到异常结束"
-            RunProgressPhase.CHECKING -> "正在检查运行环境"
-            else -> "签到进行中"
+            RunProgressPhase.FINISHED -> {
+                "签到完成"
+            }
+
+            RunProgressPhase.BLOCKED -> {
+                if (isRootCheckFailedBlock) {
+                    RootBlockMessages.CHECK_FAILED_TITLE
+                } else {
+                    RootBlockMessages.DETECTED_TITLE
+                }
+            }
+
+            RunProgressPhase.CANCELLED -> {
+                "签到已取消"
+            }
+
+            RunProgressPhase.FAILED -> {
+                "签到异常结束"
+            }
+
+            RunProgressPhase.CHECKING -> {
+                "正在检查运行环境"
+            }
+
+            else -> {
+                "签到进行中"
+            }
         }
     val subtitle =
         when (progress.phase) {

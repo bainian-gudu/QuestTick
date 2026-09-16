@@ -22,9 +22,17 @@ class MysCoinCheckInTest {
                         HttpMethod.GET -> {
                             stateReads++
                             if (stateReads == 1) {
-                                HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\",\"data\":{\"total_points\":100,\"already_received_points\":0}}")
+                                HttpResponse.text(
+                                    200,
+                                    "{\"retcode\":0,\"message\":\"OK\",\"data\":{" +
+                                        "\"total_points\":100,\"already_received_points\":0}}",
+                                )
                             } else {
-                                HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\",\"data\":{\"total_points\":130,\"already_received_points\":30}}")
+                                HttpResponse.text(
+                                    200,
+                                    "{\"retcode\":0,\"message\":\"OK\",\"data\":{" +
+                                        "\"total_points\":130,\"already_received_points\":30}}",
+                                )
                             }
                         }
 
@@ -143,7 +151,13 @@ class MysCoinCheckInTest {
                     HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\"}")
                 }
 
-            val outcome = MysCoinCheckIn.run("stoken=s; mid=m; stuid=1; ltoken=l; account_id=1; cookie_token=test", "DEVICE-ID", "2.109.0", transport)
+            val outcome =
+                MysCoinCheckIn.run(
+                    "stoken=s; mid=m; stuid=1; ltoken=l; account_id=1; cookie_token=test",
+                    "DEVICE-ID",
+                    "2.109.0",
+                    transport,
+                )
 
             assertTrue(outcome.success)
             assertFalse(outcome.alreadyDone)

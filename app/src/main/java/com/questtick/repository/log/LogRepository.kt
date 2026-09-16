@@ -87,7 +87,9 @@ class LogRepository
                 LogExporter.buildBytes(logs.value, verbose, format, language)
             }
 
-        fun suggestExportFileName(format: LogExporter.ExportFormat = LogExporter.ExportFormat.TXT): String = LogExporter.suggestFileName(format = format)
+        fun suggestExportFileName(
+            format: LogExporter.ExportFormat = LogExporter.ExportFormat.TXT,
+        ): String = LogExporter.suggestFileName(format = format)
 
         suspend fun exportAndShare(
             verbose: Boolean,

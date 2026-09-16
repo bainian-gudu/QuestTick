@@ -164,20 +164,28 @@ internal fun buildLogGroups(
         currentIsRun = false
     }
 
-    entries.sortedWith(compareBy<ProcessedLogEntry>({ it.timestamp }, { it.level }, { it.safeMessage }, { it.safeDetail })).forEach { entry ->
-        if (current.isNotEmpty() && entry.dateKey != current.first().dateKey) {
-            flush()
+    entries
+        .sortedWith(
+            compareBy<ProcessedLogEntry>(
+                { it.timestamp },
+                { it.level },
+                { it.safeMessage },
+                { it.safeDetail },
+            ),
+        ).forEach { entry ->
+            if (current.isNotEmpty() && entry.dateKey != current.first().dateKey) {
+                flush()
+            }
+            if (isRunStartLog(entry)) {
+                // 只有首个签到组前的预备日志可以并入该组；已结束签到后的其它日志会阻断合并。
+                if (currentIsRun || groups.isNotEmpty()) flush()
+                currentIsRun = true
+            }
+            current.add(entry)
+            if (currentIsRun && isRunEndLog(entry)) {
+                flush()
+            }
         }
-        if (isRunStartLog(entry)) {
-            // 只有首个签到组前的预备日志可以并入该组；已结束签到后的其它日志会阻断合并。
-            if (currentIsRun || groups.isNotEmpty()) flush()
-            currentIsRun = true
-        }
-        current.add(entry)
-        if (currentIsRun && isRunEndLog(entry)) {
-            flush()
-        }
-    }
     flush()
     if (activeRunStartedAt > 0L && groups.isNotEmpty()) {
         val index = groups.lastIndex

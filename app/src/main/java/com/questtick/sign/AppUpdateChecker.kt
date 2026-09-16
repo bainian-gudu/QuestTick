@@ -396,7 +396,10 @@ object AppUpdateChecker {
         current: String,
     ): Boolean = compareVersions(latest, current) > 0
 
-    private fun normalizeVersion(raw: String): String = VERSION_PATTERN.find(raw.trim().removePrefix("v").removePrefix("V"))?.value.orEmpty()
+    private fun normalizeVersion(raw: String): String {
+        val normalized = raw.trim().removePrefix("v").removePrefix("V")
+        return VERSION_PATTERN.find(normalized)?.value.orEmpty()
+    }
 
     private fun isLikelyPreReleaseVersion(raw: String): Boolean = PRE_RELEASE_PATTERN.containsMatchIn(raw)
 

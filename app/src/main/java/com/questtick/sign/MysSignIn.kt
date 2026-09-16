@@ -242,9 +242,18 @@ class MysSignIn(
             val referer =
                 "${game.actPage}?bbs_auth_required=true&act_id=${currentActId(game)}" +
                     "&bbs_presentation_style=fullscreen&utm_source=bbs&utm_medium=mys&utm_campaign=icon"
-            MysHeaders.sign(cookie, deviceId, customVersion, ds, referer = referer, origin = "https://webstatic.mihoyo.com").toMutableMap().apply {
-                put("Host", host(game))
-            }
+            MysHeaders
+                .sign(
+                    cookie,
+                    deviceId,
+                    customVersion,
+                    ds,
+                    referer = referer,
+                    origin = "https://webstatic.mihoyo.com",
+                ).toMutableMap()
+                .apply {
+                    put("Host", host(game))
+                }
         }
 
     /** SignResult：ok 表示成功或今日已签；already 表示今天此前已经签到。 */

@@ -61,15 +61,22 @@ class ActIdTest {
 
     @Test
     fun `parse trusted home navigation act id`() {
-        val body = """{"retcode":0,"data":{"navigator":[{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/index.html?act_id=e202311201442471"}]}}"""
+        val body =
+            """{"retcode":0,"data":{"navigator":[{"app_path":""" +
+                """"https://act.mihoyo.com/bbs/event/signin/hk4e/index.html?act_id=e202311201442471"}]}}"""
         assertEquals("e202311201442471", ActId.parseFromNavigation(body, "Genshin"))
     }
 
     @Test
     fun `navigation rejects duplicate or mismatched candidates`() {
-        val duplicate = """{"retcode":0,"data":{"navigator":[{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202311201442471"},{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202304121516551"}]}}"""
+        val duplicate =
+            """{"retcode":0,"data":{"navigator":[{"app_path":""" +
+                """"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202311201442471"},""" +
+                """{"app_path":"https://act.mihoyo.com/bbs/event/signin/hk4e/?act_id=e202304121516551"}]}}"""
         assertNull(ActId.parseFromNavigation(duplicate, "Genshin"))
-        val mismatch = """{"retcode":0,"data":{"navigator":[{"app_path":"https://evil.example/bbs/event/signin/hk4e/?act_id=e202311201442471"}]}}"""
+        val mismatch =
+            """{"retcode":0,"data":{"navigator":[{"app_path":""" +
+                """"https://evil.example/bbs/event/signin/hk4e/?act_id=e202311201442471"}]}}"""
         assertNull(ActId.parseFromNavigation(mismatch, "Genshin"))
     }
 }
