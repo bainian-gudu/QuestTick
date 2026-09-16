@@ -47,6 +47,28 @@ object RootDetectorV2 {
     private const val SU_EXEC_TIMEOUT_MS = 900L
     internal const val TOTAL_PROBE_GROUPS = 12
     private const val MIN_REQUIRED_PROBE_GROUPS = 11
+    private const val MAX_RISK_SCORE = 100
+    private const val CRITICAL_RISK_THRESHOLD = 70
+    private const val HIGH_RISK_THRESHOLD = 50
+    private const val MEDIUM_RISK_THRESHOLD = 30
+    private const val LOW_RISK_THRESHOLD = 10
+    private const val MAX_REPORTED_APPS = 3
+    private const val WEIGHT_ROOT_MANAGEMENT_APP = 15
+    private const val WEIGHT_ROOT_NATIVE = 15
+    private const val WEIGHT_SU_BINARY_ROOTBEER = 15
+    private const val WEIGHT_MAGISK_BINARY = 20
+    private const val WEIGHT_SU_BINARY_FILESYSTEM = 15
+    private const val WEIGHT_DANGEROUS_SYSTEM_PROPS = 10
+    private const val WEIGHT_TEST_KEYS = 10
+    private const val WEIGHT_RISK_APPS = 5
+    private const val WEIGHT_MAGISK_FILES = 20
+    private const val WEIGHT_BUSYBOX = 8
+    private const val WEIGHT_WHICH_SU = 12
+    private const val WEIGHT_SU_EXEC_UID0 = 35
+    private const val WEIGHT_SELINUX_PERMISSIVE = 5
+    private const val WEIGHT_WRITABLE_SYSTEM = 10
+    private const val WEIGHT_EMULATOR = 5
+    private const val WEIGHT_MAGISK_HIDE = 10
 
     /** 快速返回完整检测得到的明确 Root 结论。 */
     fun isLikelyRooted(context: Context? = null): Boolean = check(context).isRooted
@@ -63,19 +85,19 @@ object RootDetectorV2 {
                 val rb = RootBeer(context.applicationContext)
                 if (rb.detectRootManagementApps()) {
                     triggers.add("root_management_apps_rb")
-                    score += 15
+                    score += WEIGHT_ROOT_MANAGEMENT_APP
                 }
                 if (rb.checkForRootNative()) {
                     triggers.add("root_native")
-                    score += 15
+                    score += WEIGHT_ROOT_NATIVE
                 }
                 if (rb.checkForSuBinary()) {
                     triggers.add("su_binary_rb")
-                    score += 15
+                    score += WEIGHT_SU_BINARY_ROOTBEER
                 }
                 if (rb.checkForMagiskBinary()) {
                     triggers.add("magisk_binary_rb")
-                    score += 20
+                    score += WEIGHT_MAGISK_BINARY
                 }
             } catch (e: Throwable) {
                 unavailableProbes += "rootbeer"
@@ -91,92 +113,92 @@ object RootDetectorV2 {
         // Layer 2: su 二进制全路径扫描 (权重 15)
         if (checkSuBinary()) {
             triggers.add("su_binary_fs")
-            score += 15
+            score += WEIGHT_SU_BINARY_FILESYSTEM
         }
 
         // Layer 3: 危险属性 ro.debuggable / ro.secure (权重 10)
         if (checkDangerousProps()) {
             triggers.add("dangerous_system_props")
-            score += 10
+            score += WEIGHT_DANGEROUS_SYSTEM_PROPS
         }
 
         // Layer 4: test-keys 检测 (权重 10)
         if (Build.TAGS?.contains("test-keys") == true) {
             triggers.add("test_keys")
-            score += 10
+            score += WEIGHT_TEST_KEYS
         }
 
         // Layer 5: Root 管理应用包名扫描。只把明确 Root 管理器作为阻断证据，辅助/改机工具仅记录风险。
         val rootApps = detectRootManagementApps(context)
         if (rootApps.isNotEmpty()) {
-            triggers.add("root_apps:${rootApps.take(3).joinToString(",")}")
-            score += 15
+            triggers.add("root_apps:${rootApps.take(MAX_REPORTED_APPS).joinToString(",")}")
+            score += WEIGHT_ROOT_MANAGEMENT_APP
         }
         val riskApps = detectRootRiskApps(context)
         if (riskApps.isNotEmpty()) {
-            triggers.add("risk_apps:${riskApps.take(3).joinToString(",")}")
-            score += 5
+            triggers.add("risk_apps:${riskApps.take(MAX_REPORTED_APPS).joinToString(",")}")
+            score += WEIGHT_RISK_APPS
         }
 
         // Layer 6: Magisk / KernelSU / APatch 特定文件 (权重 20)
         val magiskFiles = checkMagiskSpecificPaths()
         if (magiskFiles.isNotEmpty()) {
             triggers.add("magisk_files:${magiskFiles.first()}")
-            score += 20
+            score += WEIGHT_MAGISK_FILES
         }
 
         // Layer 7: BusyBox 检测 (权重 8)
         if (checkBusyBox()) {
             triggers.add("busybox")
-            score += 8
+            score += WEIGHT_BUSYBOX
         }
 
         // Layer 8: which / command -v su 命令 (权重 12)
         if (checkWhichSu()) {
             triggers.add("which_su")
-            score += 12
+            score += WEIGHT_WHICH_SU
         }
 
         // Layer 8.5: 直接尝试执行 su -c id，命中时说明当前环境可提权，必须强信号阻断。
         if (checkSuCommandExecution()) {
             triggers.add("su_exec_uid0")
-            score += 35
+            score += WEIGHT_SU_EXEC_UID0
         }
 
         // Layer 9: SELinux 状态 (权重 5)
         if (isSelinuxPermissive()) {
             triggers.add("selinux_permissive")
-            score += 5
+            score += WEIGHT_SELINUX_PERMISSIVE
         }
 
         // Layer 10: 可写系统路径 (权重 10)
         if (checkWritableSystemPaths()) {
             triggers.add("writable_system")
-            score += 10
+            score += WEIGHT_WRITABLE_SYSTEM
         }
 
         // Layer 11: 模拟器检测。模拟器本身不等于 Root，仅记录环境信息，不参与 Root 证据阻断。
         val emulator = isEmulator()
         if (emulator) {
             triggers.add("emulator")
-            score += 5
+            score += WEIGHT_EMULATOR
         }
 
         // Layer 12: Magisk Hide / Shamiko / Zygisk 痕迹 (权重 10)
         if (detectMagiskHide()) {
             triggers.add("magisk_hide_traces")
-            score += 10
+            score += WEIGHT_MAGISK_HIDE
         }
 
-        score = score.coerceIn(0, 100)
+        score = score.coerceIn(0, MAX_RISK_SCORE)
         val distinctTriggers = triggers.distinct()
         val rootEvidenceTriggers = distinctTriggers.filter(::isRootEvidenceTrigger)
         val level =
             when {
-                score >= 70 -> RiskLevel.CRITICAL
-                score >= 50 -> RiskLevel.HIGH
-                score >= 30 -> RiskLevel.MEDIUM
-                score >= 10 -> RiskLevel.LOW
+                score >= CRITICAL_RISK_THRESHOLD -> RiskLevel.CRITICAL
+                score >= HIGH_RISK_THRESHOLD -> RiskLevel.HIGH
+                score >= MEDIUM_RISK_THRESHOLD -> RiskLevel.MEDIUM
+                score >= LOW_RISK_THRESHOLD -> RiskLevel.LOW
                 else -> RiskLevel.SAFE
             }
 
