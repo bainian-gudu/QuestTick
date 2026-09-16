@@ -91,36 +91,20 @@ class ExecutionStateDatabaseTest {
         }
 
     @Test
-    fun accountGuardPausesStructuredAuthAndClearsAfterSuccess() =
+    fun clearAccountGuardsRemovesLegacyGuards() =
         runBlocking {
-            repository.applyRunGuards(record(FailureCategory.AUTH_EXPIRED, retryable = false), now = 10L)
+            database.executionStateDao().upsertAccountGuard(guard("account-1", FailureCategory.AUTH_EXPIRED))
 
-            val guard = repository.activeAccountGuards(now = 11L).single()
-            assertEquals("account-1", guard.accountId)
-            assertEquals(FailureCategory.AUTH_EXPIRED, guard.reason)
+            repository.clearAccountGuards()
 
-            repository.applyRunGuards(successRecord(), now = 20L)
-            assertTrue(repository.activeAccountGuards(now = 21L).isEmpty())
+            assertTrue(repository.activeAccountGuards(now = 11L).isEmpty())
         }
 
     @Test
     fun manualResumeOnlyRemovesRequestedAccountGuard() =
         runBlocking {
-            repository.applyRunGuards(
-                RunRecord(
-                    timestamp = 1L,
-                    runId = "run-guards",
-                    results =
-                        listOf(
-                            result(FailureCategory.CAPTCHA_REQUIRED, false),
-                            result(FailureCategory.SMS_REQUIRED, false).copy(
-                                accountId = "account-2",
-                                taskId = "account-2|MYS|Genshin",
-                            ),
-                        ),
-                ),
-                now = 10L,
-            )
+            database.executionStateDao().upsertAccountGuard(guard("account-1", FailureCategory.CAPTCHA_REQUIRED))
+            database.executionStateDao().upsertAccountGuard(guard("account-2", FailureCategory.SMS_REQUIRED))
 
             repository.resumeAccount("account-1")
 
@@ -172,16 +156,17 @@ class ExecutionStateDatabaseTest {
             assertFalse(taskIds.orEmpty().contains("account-3|MYS|ZZZ"))
         }
 
-    private fun record(
-        category: FailureCategory,
-        retryable: Boolean,
-    ): RunRecord = RunRecord(timestamp = 1L, runId = "run-1", results = listOf(result(category, retryable)))
-
-    private fun successRecord(): RunRecord =
-        RunRecord(
-            timestamp = 2L,
-            runId = "run-success",
-            results = listOf(result(FailureCategory.NONE, false).copy(success = true)),
+    private fun guard(
+        accountId: String,
+        reason: FailureCategory,
+    ): AccountExecutionGuardEntity =
+        AccountExecutionGuardEntity(
+            accountId = accountId,
+            reason = reason.name,
+            errorCode = "test",
+            pausedAt = 1L,
+            resumeAfter = 0L,
+            updatedAt = 1L,
         )
 
     private fun result(

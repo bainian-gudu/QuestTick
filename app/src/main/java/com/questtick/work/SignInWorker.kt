@@ -197,7 +197,6 @@ class SignInWorker
                     return Result.success()
                 }
 
-                executionStateRepository.applyRunGuards(record)
                 updateFailureGuard(store, record)
                 syncRepositoryAfterBackgroundRun()
 

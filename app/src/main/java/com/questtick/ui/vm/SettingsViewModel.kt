@@ -493,7 +493,7 @@ class SettingsViewModel
             _updatePrompt.value = AppUpdatePrompt(info = info, automatic = automatic, apkReady = apkReady)
             if (!apkReady) {
                 viewModelScope.launch(Dispatchers.IO) {
-                    AppUpdateInstaller.prepareDownloadLinks(context, info, streamingHttpTransport)
+                    AppUpdateInstaller.prepareDownloadLinks(info)
                 }
             }
         }

@@ -144,7 +144,6 @@ class HomeViewModel
                                     trigger = RunTrigger.MANUAL,
                                 )
 
-                            executionStateRepository.applyRunGuards(record)
                             historyRepository.reload()
                             signInCalendarRepository.reload()
                             logRepository.reload()

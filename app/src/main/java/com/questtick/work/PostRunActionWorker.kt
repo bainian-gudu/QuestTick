@@ -54,6 +54,7 @@ class PostRunActionWorker
             }
         }
 
+        /** 解析失败属于持久化数据问题，标记终态避免 Worker 对同一坏载荷无限重试。 */
         private suspend fun deliver(action: com.questtick.data.db.PostRunActionEntity): Result {
             val actionType =
                 PostRunActionType.entries.firstOrNull { it.name == action.type }

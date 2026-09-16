@@ -35,6 +35,7 @@ class ExecutionStateRepository
             businessDayKey: String = dayKey(System.currentTimeMillis()),
             now: Long = System.currentTimeMillis(),
         ): SlotClaim =
+            // 插入、检查和过期接管必须在同一事务内完成，避免两个 Worker 同时获得同一业务日槽位。
             withContext(Dispatchers.IO) {
                 database.withTransaction {
                     val dao = database.executionStateDao()
@@ -166,17 +167,11 @@ class ExecutionStateRepository
                 }
             }
 
-        suspend fun applyRunGuards(
-            record: RunRecord,
-            now: Long = System.currentTimeMillis(),
-        ) = withContext(Dispatchers.IO) {
-            database.withTransaction {
-                // 单个签到任务失败只记录任务结果，不再冻结整个账号；Root 阻断仍由运行器单独处理。
-                database.executionStateDao().deleteAllAccountGuards()
-            }
-        }
-
-        /** 清理旧版本遗留的账号冻结记录，避免历史状态阻止本次签到。 */
+        /**
+         * 清理旧版本遗留的账号冻结记录，避免历史状态阻止本次签到。
+         *
+         * 当前失败策略以任务结果和运行槽位为准，账号冻结表只作为旧版本数据的兼容清理入口。
+         */
         suspend fun clearAccountGuards() =
             withContext(Dispatchers.IO) {
                 database.executionStateDao().deleteAllAccountGuards()
@@ -191,14 +186,6 @@ class ExecutionStateRepository
             runCatching {
                 AccountGuard(accountId, FailureCategory.valueOf(reason), errorCode, pausedAt, resumeAfter)
             }.getOrNull()
-
-        private fun guardPriority(category: FailureCategory): Int =
-            when (category) {
-                FailureCategory.CAPTCHA_REQUIRED -> 3
-                FailureCategory.SMS_REQUIRED -> 3
-                FailureCategory.AUTH_EXPIRED -> 2
-                else -> 0
-            }
 
         companion object {
             const val SLOT_RUNNING = "RUNNING"

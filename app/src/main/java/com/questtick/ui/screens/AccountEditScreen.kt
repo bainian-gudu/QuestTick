@@ -802,11 +802,6 @@ internal fun GroupLabel(text: String) {
 }
 
 @Composable
-private fun HintText(text: String) {
-    Text(text, fontSize = 12.sp, color = TextSecondary, modifier = Modifier.padding(start = 2.dp, top = 2.dp))
-}
-
-@Composable
 private fun NoticeBox(
     color: Color,
     text: String,
