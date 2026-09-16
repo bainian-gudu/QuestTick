@@ -72,7 +72,12 @@ internal fun LogSearchField(
         trailingIcon = {
             if (value.isNotEmpty()) {
                 IconButton(onClick = onClear) {
-                    Icon(Icons.Filled.Close, contentDescription = localizedText("清除搜索"), tint = TextSecondary, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = localizedText("清除搜索"),
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
             }
         },
@@ -106,7 +111,13 @@ internal fun LogStatChip(
 internal fun DateDivider(date: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         HorizontalDivider(Modifier.weight(1f), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
-        Text(date, modifier = Modifier.padding(horizontal = 12.dp), fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium)
+        Text(
+            date,
+            modifier = Modifier.padding(horizontal = 12.dp),
+            fontSize = 11.sp,
+            color = TextSecondary.copy(alpha = 0.7f),
+            fontWeight = FontWeight.Medium,
+        )
         HorizontalDivider(Modifier.weight(1f), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline)
     }
 }
@@ -126,30 +137,12 @@ internal fun LogRunGroupCard(
     )
     PanelCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp)) {
-            Row(Modifier.fillMaxWidth().clickableNoRipple { onExpandedChange(!expanded) }, verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 分组标题包含动态时间，必须通过同一套模板本地化，避免繁体页面标题与卡片标题不一致。
-                        Text(
-                            localizedText(group.title),
-                            modifier = Modifier.weight(1f, fill = false),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            softWrap = true,
-                        )
-                        if (group.running) {
-                            Spacer(Modifier.width(6.dp))
-                            StatusBadge(text = "进行中", color = WarnAmber, shape = RoundedCornerShape(999.dp), horizontalPadding = 7.dp, verticalPadding = 2.dp, backgroundAlpha = 0.14f, borderAlpha = 0.18f, leadingDotColor = WarnAmber, leadingDotSize = 5.dp, leadingDotSpacing = 4.dp)
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(group.subtitle, color = TextSecondary, fontSize = 11.sp, softWrap = true)
-                }
-                Spacer(Modifier.width(8.dp))
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText(if (expanded) "收起" else "展开"), tint = TextSecondary, modifier = Modifier.size(22.dp).rotate(arrowRotation))
-            }
+            LogRunGroupHeader(
+                group = group,
+                expanded = expanded,
+                onExpandedChange = onExpandedChange,
+                arrowRotation = arrowRotation,
+            )
             AnimatedVisibility(visible = expanded, enter = AppMotion.expandEnter(), exit = AppMotion.expandExit()) {
                 Column {
                     Spacer(Modifier.height(10.dp))
@@ -158,14 +151,75 @@ internal fun LogRunGroupCard(
                     val entries = remember(group.entries) { group.entries.asReversed() }
                     LogEntryRows(entries, verbose, searchQuery)
                     Spacer(Modifier.height(8.dp))
-                    Row(Modifier.fillMaxWidth().clickableNoRipple { onExpandedChange(false) }, horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText("收起"), tint = TextSecondary.copy(alpha = 0.65f), modifier = Modifier.size(15.dp).rotate(180f))
+                    Row(
+                        Modifier.fillMaxWidth().clickableNoRipple { onExpandedChange(false) },
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardArrowDown,
+                            contentDescription = localizedText("收起"),
+                            tint = TextSecondary.copy(alpha = 0.65f),
+                            modifier = Modifier.size(15.dp).rotate(180f),
+                        )
                         Spacer(Modifier.width(4.dp))
                         Text("收起", fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.75f))
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LogRunGroupHeader(
+    group: LogRunGroup,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    arrowRotation: Float,
+) {
+    Row(
+        Modifier.fillMaxWidth().clickableNoRipple { onExpandedChange(!expanded) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 分组标题包含动态时间，必须通过同一套模板本地化，避免繁体页面标题与卡片标题不一致。
+                Text(
+                    localizedText(group.title),
+                    modifier = Modifier.weight(1f, fill = false),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    softWrap = true,
+                )
+                if (group.running) {
+                    Spacer(Modifier.width(6.dp))
+                    StatusBadge(
+                        text = "进行中",
+                        color = WarnAmber,
+                        shape = RoundedCornerShape(999.dp),
+                        horizontalPadding = 7.dp,
+                        verticalPadding = 2.dp,
+                        backgroundAlpha = 0.14f,
+                        borderAlpha = 0.18f,
+                        leadingDotColor = WarnAmber,
+                        leadingDotSize = 5.dp,
+                        leadingDotSpacing = 4.dp,
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(group.subtitle, color = TextSecondary, fontSize = 11.sp, softWrap = true)
+        }
+        Spacer(Modifier.width(8.dp))
+        Icon(
+            Icons.Filled.KeyboardArrowDown,
+            contentDescription = localizedText(if (expanded) "收起" else "展开"),
+            tint = TextSecondary,
+            modifier = Modifier.size(22.dp).rotate(arrowRotation),
+        )
     }
 }
 
@@ -186,7 +240,13 @@ private fun LogEntryRowWithDivider(
     showDivider: Boolean,
 ) {
     ProcessedLogRow(entry, verbose, searchQuery)
-    if (showDivider) HorizontalDivider(Modifier.padding(start = 62.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+    if (showDivider) {
+        HorizontalDivider(
+            Modifier.padding(start = 62.dp),
+            thickness = 0.5.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+        )
+    }
 }
 
 @Composable
@@ -240,7 +300,11 @@ private fun ProcessedLogRow(
                 )
             }
         }
-        AnimatedVisibility(visible = verbose && entry.safeDetail.isNotBlank(), enter = AppMotion.expandEnter(), exit = AppMotion.expandExit()) {
+        AnimatedVisibility(
+            visible = verbose && entry.safeDetail.isNotBlank(),
+            enter = AppMotion.expandEnter(),
+            exit = AppMotion.expandExit(),
+        ) {
             Box(
                 Modifier
                     .padding(start = 62.dp, top = 6.dp)
@@ -277,7 +341,16 @@ private fun HighlightedLogText(
 ) {
     val highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
     val annotated = remember(text, query, highlightColor) { highlightedLogText(text, query, highlightColor) }
-    Text(annotated, modifier = modifier, fontFamily = fontFamily, fontSize = fontSize, lineHeight = lineHeight, color = color, maxLines = maxLines, overflow = overflow)
+    Text(
+        annotated,
+        modifier = modifier,
+        fontFamily = fontFamily,
+        fontSize = fontSize,
+        lineHeight = lineHeight,
+        color = color,
+        maxLines = maxLines,
+        overflow = overflow,
+    )
 }
 
 private fun highlightedLogText(

@@ -242,7 +242,7 @@ suspend fun HttpTransport.executeResult(request: HttpRequest): ApiResult<HttpRes
         )
     }
 
-private fun Map<String, List<String>>.immutableCopy(): Map<String, List<String>> = entries.associate { (name, values) -> name to values.toList() }
+private fun Map<String, List<String>>.immutableCopy() = entries.associate { (name, values) -> name to values.toList() }
 
 private const val JSON_CONTENT_TYPE = "application/json;charset=utf-8"
 private const val HTTP_SUCCESS_CODE_MIN = 200

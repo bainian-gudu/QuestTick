@@ -105,9 +105,24 @@ internal fun AppearanceDetailPage(
                         SettingsSectionTitle("主题模式")
                         Spacer(Modifier.height(12.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ThemeModeOptionChip("跟随系统", "SYSTEM", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }
-                            ThemeModeOptionChip("浅色", "LIGHT", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }
-                            ThemeModeOptionChip("深色", "DARK", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }
+                            ThemeModeOptionChip(
+                                "跟随系统",
+                                "SYSTEM",
+                                settings.appThemeMode,
+                                Modifier.weight(1f),
+                            ) { onSave(settings.copy(appThemeMode = it)) }
+                            ThemeModeOptionChip(
+                                "浅色",
+                                "LIGHT",
+                                settings.appThemeMode,
+                                Modifier.weight(1f),
+                            ) { onSave(settings.copy(appThemeMode = it)) }
+                            ThemeModeOptionChip(
+                                "深色",
+                                "DARK",
+                                settings.appThemeMode,
+                                Modifier.weight(1f),
+                            ) { onSave(settings.copy(appThemeMode = it)) }
                         }
                         Spacer(Modifier.height(10.dp))
                         Text("选择后立即生效；跟随系统会随系统深色模式自动切换。", fontSize = 12.sp, color = TextSecondary, lineHeight = 18.sp)
@@ -134,14 +149,25 @@ internal fun AppearanceDetailPage(
                         var expanded by rememberSaveable { mutableStateOf(false) }
                         var customHex by remember(settings.customThemeColor) { mutableStateOf(settings.customThemeColor) }
                         val customEnabled = !settings.dynamicColorEnabled
-                        val customTextColor = if (customEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        val customTextColor =
+                            if (customEnabled) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
                         Row(
                             Modifier.fillMaxWidth().clickableNoRipple { expanded = !expanded },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             SettingsSectionTitle("自定义颜色")
                             Spacer(Modifier.weight(1f))
-                            CustomColorOption(settings.customThemeColor, settings.customThemeColor, customEnabled, onSelect = {}, compact = true)
+                            CustomColorOption(
+                                settings.customThemeColor,
+                                settings.customThemeColor,
+                                customEnabled,
+                                onSelect = {},
+                                compact = true,
+                            )
                             Spacer(Modifier.width(8.dp))
                             Icon(
                                 imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
@@ -196,7 +222,16 @@ internal fun AppearanceDetailPage(
                                             )
                                     }
                                 Spacer(Modifier.height(8.dp))
-                                Text("动态配色开启时暂时停用，关闭后自动恢复已保存的自定义颜色。", fontSize = 12.sp, color = if (customEnabled) TextSecondary else TextSecondary.copy(alpha = 0.55f))
+                                Text(
+                                    "动态配色开启时暂时停用，关闭后自动恢复已保存的自定义颜色。",
+                                    fontSize = 12.sp,
+                                    color =
+                                        if (customEnabled) {
+                                            TextSecondary
+                                        } else {
+                                            TextSecondary.copy(alpha = 0.55f)
+                                        },
+                                )
                                 Spacer(Modifier.height(12.dp))
                                 Row(
                                     Modifier
@@ -241,13 +276,17 @@ internal fun AppearanceDetailPage(
                                                                 ) &&
                                                                 settings.customThemeSecondaryColor.equals(preset.secondary, true) &&
                                                                 settings.customThemeTertiaryColor.equals(preset.tertiary, true)
+                                                        val nextName = if (deletingCurrent) "" else settings.customThemeName
+                                                        val nextColor = if (deletingCurrent) "" else settings.customThemeColor
+                                                        val nextSecondary = if (deletingCurrent) "" else settings.customThemeSecondaryColor
+                                                        val nextTertiary = if (deletingCurrent) "" else settings.customThemeTertiaryColor
                                                         onSave(
                                                             settings.copy(
                                                                 customThemePresets = remaining,
-                                                                customThemeName = if (deletingCurrent) "" else settings.customThemeName,
-                                                                customThemeColor = if (deletingCurrent) "" else settings.customThemeColor,
-                                                                customThemeSecondaryColor = if (deletingCurrent) "" else settings.customThemeSecondaryColor,
-                                                                customThemeTertiaryColor = if (deletingCurrent) "" else settings.customThemeTertiaryColor,
+                                                                customThemeName = nextName,
+                                                                customThemeColor = nextColor,
+                                                                customThemeSecondaryColor = nextSecondary,
+                                                                customThemeTertiaryColor = nextTertiary,
                                                             ),
                                                         )
                                                     }
@@ -277,7 +316,9 @@ internal fun AppearanceDetailPage(
                                         enabled = customEnabled,
                                         onClick = {
                                             val normalized = customHex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }
-                                            if (normalized.matches(Regex("#[0-9A-F]{6}"))) onSave(settings.copy(customThemeColor = normalized))
+                                            if (normalized.matches(Regex("#[0-9A-F]{6}"))) {
+                                                onSave(settings.copy(customThemeColor = normalized))
+                                            }
                                         },
                                     ) { Text("应用", color = customTextColor) }
                                 }
@@ -375,15 +416,27 @@ private fun CustomColorOption(
     onSelect: (String) -> Unit,
     compact: Boolean = false,
 ) {
-    val color = if (colorHex.isBlank()) MaterialTheme.colorScheme.outline else runCatching { Color(android.graphics.Color.parseColor(colorHex)) }.getOrDefault(MaterialTheme.colorScheme.outline)
+    val color =
+        if (colorHex.isBlank()) {
+            MaterialTheme.colorScheme.outline
+        } else {
+            runCatching { Color(android.graphics.Color.parseColor(colorHex)) }
+                .getOrDefault(MaterialTheme.colorScheme.outline)
+        }
     val isSelected = selected.equals(colorHex, ignoreCase = true)
     val displayColor = if (enabled) color else Color.Gray.copy(alpha = 0.45f)
+    val borderColor =
+        if (enabled && isSelected) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            Color.Gray
+        }
     Box(
         Modifier
             .size(if (compact) 24.dp else 34.dp)
             .clip(RoundedCornerShape(17.dp))
             .background(displayColor)
-            .border(if (isSelected) 3.dp else 1.dp, if (enabled && isSelected) MaterialTheme.colorScheme.onSurface else Color.Gray, RoundedCornerShape(17.dp))
+            .border(if (isSelected) 3.dp else 1.dp, borderColor, RoundedCornerShape(17.dp))
             .then(if (enabled) Modifier.clickableNoRipple { onSelect(colorHex) } else Modifier),
         contentAlignment = Alignment.Center,
     ) {
@@ -432,7 +485,11 @@ private fun CustomThemeColorPage(
                         Text("拖动滑块即可预览，颜色会在应用后保存。", fontSize = 12.sp, color = TextSecondary)
                         Spacer(Modifier.height(10.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            listOf("P" to hslToHex(primary), "S" to hslToHex(secondary), "T" to hslToHex(tertiary)).forEach { (label, hex) ->
+                            listOf(
+                                "P" to hslToHex(primary),
+                                "S" to hslToHex(secondary),
+                                "T" to hslToHex(tertiary),
+                            ).forEach { (label, hex) ->
                                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                                     CustomColorOption(hex, hex, true, onSelect = {}, compact = false)
                                     Text(label, fontSize = 12.sp, color = TextSecondary)
@@ -531,31 +588,13 @@ private fun ThemePresetOption(
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Box(Modifier.size(42.dp)) {
-            Canvas(
-                Modifier
-                    .matchParentSize()
-                    .clip(CircleShape)
-                    .border(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected && enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
-                        shape = CircleShape,
-                    ),
-            ) {
-                val alpha = if (enabled) 1f else 0.45f
-                drawRect(secondary.copy(alpha = alpha), size = size)
-                drawRect(
-                    tertiary.copy(alpha = alpha),
-                    topLeft = Offset(size.width / 2f, size.height / 2f),
-                    size =
-                        androidx.compose.ui.geometry
-                            .Size(size.width / 2f, size.height / 2f),
-                )
-                drawCircle(
-                    primary.copy(alpha = alpha),
-                    radius = if (selected) 11.dp.toPx() else 8.dp.toPx(),
-                    center = Offset(size.width / 2f, size.height / 2f),
-                )
-            }
+            ThemePresetSwatch(
+                primary = primary,
+                secondary = secondary,
+                tertiary = tertiary,
+                selected = selected,
+                enabled = enabled,
+            )
             if (onDelete != null && enabled) {
                 Icon(
                     imageVector = Icons.Filled.Close,
@@ -573,6 +612,47 @@ private fun ThemePresetOption(
             }
         }
         Text(preset.name, fontSize = 9.sp, color = if (enabled) TextSecondary else TextSecondary.copy(alpha = 0.45f), maxLines = 1)
+    }
+}
+
+@Composable
+private fun ThemePresetSwatch(
+    primary: Color,
+    secondary: Color,
+    tertiary: Color,
+    selected: Boolean,
+    enabled: Boolean,
+) {
+    val ringColor =
+        if (selected && enabled) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+        }
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .clip(CircleShape)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = ringColor,
+                shape = CircleShape,
+            ),
+    ) {
+        val alpha = if (enabled) 1f else 0.45f
+        drawRect(secondary.copy(alpha = alpha), size = size)
+        drawRect(
+            tertiary.copy(alpha = alpha),
+            topLeft = Offset(size.width / 2f, size.height / 2f),
+            size =
+                androidx.compose.ui.geometry
+                    .Size(size.width / 2f, size.height / 2f),
+        )
+        drawCircle(
+            primary.copy(alpha = alpha),
+            radius = if (selected) 11.dp.toPx() else 8.dp.toPx(),
+            center = Offset(size.width / 2f, size.height / 2f),
+        )
     }
 }
 

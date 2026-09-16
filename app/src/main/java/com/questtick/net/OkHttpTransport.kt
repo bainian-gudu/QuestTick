@@ -147,7 +147,7 @@ class OkHttpTransport internal constructor(
     }
 
     internal companion object {
-        fun forSameOriginTest(okHttpClient: OkHttpClient): OkHttpTransport = OkHttpTransport(okHttpClient, TrustedRedirects.sameOriginForTest)
+        fun forSameOriginTest(okHttpClient: OkHttpClient) = OkHttpTransport(okHttpClient, TrustedRedirects.sameOriginForTest)
     }
 }
 

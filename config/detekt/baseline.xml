@@ -304,37 +304,6 @@
     <ID>MatchingDeclarationName:MainTabHost.kt$Tab</ID>
     <ID>MatchingDeclarationName:QRLoginScreen.kt$QRLoginResult</ID>
     <ID>MatchingDeclarationName:SignInTaskPlanning.kt$CloudGameBinding</ID>
-    <ID>MaxLineLength:AccountGameSelection.kt$AnimatedSwitch(checked = mysCoinEnabled, onCheckedChange = onMysCoinEnabledChange, offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))</ID>
-    <ID>MaxLineLength:AccountGameSelection.kt$val border = if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)</ID>
-    <ID>MaxLineLength:AccountGameSelection.kt$val rowModifier = Modifier.fillMaxWidth().border(1.5.dp, border, RoundedCornerShape(18.dp)).then(if (enabled) Modifier.clickableNoRipple(onToggle) else Modifier)</ID>
-    <ID>MaxLineLength:ActIdInvalid.kt$ActIdInvalid$private fun isClearlyNotActIdMessage(message: String): Boolean</ID>
-    <ID>MaxLineLength:AppUpdateCache.kt$AppUpdateCache$private fun prefs(context: Context): SharedPreferences</ID>
-    <ID>MaxLineLength:HttpTransport.kt$private fun Map&lt;String, List&lt;String&gt;&gt;.immutableCopy(): Map&lt;String, List&lt;String&gt;&gt;</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$AnimatedVisibility</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Icon(Icons.Filled.Close, contentDescription = localizedText("清除搜索"), tint = TextSecondary, modifier = Modifier.size(18.dp))</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText("收起"), tint = TextSecondary.copy(alpha = 0.65f), modifier = Modifier.size(15.dp).rotate(180f))</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Icon(Icons.Filled.KeyboardArrowDown, contentDescription = localizedText(if (expanded) "收起" else "展开"), tint = TextSecondary, modifier = Modifier.size(22.dp).rotate(arrowRotation))</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Row</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$StatusBadge(text = "进行中", color = WarnAmber, shape = RoundedCornerShape(999.dp), horizontalPadding = 7.dp, verticalPadding = 2.dp, backgroundAlpha = 0.14f, borderAlpha = 0.18f, leadingDotColor = WarnAmber, leadingDotSize = 5.dp, leadingDotSpacing = 4.dp)</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Text(annotated, modifier = modifier, fontFamily = fontFamily, fontSize = fontSize, lineHeight = lineHeight, color = color, maxLines = maxLines, overflow = overflow)</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$Text(date, modifier = Modifier.padding(horizontal = 12.dp), fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.7f), fontWeight = FontWeight.Medium)</ID>
-    <ID>MaxLineLength:LogDisplayComponents.kt$if (showDivider) HorizontalDivider(Modifier.padding(start = 62.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))</ID>
-    <ID>MaxLineLength:OkHttpTransport.kt$OkHttpTransport.Companion$fun forSameOriginTest(okHttpClient: OkHttpClient): OkHttpTransport</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$.</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$CustomColorOption(settings.customThemeColor, settings.customThemeColor, customEnabled, onSelect = {}, compact = true)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$Text("动态配色开启时暂时停用，关闭后自动恢复已保存的自定义颜色。", fontSize = 12.sp, color = if (customEnabled) TextSecondary else TextSecondary.copy(alpha = 0.55f))</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$ThemeModeOptionChip("浅色", "LIGHT", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$ThemeModeOptionChip("深色", "DARK", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$ThemeModeOptionChip("跟随系统", "SYSTEM", settings.appThemeMode, Modifier.weight(1f)) { onSave(settings.copy(appThemeMode = it)) }</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$color = if (selected &amp;&amp; enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$customThemeSecondaryColor = if (deletingCurrent) "" else settings.customThemeSecondaryColor</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$customThemeTertiaryColor = if (deletingCurrent) "" else settings.customThemeTertiaryColor</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$if (normalized.matches(Regex("#[0-9A-F]{6}"))) onSave(settings.copy(customThemeColor = normalized))</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$listOf("P" to hslToHex(primary), "S" to hslToHex(secondary), "T" to hslToHex(tertiary))</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$val color = if (colorHex.isBlank()) MaterialTheme.colorScheme.outline else runCatching { Color(android.graphics.Color.parseColor(colorHex)) }.getOrDefault(MaterialTheme.colorScheme.outline)</ID>
-    <ID>MaxLineLength:SettingsAppearancePage.kt$val customTextColor = if (customEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)</ID>
-    <ID>MaxLineLength:SettingsStoragePages.kt$Text(cacheCategoryTitle(item.category), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)</ID>
-    <ID>MaxLineLength:SettingsStoragePages.kt$Text(formatCacheSize(item.sizeBytes), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)</ID>
     <ID>NestedBlockDepth:CloudSignExecutor.kt$CloudSignExecutor$suspend fun runAccount( acc: Account, cloudGameBindings: List&lt;CloudGameBinding&gt;, cloudDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>NestedBlockDepth:CloudSignIn.kt$CloudSignIn$private suspend fun listNotifications( game: GameConfig, token: String, version: String, clientType: String, ): Notifications</ID>
     <ID>NestedBlockDepth:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>

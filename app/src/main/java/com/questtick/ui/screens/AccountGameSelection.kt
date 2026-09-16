@@ -63,7 +63,11 @@ internal fun GamesTab(
                     Spacer(Modifier.weight(1f))
                     Text("米游币打卡", fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.size(8.dp))
-                    AnimatedSwitch(checked = mysCoinEnabled, onCheckedChange = onMysCoinEnabledChange, offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+                    AnimatedSwitch(
+                        checked = mysCoinEnabled,
+                        onCheckedChange = onMysCoinEnabledChange,
+                        offColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
+                    )
                 }
             }
         }
@@ -119,8 +123,17 @@ private fun GameSelectRow(
     enabled: Boolean = true,
     onToggle: () -> Unit,
 ) {
-    val border = if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.65f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-    val rowModifier = Modifier.fillMaxWidth().border(1.5.dp, border, RoundedCornerShape(18.dp)).then(if (enabled) Modifier.clickableNoRipple(onToggle) else Modifier)
+    val border =
+        if (checked) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
+        } else {
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+        }
+    val rowModifier =
+        Modifier
+            .fillMaxWidth()
+            .border(1.5.dp, border, RoundedCornerShape(18.dp))
+            .then(if (enabled) Modifier.clickableNoRipple(onToggle) else Modifier)
     PanelCard(modifier = rowModifier) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             GameIcon(game, size = 48.dp, corner = 14.dp)
