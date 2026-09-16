@@ -23,6 +23,12 @@ import java.util.zip.ZipOutputStream
  * Cookie / Token。支持 TXT / JSON / ZIP 三种格式，便于普通阅读与问题诊断。
  */
 object LogExporter {
+    private const val MAX_CRASH_REPORT_FILES = 10
+    private const val EXPORT_RETENTION_DAYS = 7L
+    private const val HOURS_PER_DAY = 24
+    private const val MINUTES_PER_HOUR = 60
+    private const val MILLIS_PER_SECOND = 1_000L
+
     enum class ExportFormat(
         val label: String,
         val extension: String,
@@ -156,7 +162,7 @@ object LogExporter {
         File(context.filesDir, "crash_diagnostics")
             .listFiles { file -> file.isFile && file.extension.equals("txt", ignoreCase = true) }
             ?.sortedByDescending { it.lastModified() }
-            ?.take(10)
+            ?.take(MAX_CRASH_REPORT_FILES)
             .orEmpty()
 
     /** 生成日志导出的默认文件名，例如 `signin_logs_20260615_153012.txt`。 */
@@ -177,7 +183,9 @@ object LogExporter {
         return try {
             val dir = File(context.cacheDir, "exports").apply { mkdirs() }
             // 清理 7 天前的导出缓存，避免 cacheDir 膨胀。
-            val weekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+            val retentionMillis =
+                EXPORT_RETENTION_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * MINUTES_PER_HOUR * MILLIS_PER_SECOND
+            val weekAgo = System.currentTimeMillis() - retentionMillis
             dir.listFiles()?.forEach { if (it.lastModified() < weekAgo) it.delete() }
 
             val file = File(dir, suggestFileName(format = format))

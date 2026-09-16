@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val BACKOFF_SECONDS = 30L
+
 @Singleton
 class PostRunActionScheduler
     @Inject
@@ -57,7 +59,7 @@ class PostRunActionScheduler
                     .setInputData(Data.Builder().putString(PostRunActionWorker.KEY_ACTION_ID, action.actionId).build())
                     .setConstraints(constraints)
                     .setInitialDelay((readyAt - now).coerceAtLeast(0L), TimeUnit.MILLISECONDS)
-                    .setBackoffCriteria(BackoffPolicy.LINEAR, 30L, TimeUnit.SECONDS)
+                    .setBackoffCriteria(BackoffPolicy.LINEAR, BACKOFF_SECONDS, TimeUnit.SECONDS)
                     .build()
             WorkManager.getInstance(context).enqueueUniqueWork(
                 uniqueWorkName(action.actionId, action.attemptCount),

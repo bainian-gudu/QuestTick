@@ -11,6 +11,9 @@ import com.questtick.data.AppSettings
 import com.questtick.data.SecureStore
 import com.questtick.security.RootDetectorV2
 
+private const val ROOT_EVIDENCE_LOG_LIMIT = 3
+private const val DEVICE_ID_MASK_SUFFIX_LENGTH = 4
+
 /**
  * 运行诊断：把系统与运行环境信息汇总进签到日志，供详细日志排查使用。
  *
@@ -21,6 +24,11 @@ class RunDiagnostics(
     private val store: SecureStore,
     private val log: (level: String, message: String, detail: String) -> Unit,
 ) {
+    private fun maskedDeviceId(value: String): String {
+        if (value.isBlank()) return "未生成"
+        return "***${value.takeLast(DEVICE_ID_MASK_SUFFIX_LENGTH)}"
+    }
+
     /** 记录系统与运行环境信息，供详细日志排查使用。 */
     fun logSystemInfo(
         settings: AppSettings,
@@ -48,23 +56,26 @@ class RunDiagnostics(
             rootResultForLog?.let {
                 when {
                     it.isRooted -> {
-                        "检测到Root [${it.level} score=${it.score} ${it.rootEvidenceTriggers.take(3).joinToString()}]"
+                        "检测到Root [${it.level} score=${it.score} ${it.rootEvidenceTriggers.take(ROOT_EVIDENCE_LOG_LIMIT).joinToString()}]"
                     }
 
                     it.completeness == RootDetectorV2.CheckCompleteness.FAILED -> {
-                        "Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"
+                        "Root检测失败 [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} " +
+                            "unavailable=${it.unavailableProbes.take(ROOT_EVIDENCE_LOG_LIMIT).joinToString()}]"
                     }
 
                     it.completeness == RootDetectorV2.CheckCompleteness.PARTIAL -> {
-                        "Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} unavailable=${it.unavailableProbes.take(3).joinToString()}]"
+                        "Root检测部分降级（不单独阻断） [checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS} " +
+                            "unavailable=${it.unavailableProbes.take(ROOT_EVIDENCE_LOG_LIMIT).joinToString()}]"
                     }
 
                     it.isEmulator -> {
-                        "模拟器环境（不阻断） [score=${it.score} ${it.triggers.take(3).joinToString()}]"
+                        "模拟器环境（不阻断） [score=${it.score} ${it.triggers.take(ROOT_EVIDENCE_LOG_LIMIT).joinToString()}]"
                     }
 
                     it.triggers.isNotEmpty() -> {
-                        "检测到非Root风险项（不阻断） [${it.level} score=${it.score} ${it.triggers.take(3).joinToString()}]"
+                        "检测到非Root风险项（不阻断） [${it.level} score=${it.score} " +
+                            "${it.triggers.take(ROOT_EVIDENCE_LOG_LIMIT).joinToString()}]"
                     }
 
                     else -> {
@@ -141,8 +152,8 @@ class RunDiagnostics(
                 append("notifyEnabled=${settings.notifyEnabled}, ")
                 append("mailEnabled=${mail.enabled}, ")
                 append("experiments={$experiments}, ")
-                append("mysDeviceId=${if (mysDeviceId.isNotBlank()) "***${mysDeviceId.takeLast(4)}" else "未生成"}, ")
-                append("cloudDeviceId=${if (cloudDeviceId.isNotBlank()) "***${cloudDeviceId.takeLast(4)}" else "未生成"}")
+                append("mysDeviceId=${maskedDeviceId(mysDeviceId)}, ")
+                append("cloudDeviceId=${maskedDeviceId(cloudDeviceId)}")
             },
         )
     }

@@ -29,6 +29,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
+private const val MINIMUM_SPLASH_DURATION_MS = 1_500L
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var httpTransport: HttpTransport
@@ -64,7 +66,7 @@ class MainActivity : ComponentActivity() {
         // 冷启动窗口先填充目标主题色，避免 Compose 首帧前露出系统默认底色。
         val launchStart = SystemClock.uptimeMillis()
         installSplashScreen().setKeepOnScreenCondition {
-            !splashCanHide && (SystemClock.uptimeMillis() - launchStart) < 1_500L
+            !splashCanHide && (SystemClock.uptimeMillis() - launchStart) < MINIMUM_SPLASH_DURATION_MS
         }
         super.onCreate(savedInstanceState)
         applyLaunchThemeColors(darkLaunchTheme, oledPureBlack, dynamicColorEnabled, customThemeColor)

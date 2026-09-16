@@ -32,6 +32,12 @@ internal class MysSignExecutor(
     private val log: (level: String, message: String, detail: String) -> Unit,
     private val recordError: ((feature: String, detail: String) -> Unit)? = null,
 ) {
+    private companion object {
+        private const val LOGGED_CLIENT_TYPE = "5"
+        private const val MIN_COOKIE_LENGTH = 50
+        private const val MILLIS_PER_SECOND = 1_000L
+    }
+
     suspend fun runAccount(
         acc: Account,
         settings: AppSettings,
@@ -61,7 +67,7 @@ internal class MysSignExecutor(
                 "[${acc.label}] 米游社签到: ${games.size} 款游戏",
                 "games=${games.joinToString { "${it.key}(act_id=${actIdCache[it.key] ?: it.actId})" }}",
             )
-            log("DEBUG", "米游社请求画像：mobile_web，client_type=5，DS=web_md5_v1", "")
+            log("DEBUG", "米游社请求画像：mobile_web，client_type=$LOGGED_CLIENT_TYPE，DS=web_md5_v1", "")
         }
 
         val mys =
@@ -286,7 +292,7 @@ internal class MysSignExecutor(
                 )
             }
 
-            cookie.length < 50 -> {
+            cookie.length < MIN_COOKIE_LENGTH -> {
                 log(
                     "WARN",
                     "[${account.label}] Cookie 过短（${cookie.length} 字符），可能不完整",
@@ -340,7 +346,7 @@ internal class MysSignExecutor(
         min: Int,
         max: Int,
     ) {
-        delay(Random.nextInt(min, max + 1) * 1000L)
+        delay(Random.nextInt(min, max + 1) * MILLIS_PER_SECOND)
     }
 
     private fun logOutcome(

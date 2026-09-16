@@ -46,6 +46,15 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
+private const val MAX_PARALLELISM = 4
+private const val ACCOUNT_START_DELAY_MIN_MS = 800L
+private const val ACCOUNT_START_DELAY_MAX_MS = 3_501L
+private const val ACCOUNT_INDEX_DELAY_MIN_MS = 250L
+private const val ACCOUNT_INDEX_DELAY_MAX_MS = 701L
+private const val LOG_SAMPLE_LIMIT = 5
+private const val LOG_ID_SUFFIX_LENGTH = 8
+private const val BYTES_PER_MIB = 1024
+
 private class RunPersistenceException(
     message: String,
     cause: Throwable? = null,
@@ -95,7 +104,7 @@ class SignInRunner(
     private val settingsUpdateMutex = Mutex()
 
     // 账号并行度按 CPU 核心数收敛到较小范围，避免后台任务过度抢占资源。
-    private val maxParallelism = Runtime.getRuntime().availableProcessors().coerceIn(2, 4)
+    private val maxParallelism = Runtime.getRuntime().availableProcessors().coerceIn(2, MAX_PARALLELISM)
 
     /** 请求级限流器：协程可以并发调度，但真正发起请求前仍需排队。 */
     private val mysRequestLimiter = Semaphore(permits = 2)
@@ -210,7 +219,9 @@ class SignInRunner(
         total: Int,
     ) {
         if (!parallel || total <= 1) return
-        val delayMs = Random.nextLong(800L, 3501L) + index * Random.nextLong(250L, 701L)
+        val delayMs =
+            Random.nextLong(ACCOUNT_START_DELAY_MIN_MS, ACCOUNT_START_DELAY_MAX_MS) +
+                index * Random.nextLong(ACCOUNT_INDEX_DELAY_MIN_MS, ACCOUNT_INDEX_DELAY_MAX_MS)
         log("INFO", "账号启动随机延迟：[$accountLabel] ${delayMs}ms", "accountIndex=$index, totalAccounts=$total")
         delay(delayMs)
     }
@@ -362,7 +373,7 @@ class SignInRunner(
                             log(
                                 "WARN",
                                 "忽略重复的任务终态结果",
-                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
+                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(LOG_ID_SUFFIX_LENGTH)}",
                             )
                         }
 
@@ -371,7 +382,7 @@ class SignInRunner(
                             log(
                                 "ERROR",
                                 "忽略未列入计划的任务结果",
-                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(8)}",
+                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(LOG_ID_SUFFIX_LENGTH)}",
                             )
                         }
                     }
@@ -445,8 +456,9 @@ class SignInRunner(
                         blockMessage,
                         rootResult?.let {
                             "completeness=${it.completeness}, checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS}, " +
-                                "unavailable=${it.unavailableProbes.take(5).joinToString()}, score=${it.score}, " +
-                                "rootEvidence=${it.rootEvidenceTriggers.take(5).joinToString()}, triggers=${it.triggers.take(5).joinToString()}"
+                                "unavailable=${it.unavailableProbes.take(LOG_SAMPLE_LIMIT).joinToString()}, score=${it.score}, " +
+                                "rootEvidence=${it.rootEvidenceTriggers.take(LOG_SAMPLE_LIMIT).joinToString()}, " +
+                                "triggers=${it.triggers.take(LOG_SAMPLE_LIMIT).joinToString()}"
                         } ?: "root check unavailable",
                     )
                     val blockedResults =
@@ -556,8 +568,8 @@ class SignInRunner(
                 )
 
                 val cpuCores = Runtime.getRuntime().availableProcessors()
-                val maxMem = Runtime.getRuntime().maxMemory() / 1024 / 1024
-                val freeMem = Runtime.getRuntime().freeMemory() / 1024 / 1024
+                val maxMem = Runtime.getRuntime().maxMemory() / BYTES_PER_MIB / BYTES_PER_MIB
+                val freeMem = Runtime.getRuntime().freeMemory() / BYTES_PER_MIB / BYTES_PER_MIB
                 val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
                 val mysVersion =
                     when {
@@ -891,7 +903,7 @@ class SignInRunner(
         log(
             "INFO",
             "────── 开始处理账号: ${acc.label} ──────",
-            "accountId=${acc.id.takeLast(8)}, thread=${Thread.currentThread().name}, " +
+            "accountId=${acc.id.takeLast(LOG_ID_SUFFIX_LENGTH)}, thread=${Thread.currentThread().name}, " +
                 "enabled=${acc.enabled}, hasMysCookie=${acc.mysCookie.isNotBlank()}, hasMysKeepLogin=${acc.hasMysKeepLogin}, " +
                 "qrLoginBound=${acc.qrLoginBound}, hasCloudYS=${hasCloudYS(acc)}, hasCloudSR=${hasCloudSR(acc)}, " +
                 "selectedMysGames=${acc.selectedMysGames().joinToString { it.key }}, " +
