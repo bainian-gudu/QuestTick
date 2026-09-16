@@ -37,6 +37,8 @@ class QuestTickApp :
     Configuration.Provider {
     private companion object {
         const val TAG = "QuestTickApp"
+        const val IMAGE_MEMORY_CACHE_PERCENT = 0.18
+        const val IMAGE_DISK_CACHE_BYTES = 20L * 1024 * 1024
     }
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
@@ -72,14 +74,14 @@ class QuestTickApp :
             .memoryCache {
                 MemoryCache
                     .Builder()
-                    .maxSizePercent(context, 0.18)
+                    .maxSizePercent(context, IMAGE_MEMORY_CACHE_PERCENT)
                     .strongReferencesEnabled(true)
                     .build()
             }.diskCache {
                 DiskCache
                     .Builder()
                     .directory(context.cacheDir.resolve("coil_images").toOkioPath())
-                    .maxSizeBytes(20L * 1024 * 1024)
+                    .maxSizeBytes(IMAGE_DISK_CACHE_BYTES)
                     .build()
             }.build()
 

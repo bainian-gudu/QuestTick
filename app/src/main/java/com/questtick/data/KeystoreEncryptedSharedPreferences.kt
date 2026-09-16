@@ -265,7 +265,7 @@ internal class KeystoreEncryptedSharedPreferences(
                     KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
                 ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
+                .setKeySize(AES_KEY_SIZE_BITS)
                 .setRandomizedEncryptionRequired(true)
                 // 明确不需要用户认证，避免锁屏时无法解密后台签到任务
                 .setUserAuthenticationRequired(false)
@@ -288,6 +288,7 @@ internal class KeystoreEncryptedSharedPreferences(
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private const val GCM_IV_SIZE_BYTES = 12
         private const val GCM_TAG_SIZE_BITS = 128
+        private const val AES_KEY_SIZE_BITS = 256
         private const val TYPE_PREFIX = "__signin_secure_pref__:"
         private const val TYPE_BOOLEAN = "boolean"
         private const val TYPE_INT = "int"

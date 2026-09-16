@@ -139,11 +139,11 @@ class PostRunActionRepository
         }
 
         private fun retryDelayMillis(attemptCount: Int): Long {
-            val exponent = (attemptCount - 1).coerceIn(0, 10)
+            val exponent = (attemptCount - 1).coerceIn(0, MAX_RETRY_EXPONENT)
             return min(BASE_RETRY_MILLIS * (1L shl exponent), MAX_RETRY_MILLIS)
         }
 
-        private fun sanitizeCode(value: String): String = value.trim().replace(Regex("[^A-Za-z0-9_.-]"), "-").take(80)
+        private fun sanitizeCode(value: String): String = value.trim().replace(Regex("[^A-Za-z0-9_.-]"), "-").take(MAX_ERROR_CODE_LENGTH)
 
         sealed interface ClaimResult {
             data class Claimed(
@@ -171,6 +171,8 @@ class PostRunActionRepository
             const val ERROR_CATEGORY_RESULT_UNKNOWN = "RESULT_UNKNOWN"
             const val MAX_ATTEMPTS = 5
             const val LEASE_MILLIS = 5L * 60 * 1000
+            private const val MAX_RETRY_EXPONENT = 10
+            private const val MAX_ERROR_CODE_LENGTH = 80
             private const val CLAIM_RETRY_MILLIS = 30_000L
             private const val BASE_RETRY_MILLIS = 5L * 60 * 1000
             private const val MAX_RETRY_MILLIS = 6L * 60 * 60 * 1000

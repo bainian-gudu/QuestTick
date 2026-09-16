@@ -29,6 +29,8 @@ import java.util.Properties
  * 浅色调色板，不读取动态配色或用户自定义主题；正文不写入 Cookie / Token 等敏感值。
  */
 object Mailer {
+    private const val SMTP_SSL_PORT = 465
+
     private object DefaultMailPalette {
         const val PAGE_BACKGROUND = "#F8FBFF"
         const val SURFACE = "#FFFFFF"
@@ -63,7 +65,7 @@ object Mailer {
             }
 
             try {
-                val useSsl = settings.smtpPort == 465
+                val useSsl = settings.smtpPort == SMTP_SSL_PORT
                 val props =
                     Properties().apply {
                         put("mail.smtp.host", settings.smtpServer)

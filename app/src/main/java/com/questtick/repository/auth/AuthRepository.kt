@@ -8,6 +8,8 @@ import com.questtick.net.HttpTransport
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val MIN_COOKIE_LENGTH = 50
+
 /** 认证仓库：统一管理 Cookie 健康检查、Cookie 刷新与云游戏 Token 续期。 */
 @Singleton
 class AuthRepository
@@ -34,7 +36,7 @@ class AuthRepository
             val missing = mutableListOf<String>()
             if (!lower.contains("cookie_token")) missing.add("cookie_token")
             if (!lower.contains("account_id")) missing.add("account_id")
-            if (cookie.length < 50) missing.add("长度过短(${cookie.length}字符)")
+            if (cookie.length < MIN_COOKIE_LENGTH) missing.add("长度过短(${cookie.length}字符)")
             if (missing.isNotEmpty()) {
                 return CredentialHealth(CredentialState.EXPIRING, "Cookie 可能不完整：缺少${missing.joinToString("、")}")
             }

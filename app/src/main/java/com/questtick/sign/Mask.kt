@@ -7,6 +7,8 @@ package com.questtick.sign
  * HTTP Header、云游戏 token 以及 URL 查询参数中的凭证，避免 Cookie / Token 外泄。
  */
 object Mask {
+    private const val SHORT_ID_MAX_LENGTH = 4
+
     private val rules: List<Pair<Regex, String>> =
         listOf(
             // Cookie 字段：来自 CookieRefresher.buildCookie 与米游社接口。
@@ -66,10 +68,8 @@ object Mask {
         val n = value.length
         // 单字符 ID 直接显示并追加星号。
         if (n <= 1) return value
-        // 2 到 3 字符：保留原文并追加星号。
-        if (n <= 3) return "$value****"
-        // 4 字符：保留原文并追加星号。
-        if (n <= 4) return "$value****"
+        // 2 到 4 字符：保留原文并追加星号。
+        if (n <= SHORT_ID_MAX_LENGTH) return "$value****"
         // 5 字符及以上：保留前 2 与后 2，中间替换为星号。
         return "${value.take(2)}****${value.takeLast(2)}"
     }
