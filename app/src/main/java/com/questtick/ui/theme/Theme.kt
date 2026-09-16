@@ -21,11 +21,29 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-val TextSecondary = Color(0xFF6B7280)
-val SuccessGreen = Color(0xFF34D399)
-val WarnAmber = Color(0xFFF6B24A)
-val DangerRed = Color(0xFFF65B6B)
-val InfoBlue = Color(0xFF5AA8F0)
+private const val TEXT_SECONDARY_COLOR = 0xFF6B7280
+private const val SUCCESS_GREEN_COLOR = 0xFF34D399
+private const val WARN_AMBER_COLOR = 0xFFF6B24A
+private const val DANGER_RED_COLOR = 0xFFF65B6B
+private const val INFO_BLUE_COLOR = 0xFF5AA8F0
+private const val DARK_ON_PRIMARY_COLOR = 0xFF0B1120
+
+private const val CUSTOM_DARK_BACKGROUND_TINT = 0.08f
+private const val CUSTOM_LIGHT_BACKGROUND_TINT = 0.035f
+private const val CUSTOM_DARK_PRIMARY_CONTAINER_TINT = 0.32f
+private const val CUSTOM_LIGHT_PRIMARY_CONTAINER_TINT = 0.16f
+private const val CUSTOM_DARK_SURFACE_TINT = 0.14f
+private const val CUSTOM_LIGHT_SURFACE_TINT = 0.06f
+private const val CUSTOM_DARK_SURFACE_VARIANT_TINT = 0.2f
+private const val CUSTOM_LIGHT_SURFACE_VARIANT_TINT = 0.1f
+private const val CUSTOM_OUTLINE_TINT = 0.28f
+private const val CUSTOM_OUTLINE_VARIANT_TINT = 0.22f
+
+val TextSecondary = Color(TEXT_SECONDARY_COLOR)
+val SuccessGreen = Color(SUCCESS_GREEN_COLOR)
+val WarnAmber = Color(WARN_AMBER_COLOR)
+val DangerRed = Color(DANGER_RED_COLOR)
+val InfoBlue = Color(INFO_BLUE_COLOR)
 
 private val AppTypography = Typography()
 
@@ -93,11 +111,11 @@ fun QuestTickTheme(
             dynamicScheme ?: if (darkTheme) {
                 darkColorScheme(
                     primary = palette.brand,
-                    onPrimary = Color(0xFF0B1120),
+                    onPrimary = Color(DARK_ON_PRIMARY_COLOR),
                     primaryContainer = palette.cardElevated,
                     onPrimaryContainer = palette.textPrimary,
                     secondary = palette.brandAlt,
-                    onSecondary = Color(0xFF0B1120),
+                    onSecondary = Color(DARK_ON_PRIMARY_COLOR),
                     background = palette.backgroundBottom,
                     onBackground = palette.textPrimary,
                     surface = palette.card,
@@ -134,20 +152,35 @@ fun QuestTickTheme(
                 // 自定义色同时映射到背景、卡片、输入区域和边框，保证全局观感一致。
                 val customBackground =
                     if (darkTheme) {
-                        blendColor(scheme.background, customColor, 0.08f)
+                        blendColor(scheme.background, customColor, CUSTOM_DARK_BACKGROUND_TINT)
                     } else {
-                        blendColor(scheme.background, customColor, 0.035f)
+                        blendColor(scheme.background, customColor, CUSTOM_LIGHT_BACKGROUND_TINT)
                     }
                 scheme.copy(
                     primary = customColor,
                     secondary = customSecondaryColor ?: customColor,
                     tertiary = customTertiaryColor ?: customColor,
-                    primaryContainer = blendColor(scheme.primaryContainer, customColor, if (darkTheme) 0.32f else 0.16f),
+                    primaryContainer =
+                        blendColor(
+                            scheme.primaryContainer,
+                            customColor,
+                            if (darkTheme) CUSTOM_DARK_PRIMARY_CONTAINER_TINT else CUSTOM_LIGHT_PRIMARY_CONTAINER_TINT,
+                        ),
                     background = customBackground,
-                    surface = blendColor(scheme.surface, customColor, if (darkTheme) 0.14f else 0.06f),
-                    surfaceVariant = blendColor(scheme.surfaceVariant, customColor, if (darkTheme) 0.2f else 0.1f),
-                    outline = blendColor(scheme.outline, customColor, 0.28f),
-                    outlineVariant = blendColor(scheme.outlineVariant, customColor, 0.22f),
+                    surface =
+                        blendColor(
+                            scheme.surface,
+                            customColor,
+                            if (darkTheme) CUSTOM_DARK_SURFACE_TINT else CUSTOM_LIGHT_SURFACE_TINT,
+                        ),
+                    surfaceVariant =
+                        blendColor(
+                            scheme.surfaceVariant,
+                            customColor,
+                            if (darkTheme) CUSTOM_DARK_SURFACE_VARIANT_TINT else CUSTOM_LIGHT_SURFACE_VARIANT_TINT,
+                        ),
+                    outline = blendColor(scheme.outline, customColor, CUSTOM_OUTLINE_TINT),
+                    outlineVariant = blendColor(scheme.outlineVariant, customColor, CUSTOM_OUTLINE_VARIANT_TINT),
                 )
             } else {
                 scheme

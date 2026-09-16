@@ -181,18 +181,6 @@
     <ID>MagicNumber:AccountsScreen.kt$6</ID>
     <ID>MagicNumber:AnimatedSwitch.kt$0xFF2C2747</ID>
     <ID>MagicNumber:AnimatedSwitch.kt$0xFFB8C0CC</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF0B1120</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF111827</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF182033</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF1F2937</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF2563EB</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF334155</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF3B82F6</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF60A5FA</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF6B7280</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF93C5FD</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFF9CA3AF</ID>
-    <ID>MagicNumber:AppUiTheme.kt$AppUiThemeCatalog$0xFFE5E7EB</ID>
     <ID>MagicNumber:AuthRepository.kt$AuthRepository$50</ID>
     <ID>MagicNumber:CloudSignExecutor.kt$CloudSignExecutor$1000L</ID>
     <ID>MagicNumber:CloudSignExecutor.kt$CloudSignExecutor$5</ID>
@@ -201,16 +189,6 @@
     <ID>MagicNumber:CrashHandler.kt$CrashHandler$10</ID>
     <ID>MagicNumber:CryptoStore.kt$CryptoStore$256</ID>
     <ID>MagicNumber:Ds.kt$Ds$1000</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFF0891B2</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFF10B981</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFF38BDF8</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFF3B82F6</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFF8B5CF6</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFF8B7CF6</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFFEC4899</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFFEF4444</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFFF5A623</ID>
-    <ID>MagicNumber:Games.kt$Games$0xFFF97316</ID>
     <ID>MagicNumber:HomeAccountCard.kt$0xFFE0A22B</ID>
     <ID>MagicNumber:HomeAccountCard.kt$6</ID>
     <ID>MagicNumber:HomeScreen.kt$1000</ID>
@@ -255,38 +233,11 @@
     <ID>MagicNumber:SettingsCommonComponents.kt$0.45f</ID>
     <ID>MagicNumber:SettingsCommonComponents.kt$1024.0</ID>
     <ID>MagicNumber:SettingsCommonComponents.kt$1024L</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF0AAFC1</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF20B8D8</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF2A9D8F</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF2F6BDB</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF5BA8DF</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF64748B</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFF8650C6</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFFB24BC5</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFFD66D2B</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFFE6A832</ID>
-    <ID>MagicNumber:SettingsScreen.kt$0xFFEF5B63</ID>
     <ID>MagicNumber:SettingsScreen.kt$23</ID>
     <ID>MagicNumber:SettingsScreen.kt$500</ID>
     <ID>MagicNumber:SettingsScreen.kt$59</ID>
     <ID>MagicNumber:SettingsScreen.kt$6</ID>
     <ID>MagicNumber:SignInGuardStore.kt$SignInGuardStore$999</ID>
-    <ID>MagicNumber:Theme.kt$0.035f</ID>
-    <ID>MagicNumber:Theme.kt$0.06f</ID>
-    <ID>MagicNumber:Theme.kt$0.08f</ID>
-    <ID>MagicNumber:Theme.kt$0.14f</ID>
-    <ID>MagicNumber:Theme.kt$0.16f</ID>
-    <ID>MagicNumber:Theme.kt$0.1f</ID>
-    <ID>MagicNumber:Theme.kt$0.22f</ID>
-    <ID>MagicNumber:Theme.kt$0.28f</ID>
-    <ID>MagicNumber:Theme.kt$0.2f</ID>
-    <ID>MagicNumber:Theme.kt$0.32f</ID>
-    <ID>MagicNumber:Theme.kt$0xFF0B1120</ID>
-    <ID>MagicNumber:Theme.kt$0xFF34D399</ID>
-    <ID>MagicNumber:Theme.kt$0xFF5AA8F0</ID>
-    <ID>MagicNumber:Theme.kt$0xFF6B7280</ID>
-    <ID>MagicNumber:Theme.kt$0xFFF65B6B</ID>
-    <ID>MagicNumber:Theme.kt$0xFFF6B24A</ID>
     <ID>MatchingDeclarationName:CloudQRLoginScreen.kt$CloudQRLoginResult</ID>
     <ID>MatchingDeclarationName:LocalizationCatalog.kt$Translation</ID>
     <ID>MatchingDeclarationName:MainTabHost.kt$Tab</ID>
