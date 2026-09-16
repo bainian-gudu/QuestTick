@@ -267,8 +267,8 @@ object QRLoginManager {
         val parsed =
             CookieParser.parseLoginCookies(
                 setCookieHeaders = setCookieHeaders,
-                userUid = userInfo.firstNonBlank("aid", "uid", "account_id", "stuid", "user_id"),
-                userMid = userInfo.firstNonBlank("mid", "account_mid", "account_mid_v2", "stmid", "stmid_v2"),
+                userUid = firstNonBlankJson(userInfo, "aid", "uid", "account_id", "stuid", "user_id"),
+                userMid = firstNonBlankJson(userInfo, "mid", "account_mid", "account_mid_v2", "stmid", "stmid_v2"),
             )
         return buildConfirmedStatus(
             uid = parsed.uid.ifBlank { bodyTokens.uid },
@@ -282,19 +282,16 @@ object QRLoginManager {
     }
 
     private fun parseConfirmedNickname(data: JSONObject): String =
-        data
-            .optJSONObject("user_info")
-            .firstNonBlank("nickname", "name", "user_name", "username")
-            .ifBlank { data.optJSONObject("account_info").firstNonBlank("nickname", "name") }
-            .ifBlank { data.optJSONObject("user").firstNonBlank("nickname", "name", "username") }
-            .ifBlank { data.optJSONObject("account").firstNonBlank("nickname", "name") }
-            .ifBlank { data.firstNonBlank("nickname", "name", "user_name", "username") }
+        firstNonBlankJson(data.optJSONObject("user_info"), "nickname", "name", "user_name", "username")
+            .ifBlank { firstNonBlankJson(data.optJSONObject("account_info"), "nickname", "name") }
+            .ifBlank { firstNonBlankJson(data.optJSONObject("user"), "nickname", "name", "username") }
+            .ifBlank { firstNonBlankJson(data.optJSONObject("account"), "nickname", "name") }
+            .ifBlank { firstNonBlankJson(data, "nickname", "name", "user_name", "username") }
 
-    internal fun parseMysUserNickname(json: JSONObject): String =
-        json
-            .optJSONObject("data")
-            ?.optJSONObject("user_info")
-            .firstNonBlank("nickname", "name")
+    internal fun parseMysUserNickname(json: JSONObject): String {
+        val userInfo = json.optJSONObject("data")?.optJSONObject("user_info")
+        return firstNonBlankJson(userInfo, "nickname", "name")
+    }
 
     private fun buildConfirmedStatus(
         uid: String,
@@ -344,19 +341,19 @@ object QRLoginManager {
 
         for (index in 0 until tokens.length()) {
             val item = tokens.optJSONObject(index) ?: continue
-            val token = item.firstNonBlank("token", "value", "token_value", "tokenValue")
-            val tokenName = item.firstNonBlank("name", "token_name", "tokenName").lowercase()
-            val tokenType = item.firstNonBlank("token_type", "tokenType", "type")
+            val token = firstNonBlankJson(item, "token", "value", "token_value", "tokenValue")
+            val tokenName = firstNonBlankJson(item, "name", "token_name", "tokenName").lowercase()
+            val tokenType = firstNonBlankJson(item, "token_type", "tokenType", "type")
             val tokenCookies = CookieParser.parseCookieHeader(token)
 
-            uid = uid.ifBlank { item.firstNonBlank("uid", "aid", "account_id", "stuid", "login_uid") }
-            uid = uid.ifBlank { tokenCookies.firstNonBlank("stuid", "account_id", "account_id_v2", "login_uid") }
-            mid = mid.ifBlank { item.firstNonBlank("mid", "account_mid", "account_mid_v2", "stmid", "stmid_v2") }
-            mid = mid.ifBlank { tokenCookies.firstNonBlank("stmid_v2", "stmid", "account_mid_v2", "mid") }
-            cookieToken = cookieToken.ifBlank { tokenCookies.firstNonBlank("cookie_token_v2", "cookie_token") }
-            ltoken = ltoken.ifBlank { tokenCookies.firstNonBlank("ltoken_v2", "ltoken") }
-            stokenFallback = stokenFallback.ifBlank { tokenCookies.firstNonBlank("stoken_v2", "stoken") }
-            loginTicket = loginTicket.ifBlank { tokenCookies.firstNonBlank("login_ticket", "login_ticket_v2") }
+            uid = uid.ifBlank { firstNonBlankJson(item, "uid", "aid", "account_id", "stuid", "login_uid") }
+            uid = uid.ifBlank { firstNonBlankMap(tokenCookies, "stuid", "account_id", "account_id_v2", "login_uid") }
+            mid = mid.ifBlank { firstNonBlankJson(item, "mid", "account_mid", "account_mid_v2", "stmid", "stmid_v2") }
+            mid = mid.ifBlank { firstNonBlankMap(tokenCookies, "stmid_v2", "stmid", "account_mid_v2", "mid") }
+            cookieToken = cookieToken.ifBlank { firstNonBlankMap(tokenCookies, "cookie_token_v2", "cookie_token") }
+            ltoken = ltoken.ifBlank { firstNonBlankMap(tokenCookies, "ltoken_v2", "ltoken") }
+            stokenFallback = stokenFallback.ifBlank { firstNonBlankMap(tokenCookies, "stoken_v2", "stoken") }
+            loginTicket = loginTicket.ifBlank { firstNonBlankMap(tokenCookies, "login_ticket", "login_ticket_v2") }
 
             when {
                 tokenType == TOKEN_TYPE_STOKEN -> {
@@ -403,9 +400,9 @@ object QRLoginManager {
         var ltoken = ""
         for (index in 0 until list.length()) {
             val item = list.optJSONObject(index) ?: continue
-            val token = item.firstNonBlank("token", "value", "token_value", "tokenValue")
-            val tokenName = item.firstNonBlank("name", "token_name", "tokenName").lowercase()
-            val tokenType = item.firstNonBlank("token_type", "tokenType", "type")
+            val token = firstNonBlankJson(item, "token", "value", "token_value", "tokenValue")
+            val tokenName = firstNonBlankJson(item, "name", "token_name", "tokenName").lowercase()
+            val tokenType = firstNonBlankJson(item, "token_type", "tokenType", "type")
             when {
                 tokenType == TOKEN_TYPE_STOKEN -> {
                     stokenFromTokenType = stokenFromTokenType.ifBlank { token }
@@ -470,22 +467,21 @@ object QRLoginManager {
         }
     }
 
-    private fun JSONObject?.firstNonBlank(vararg keys: String): String {
-        if (this == null) return ""
-        for (key in keys) {
-            val value = optString(key).trim()
-            if (value.isNotBlank()) return value
-        }
-        return ""
-    }
+    private fun firstNonBlankJson(
+        json: JSONObject?,
+        vararg keys: String,
+    ): String =
+        keys
+            .firstNotNullOfOrNull { key -> json?.optString(key)?.trim()?.takeIf { it.isNotBlank() } }
+            .orEmpty()
 
-    private fun Map<String, String>.firstNonBlank(vararg keys: String): String {
-        for (key in keys) {
-            val value = this[key].orEmpty().trim()
-            if (value.isNotBlank()) return value
-        }
-        return ""
-    }
+    private fun firstNonBlankMap(
+        values: Map<String, String>,
+        vararg keys: String,
+    ): String =
+        keys
+            .firstNotNullOfOrNull { key -> values[key]?.trim()?.takeIf { it.isNotBlank() } }
+            .orEmpty()
 
     private fun urlEncode(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8.name())
 
