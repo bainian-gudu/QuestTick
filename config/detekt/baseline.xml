@@ -46,8 +46,6 @@
     <ID>CyclomaticComplexMethod:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>CyclomaticComplexMethod:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
     <ID>CyclomaticComplexMethod:Theme.kt$@Suppress("DEPRECATION") @Composable fun QuestTickTheme( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
-    <ID>DoubleMutabilityForCollection:ActIdStore.kt$ActIdStore$@Volatile private var cache: MutableMap&lt;String, String&gt;? = null</ID>
-    <ID>ImplicitDefaultLocale:Ds.kt$Ds$String.format("\\u%04x", c.code)</ID>
     <ID>InjectDispatcher:AccountRepository.kt$AccountRepository$IO</ID>
     <ID>InjectDispatcher:AccountsViewModel.kt$AccountsViewModel$IO</ID>
     <ID>InjectDispatcher:AddAccountViewModel.kt$AddAccountViewModel$IO</ID>
@@ -80,16 +78,12 @@
     <ID>InjectDispatcher:StatefulRepository.kt$StatefulRepository$Default</ID>
     <ID>InjectDispatcher:StatefulRepository.kt$StatefulRepository$IO</ID>
     <ID>InjectDispatcher:SyncWorker.kt$SyncWorker$IO</ID>
-    <ID>InstanceOfCheckForException:CloudSignExecutor.kt$CloudSignExecutor$e is kotlinx.coroutines.CancellationException</ID>
-    <ID>InstanceOfCheckForException:MysSignExecutor.kt$MysSignExecutor$e is kotlinx.coroutines.CancellationException</ID>
-    <ID>InstanceOfCheckForException:SignInRunner.kt$SignInRunner$e is RunPersistenceException</ID>
     <ID>LargeClass:RunPersistenceRepository.kt$RunPersistenceRepository</ID>
     <ID>LargeClass:SignInRunner.kt$SignInRunner</ID>
     <ID>LongMethod:AccountEditScreen.kt$@Composable private fun BasicTab( label: String, onLabel: (String) -&gt; Unit, cookie: String, onCookie: (String) -&gt; Unit, cookieWarning: String? = null, keepLogin: Boolean = false, refreshingCookie: Boolean = false, cookieRefreshDone: Boolean = false, cookieRefreshFailed: Boolean = false, onStartQRLogin: (() -&gt; Unit)? = null, onRefreshCookie: (() -&gt; Unit)? = null, onLogout: (() -&gt; Unit)? = null, )</ID>
     <ID>LongMethod:AccountEditScreen.kt$@Composable private fun CloudTab( genshin: String, onGenshin: (String) -&gt; Unit, starrail: String, onStarrail: (String) -&gt; Unit, genshinKeepLogin: Boolean = false, starrailKeepLogin: Boolean = false, refreshingGenshinToken: Boolean = false, genshinTokenRefreshDone: Boolean = false, genshinTokenRefreshFailed: Boolean = false, refreshingStarrailToken: Boolean = false, starrailTokenRefreshDone: Boolean = false, starrailTokenRefreshFailed: Boolean = false, /** 扫码获取云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onStartCloudQR: ((gameKey: String) -&gt; Unit)? = null, /** 手动刷新云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onRefreshCloudToken: ((gameKey: String) -&gt; Unit)? = null, /** 退出云游戏扫码登录；保留当前 Token。 */ onLogoutCloud: ((gameKey: String) -&gt; Unit)? = null, )</ID>
     <ID>LongMethod:AccountsScreen.kt$@Composable fun AccountsScreen( onStartEdit: (Account, Boolean) -&gt; Unit, isVisible: Boolean = true, viewModel: AccountsViewModel = hiltViewModel(), )</ID>
     <ID>LongMethod:AccountsScreen.kt$@Composable private fun AccountCard( account: Account, onEdit: () -&gt; Unit, onDelete: () -&gt; Unit, onToggle: (Boolean) -&gt; Unit, executionGuard: ExecutionStateRepository.AccountGuard?, onResume: () -&gt; Unit, )</ID>
-    <ID>LongMethod:AppUpdateInstaller.kt$AppUpdateInstaller$private suspend fun downloadOnce( url: String, tmp: File, onProgress: (downloadedBytes: Long, totalBytes: Long) -&gt; Unit, streamingHttpTransport: StreamingHttpTransport, )</ID>
     <ID>LongMethod:CloudQRLoginScreen.kt$@Composable fun CloudQRLoginScreen( gameKey: String, deviceId: String, visible: Boolean = true, onResult: (CloudQRLoginResult) -&gt; Unit, onCancel: () -&gt; Unit, onError: (String) -&gt; Unit = {}, )</ID>
     <ID>LongMethod:CloudSignExecutor.kt$CloudSignExecutor$suspend fun runAccount( acc: Account, cloudGameBindings: List&lt;CloudGameBinding&gt;, cloudDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>LongMethod:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
@@ -832,8 +826,6 @@
     <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$private fun isDirectUpdateMetadataUrl(rawUrl: String): Boolean</ID>
     <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$private fun parseHttps(rawUrl: String): HttpUrl?</ID>
     <ID>SpreadOperator:PinningManager.kt$PinningManager$(config.host, *config.pins.toTypedArray())</ID>
-    <ID>ThrowingExceptionFromFinally:AppUpdateInstaller.kt$AppUpdateInstaller$throw closeError</ID>
-    <ID>ThrowingExceptionFromFinally:AppUpdateInstaller.kt$AppUpdateInstaller$throw failure</ID>
     <ID>ThrowsCount:AppUpdateInstaller.kt$AppUpdateInstaller$private suspend fun downloadFromCandidates( urls: List&lt;String&gt;, tmp: File, onProgress: (downloadedBytes: Long, totalBytes: Long) -&gt; Unit, streamingHttpTransport: StreamingHttpTransport, )</ID>
     <ID>ThrowsCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ThrowsCount:TrustedRedirects.kt$TrustedRedirects$internal fun resolveLocation(response: Response): HttpUrl</ID>
@@ -844,7 +836,6 @@
     <ID>TooGenericExceptionCaught:AppUpdateChecker.kt$AppUpdateChecker$e: Exception</ID>
     <ID>TooGenericExceptionCaught:AppUpdateChecker.kt$AppUpdateChecker$error: Exception</ID>
     <ID>TooGenericExceptionCaught:AppUpdateInstaller.kt$AppUpdateInstaller$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:AppUpdateInstaller.kt$AppUpdateInstaller$error: Throwable</ID>
     <ID>TooGenericExceptionCaught:BootReceiver.kt$BootReceiver$error: Exception</ID>
     <ID>TooGenericExceptionCaught:CloudQRLogin.kt$CloudQRLogin$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CloudSignExecutor.kt$CloudSignExecutor$e: Exception</ID>
@@ -923,11 +914,7 @@
     <ID>TooManyFunctions:SignInRunner.kt$SignInRunner</ID>
     <ID>TooManyFunctions:TrustedRedirects.kt$TrustedRedirects</ID>
     <ID>TooManyFunctions:TrustedUrlPolicy.kt$TrustedUrlPolicy</ID>
-    <ID>UnusedParameter:AccountEditScreen.kt$done: Boolean = false</ID>
-    <ID>UnusedParameter:HomeThemeDashboard.kt$theme: AppUiThemePalette</ID>
     <ID>UnusedPrivateMember:QRLoginManager.kt$QRLoginManager$private fun JSONObject?.firstNonBlank(vararg keys: String): String</ID>
     <ID>UnusedPrivateMember:QRLoginManager.kt$QRLoginManager$private fun Map&lt;String, String&gt;.firstNonBlank(vararg keys: String): String</ID>
-    <ID>UseCheckOrError:MailStore.kt$MailStore$throw IllegalStateException("Failed to save mail settings: encrypted commit returned false")</ID>
-    <ID>UseCheckOrError:SettingsStore.kt$SettingsStore$throw IllegalStateException("Failed to save app settings: plain commit returned false")</ID>
   </CurrentIssues>
 </SmellBaseline>

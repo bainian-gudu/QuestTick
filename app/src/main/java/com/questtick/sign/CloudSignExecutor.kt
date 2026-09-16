@@ -8,6 +8,7 @@ import com.questtick.data.Account
 import com.questtick.data.FailureCategory
 import com.questtick.data.TaskResult
 import com.questtick.net.HttpTransport
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -128,8 +129,9 @@ internal class CloudSignExecutor(
     ): CloudSignIn.Outcome =
         try {
             cloud.runForToken(token, game)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
             CloudSignIn.Outcome(
                 success = false,
                 skipped = false,

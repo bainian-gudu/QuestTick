@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Cookie
@@ -497,7 +498,15 @@ private fun LoginActionButton(
         shape = RoundedCornerShape(12.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, stateColor),
     ) {
-        if (loading) {
+        if (done) {
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = stateColor,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.size(6.dp))
+        } else if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(16.dp),
                 color = stateColor,

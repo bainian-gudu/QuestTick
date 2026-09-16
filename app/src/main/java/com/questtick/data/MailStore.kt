@@ -28,9 +28,7 @@ internal class MailStore(
                 .edit()
                 .putString(key, settings.toJson().toString())
                 .commitSafely(TAG, "save mail settings")
-        if (!success) {
-            throw IllegalStateException("Failed to save mail settings: encrypted commit returned false")
-        }
+        check(success) { "Failed to save mail settings: encrypted commit returned false" }
         cache = settings
     }
 

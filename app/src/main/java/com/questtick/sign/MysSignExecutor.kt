@@ -11,6 +11,7 @@ import com.questtick.data.TaskResult
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpTransport
 import com.questtick.net.TrustedUrlPolicy
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -310,8 +311,9 @@ internal class MysSignExecutor(
     ): MysSignIn.Outcome =
         try {
             mys.runForCookie(cookie, game)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
             MysSignIn.Outcome(
                 success = false,
                 skipped = false,
