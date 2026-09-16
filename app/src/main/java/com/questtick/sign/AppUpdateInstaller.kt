@@ -297,7 +297,9 @@ object AppUpdateInstaller {
         keepName: String,
     ) {
         dir.listFiles()?.forEach { file ->
-            if (file.isFile && file.name != keepName && (file.name.endsWith(".apk") || file.name.endsWith(".tmp"))) {
+            val isManagedFile = file.name.endsWith(".apk") || file.name.endsWith(".tmp")
+            val isObsoleteManagedFile = file.isFile && file.name != keepName && isManagedFile
+            if (isObsoleteManagedFile) {
                 file.delete()
             }
         }

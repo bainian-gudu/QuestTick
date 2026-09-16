@@ -327,6 +327,15 @@ data class MailSettings(
     val username: String = "",
     val password: String = "",
 ) {
+    val isConfigured: Boolean
+        get() = hasRecipient && hasSmtpCredentials
+
+    private val hasRecipient: Boolean
+        get() = mailTo.isNotBlank() && smtpServer.isNotBlank()
+
+    private val hasSmtpCredentials: Boolean
+        get() = username.isNotBlank() && password.isNotBlank()
+
     fun toJson(): JSONObject =
         JSONObject().apply {
             put("enabled", enabled)
