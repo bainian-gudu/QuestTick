@@ -54,7 +54,7 @@ class RecordsViewModel
                                     attemptCount = action.attemptCount,
                                 )
                         }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(EMAIL_DELIVERY_STOP_TIMEOUT_MS), emptyMap())
 
         /**
          * 记录页在主分页器中会保留组合状态，每次切回页面都会收到可见性事件。
@@ -106,6 +106,7 @@ class RecordsViewModel
 
         private companion object {
             const val MIN_REFRESH_INTERVAL_MILLIS = 15_000L
+            const val EMAIL_DELIVERY_STOP_TIMEOUT_MS = 5_000L
         }
     }
 

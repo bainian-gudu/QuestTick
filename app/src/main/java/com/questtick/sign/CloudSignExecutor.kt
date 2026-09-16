@@ -15,6 +15,10 @@ import kotlinx.coroutines.sync.withPermit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
+private const val MIN_TASK_DELAY_SECONDS = 2
+private const val MAX_TASK_DELAY_SECONDS = 5
+private const val MILLIS_PER_SECOND = 1_000L
+
 /**
  * 云游戏签到执行器。
  *
@@ -115,7 +119,7 @@ internal class CloudSignExecutor(
             onTaskCompleted(taskId, result, "${currentAccount.label} · ${game.name}")
 
             if (idx < bindings.lastIndex) {
-                randomSleep(2, 5)
+                randomSleep(MIN_TASK_DELAY_SECONDS, MAX_TASK_DELAY_SECONDS)
             }
         }
 
@@ -158,7 +162,7 @@ internal class CloudSignExecutor(
         min: Int,
         max: Int,
     ) {
-        delay(Random.nextInt(min, max + 1) * 1000L)
+        delay(Random.nextInt(min, max + 1) * MILLIS_PER_SECOND)
     }
 
     private fun logOutcome(

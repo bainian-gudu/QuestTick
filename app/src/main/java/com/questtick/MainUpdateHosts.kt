@@ -31,6 +31,8 @@ import com.questtick.ui.vm.AppUpdateDownloadProgress
 import com.questtick.ui.vm.AppUpdatePrompt
 import com.questtick.ui.vm.SettingsViewModel
 
+private const val DOWNLOAD_PROGRESS_CORNER_PERCENT = 50
+
 @Composable
 internal fun UpdateOverlayHost(
     updateDownloadProgress: AppUpdateDownloadProgress?,
@@ -153,7 +155,7 @@ internal fun UpdateDownloadDialog(progress: AppUpdateDownloadProgress) {
                 Modifier
                     .fillMaxWidth()
                     .height(12.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(RoundedCornerShape(DOWNLOAD_PROGRESS_CORNER_PERCENT))
                     .background(dialogColors.progressTrack),
             ) {
                 if (knownTotal && ratio > 0f) {

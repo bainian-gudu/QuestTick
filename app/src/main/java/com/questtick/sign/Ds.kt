@@ -39,6 +39,7 @@ object Ds {
     private const val V2_RANDOM_SPECIAL = "100000"
     private const val V2_RANDOM_REPLACEMENT = "642367"
     private const val MIN_SALT_LENGTH = 8
+    private const val MILLIS_PER_SECOND = 1_000L
 
     private fun md5(input: String): String {
         val bytes = MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8))
@@ -64,7 +65,7 @@ object Ds {
         algorithm: Algorithm = Algorithm.MD5_V1,
         salt: String = LUNA_SALT,
     ): String {
-        val t = System.currentTimeMillis() / 1000
+        val t = System.currentTimeMillis() / MILLIS_PER_SECOND
         val r =
             when (algorithm) {
                 Algorithm.MD5_V1 -> randomString(RANDOM_V1_LENGTH)
@@ -78,14 +79,14 @@ object Ds {
         body: String = "",
         query: String = "",
     ): String {
-        val timestampSeconds = System.currentTimeMillis() / 1000
+        val timestampSeconds = System.currentTimeMillis() / MILLIS_PER_SECOND
         val random = Random.nextInt(V2_RANDOM_MIN + 1, V2_RANDOM_MAX + 1).toString()
         return generateMd5V2(timestampSeconds, random, X6_SALT, body, query)
     }
 
     /** 普通游戏签到 / 奖励接口使用的网页端 md5_v1 DS。 */
     fun generateWeb(): String {
-        val timestampSeconds = System.currentTimeMillis() / 1000
+        val timestampSeconds = System.currentTimeMillis() / MILLIS_PER_SECOND
         val random = randomString(RANDOM_V1_LENGTH)
         return generateMd5V1(timestampSeconds, random, WEB_SALT)
     }

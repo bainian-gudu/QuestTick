@@ -10,7 +10,7 @@ internal class SignInGuardStore(
     fun getConsecutiveFailures(): Int = prefs.getInt(KEY_CONSECUTIVE_FAILURES, 0)
 
     fun recordFailure(): Int {
-        val next = (getConsecutiveFailures() + 1).coerceAtMost(999)
+        val next = (getConsecutiveFailures() + 1).coerceAtMost(MAX_CONSECUTIVE_FAILURES)
         val success =
             prefs
                 .edit()
@@ -53,6 +53,7 @@ internal class SignInGuardStore(
 
     companion object {
         private const val TAG = "SignInGuardStore"
+        private const val MAX_CONSECUTIVE_FAILURES = 999
         private const val KEY_CONSECUTIVE_FAILURES = "signin_guard_consecutive_failures"
         private const val KEY_PAUSED_AT = "signin_guard_paused_at"
         private const val KEY_PAUSE_REASON = "signin_guard_pause_reason"

@@ -36,6 +36,8 @@ internal class MysSignExecutor(
         private const val LOGGED_CLIENT_TYPE = "5"
         private const val MIN_COOKIE_LENGTH = 50
         private const val MILLIS_PER_SECOND = 1_000L
+        private const val MIN_TASK_DELAY_SECONDS = 2
+        private const val MAX_TASK_DELAY_SECONDS = 5
     }
 
     suspend fun runAccount(
@@ -182,7 +184,7 @@ internal class MysSignExecutor(
             )
 
             onTaskCompleted(taskId, result, "${acc.label} · ${game.name}")
-            if (index < games.size - 1) randomSleep(2, 5)
+            if (index < games.size - 1) randomSleep(MIN_TASK_DELAY_SECONDS, MAX_TASK_DELAY_SECONDS)
         }
 
         if (MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled) {

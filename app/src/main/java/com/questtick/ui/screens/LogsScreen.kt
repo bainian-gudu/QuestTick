@@ -78,6 +78,7 @@ import java.util.Locale
 
 private val logTimeFmt: SimpleDateFormat get() = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 private val logDateFmt: SimpleDateFormat get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+private const val LOG_SEARCH_DEBOUNCE_MS = 250L
 
 @Composable
 fun LogsScreen(
@@ -113,7 +114,7 @@ fun LogsScreen(
     var debouncedSearchKeyword by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(searchQuery, isVisible) {
         if (!isVisible) return@LaunchedEffect
-        delay(250)
+        delay(LOG_SEARCH_DEBOUNCE_MS)
         debouncedSearchKeyword = searchQuery.trim()
     }
     val searchKeyword = debouncedSearchKeyword

@@ -32,7 +32,7 @@ class CrashHandler private constructor(
         }
         previous?.uncaughtException(thread, throwable) ?: run {
             android.os.Process.killProcess(android.os.Process.myPid())
-            kotlin.system.exitProcess(10)
+            kotlin.system.exitProcess(CRASH_EXIT_CODE)
         }
     }
 
@@ -120,6 +120,7 @@ class CrashHandler private constructor(
     companion object {
         private const val CRASH_DIR = "crash_diagnostics"
         private const val MAX_CRASH_FILES = 10
+        private const val CRASH_EXIT_CODE = 10
         private const val CRASH_LOG_THREAD_NAME = "questtick-crash-log"
         private const val CRASH_LOG_JOIN_TIMEOUT_MS = 800L
         private val timeFmt: SimpleDateFormat get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())

@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets
  */
 object CookieRefresher {
     private const val TAG = "CookieRefresher"
+    private const val DEFAULT_RETCODE = -999
 
     data class RefreshedCookie(
         val cookieToken: String,
@@ -55,7 +56,7 @@ object CookieRefresher {
                         headers,
                     )
                 val json = resp.json()
-                val retcode = json.optInt("retcode", -999)
+                val retcode = json.optInt("retcode", DEFAULT_RETCODE)
                 if (retcode != 0) {
                     AppLog.w(TAG, "getCookieAccountInfoBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
                     onDiagnostic(
@@ -84,7 +85,7 @@ object CookieRefresher {
                         headers,
                     )
                 val json = resp.json()
-                val retcode = json.optInt("retcode", -999)
+                val retcode = json.optInt("retcode", DEFAULT_RETCODE)
                 if (retcode != 0) {
                     AppLog.w(TAG, "getLTokenBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
                     onDiagnostic(

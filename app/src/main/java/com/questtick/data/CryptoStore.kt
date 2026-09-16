@@ -57,7 +57,7 @@ internal object CryptoStore {
                     KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
                 ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
+                .setKeySize(AES_KEY_SIZE_BITS)
                 .setRandomizedEncryptionRequired(true)
                 .setUserAuthenticationRequired(false)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
@@ -78,4 +78,5 @@ internal object CryptoStore {
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val GCM_IV_SIZE_BYTES = 12
     private const val GCM_TAG_SIZE_BITS = 128
+    private const val AES_KEY_SIZE_BITS = 256
 }
