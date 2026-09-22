@@ -106,9 +106,6 @@ internal fun mergeLogSnapshots(
     current: List<LogEntry>,
     maxKeep: Int = RoomLogStore.DEFAULT_MAX_KEEP,
 ): List<LogEntry> {
-    if (persisted.isEmpty()) return current.sortedWith(logEntryOrder).takeLast(maxKeep.coerceAtLeast(1))
-    if (current.isEmpty()) return persisted.sortedWith(logEntryOrder).takeLast(maxKeep.coerceAtLeast(1))
-
     val seen = LinkedHashSet<String>(persisted.size + current.size)
     val merged = ArrayList<LogEntry>(persisted.size + current.size)
 

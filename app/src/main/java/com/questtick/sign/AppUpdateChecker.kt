@@ -330,29 +330,34 @@ object AppUpdateChecker {
     ): AppUpdateInfo {
         val tagName = json.optString("tag_name").trim()
         val rawVersion = tagName.ifBlank { json.optString("name") }
-        if (json.optBoolean("draft") || json.optBoolean("prerelease") || isLikelyPreReleaseVersion(rawVersion)) {
-            return noReleaseInfo(currentVersion)
+        return if (json.optBoolean("draft") ||
+            json.optBoolean("prerelease") ||
+            isLikelyPreReleaseVersion(rawVersion)
+        ) {
+            noReleaseInfo(currentVersion)
+        } else {
+            val latestVersion = normalizeVersion(rawVersion)
+            if (latestVersion.isBlank()) error("no version")
+            findApkAsset(json.optJSONArray("assets"), latestVersion)?.let { apk ->
+                val releaseUrl =
+                    json
+                        .optString("html_url")
+                        .takeIf(TrustedUrlPolicy::isUpdateReleasePageUrl)
+                        ?: RELEASES_PAGE
+                AppUpdateInfo(
+                    currentVersion = currentVersion,
+                    latestVersion = latestVersion,
+                    tagName = tagName,
+                    releaseUrl = releaseUrl,
+                    releaseNotes = json.optString("body").trim(),
+                    publishedAt = json.optString("published_at").trim(),
+                    apkName = apk.name,
+                    apkUrl = apk.url,
+                    apkSha256 = apk.sha256,
+                    hasUpdate = isVersionNewer(latestVersion, currentVersion),
+                )
+            } ?: noReleaseInfo(currentVersion)
         }
-        val latestVersion = normalizeVersion(rawVersion)
-        if (latestVersion.isBlank()) error("no version")
-        val apk = findApkAsset(json.optJSONArray("assets"), latestVersion) ?: return noReleaseInfo(currentVersion)
-        val releaseUrl =
-            json
-                .optString("html_url")
-                .takeIf(TrustedUrlPolicy::isUpdateReleasePageUrl)
-                ?: RELEASES_PAGE
-        return AppUpdateInfo(
-            currentVersion = currentVersion,
-            latestVersion = latestVersion,
-            tagName = tagName,
-            releaseUrl = releaseUrl,
-            releaseNotes = json.optString("body").trim(),
-            publishedAt = json.optString("published_at").trim(),
-            apkName = apk.name,
-            apkUrl = apk.url,
-            apkSha256 = apk.sha256,
-            hasUpdate = isVersionNewer(latestVersion, currentVersion),
-        )
     }
 
     private fun findApkAsset(
