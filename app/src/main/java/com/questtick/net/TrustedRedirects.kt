@@ -291,12 +291,13 @@ internal object TrustedRedirects {
         }
 
         fun advance(response: Response) {
-            if (currentRequest.method !in redirectableMethods) {
-                throw UntrustedRedirectException("redirect is not allowed for ${currentRequest.method}")
-            }
-            if (redirects >= MAX_REDIRECTS) {
-                throw UntrustedRedirectException("redirect limit exceeded: $MAX_REDIRECTS")
-            }
+            val redirectError =
+                when {
+                    currentRequest.method !in redirectableMethods -> "redirect is not allowed for ${currentRequest.method}"
+                    redirects >= MAX_REDIRECTS -> "redirect limit exceeded: $MAX_REDIRECTS"
+                    else -> null
+                }
+            if (redirectError != null) throw UntrustedRedirectException(redirectError)
             val nextUrl = resolveLocation(response)
             requireAllowed(policy, initialUrl, nextUrl, "hop ${redirects + 1}")
             if (!visited.add(nextUrl.toString())) {
@@ -309,14 +310,19 @@ internal object TrustedRedirects {
 
     internal fun resolveLocation(response: Response): HttpUrl {
         val locations = response.headers.values("Location")
-        if (locations.size != 1) {
-            throw UntrustedRedirectException("redirect response must have exactly one Location")
-        }
-        val location = locations.single()
-        if (hasInvalidRedirectLocationSyntax(location) || hasUnsafeRedirectLocationCharacters(location)) {
-            throw UntrustedRedirectException("invalid redirect Location")
-        }
-        return response.request.url.resolve(location)
+        val location = locations.singleOrNull()
+        val invalidLocation =
+            location == null ||
+                hasInvalidRedirectLocationSyntax(location) ||
+                hasUnsafeRedirectLocationCharacters(location)
+        val message =
+            when {
+                locations.size != 1 -> "redirect response must have exactly one Location"
+                invalidLocation -> "invalid redirect Location"
+                else -> null
+            }
+        if (message != null) throw UntrustedRedirectException(message)
+        return response.request.url.resolve(checkNotNull(location))
             ?: throw UntrustedRedirectException("invalid redirect Location")
     }
 
