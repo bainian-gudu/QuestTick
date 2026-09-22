@@ -144,32 +144,57 @@ internal object TrustedRedirects {
         transform: (Response) -> T,
     ): T {
         retryPolicy.requireCompatible(request)
-        val safeClient = client.withAutomaticRedirectsAndRetriesDisabled()
-        val state = RedirectState(request, policy)
-        redirectLoop@ while (true) {
-            var attempts = 0
-            while (true) {
-                attempts++
-                val (attemptClient, attemptRequest) = trackedAttempt(safeClient, state.currentRequest)
-                try {
-                    val response = attemptClient.newCall(attemptRequest).execute()
-                    try {
-                        if (isRedirect(response)) {
-                            state.advance(response)
-                            continue@redirectLoop
-                        }
-                        requireAllowed(policy, state.initialUrl, response.request.url, "final")
-                        return transform(response)
-                    } finally {
-                        response.close()
-                    }
-                } catch (error: IOException) {
-                    val failure = TransportFailures.classify(error, attemptRequest)
-                    if (!TransportFailures.shouldRetry(failure, state.currentRequest, retryPolicy, attempts)) {
-                        throw failure
-                    }
+        val context =
+            MappedRequestContext(
+                client = client.withAutomaticRedirectsAndRetriesDisabled(),
+                policy = policy,
+                retryPolicy = retryPolicy,
+                state = RedirectState(request, policy),
+            )
+        while (true) {
+            when (val result = executeMappedWithRetries(context, transform)) {
+                MappedAttempt.Redirected -> continue
+                is MappedAttempt.Mapped -> return result.value
+            }
+        }
+    }
+
+    private fun <T> executeMappedWithRetries(
+        context: MappedRequestContext,
+        transform: (Response) -> T,
+    ): MappedAttempt<T> {
+        var attempts = 0
+        while (true) {
+            attempts++
+            val (attemptClient, attemptRequest) = trackedAttempt(context.client, context.state.currentRequest)
+            try {
+                return executeMappedAttempt(attemptClient, attemptRequest, context, transform)
+            } catch (error: IOException) {
+                val failure = TransportFailures.classify(error, attemptRequest)
+                if (!TransportFailures.shouldRetry(failure, context.state.currentRequest, context.retryPolicy, attempts)) {
+                    throw failure
                 }
             }
+        }
+    }
+
+    private fun <T> executeMappedAttempt(
+        attemptClient: OkHttpClient,
+        attemptRequest: Request,
+        context: MappedRequestContext,
+        transform: (Response) -> T,
+    ): MappedAttempt<T> {
+        val response = attemptClient.newCall(attemptRequest).execute()
+        return try {
+            if (isRedirect(response)) {
+                context.state.advance(response)
+                MappedAttempt.Redirected
+            } else {
+                requireAllowed(context.policy, context.state.initialUrl, response.request.url, "final")
+                MappedAttempt.Mapped(transform(response))
+            }
+        } finally {
+            response.close()
         }
     }
 
@@ -275,6 +300,21 @@ internal object TrustedRedirects {
     }
 
     private fun isRedirect(response: Response): Boolean = response.code in redirectCodes
+
+    private data class MappedRequestContext(
+        val client: OkHttpClient,
+        val policy: RedirectTrustPolicy,
+        val retryPolicy: TransportRetryPolicy,
+        val state: RedirectState,
+    )
+
+    private sealed interface MappedAttempt<out T> {
+        data object Redirected : MappedAttempt<Nothing>
+
+        data class Mapped<T>(
+            val value: T,
+        ) : MappedAttempt<T>
+    }
 
     private class RedirectState(
         initialRequest: Request,
