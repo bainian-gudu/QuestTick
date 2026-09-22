@@ -193,21 +193,24 @@ object CloudVersionRepository {
      * 若 3 天内已刷新过，直接返回本地当前版本；否则请求网络并持久化。
      */
     suspend fun refreshYs(httpTransport: HttpTransport): Result<String> {
-        val ctx = appContext ?: return Result.failure(IllegalStateException("CloudVersionRepository not initialized"))
-        if (isWithinRefreshInterval(lastFetchTimeMsYs)) {
+        val ctx = appContext
+        return if (ctx == null) {
+            Result.failure(IllegalStateException("CloudVersionRepository not initialized"))
+        } else if (isWithinRefreshInterval(lastFetchTimeMsYs)) {
             AppLog.d(TAG, "skip ys refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentYs=$currentYs")
-            return Result.success(currentYs)
+            Result.success(currentYs)
+        } else {
+            AppLog.d(TAG, "refresh ys: currentYs=$currentYs")
+            CloudAppVersionFetcher
+                .fetchCloudYs(httpTransport)
+                .onSuccess { v ->
+                    update(v, null, ctx)
+                    AppLog.d(TAG, "ys refreshed: $v")
+                }.onFailure { e ->
+                    recordFetchAttempt(ys = true, timestampMs = System.currentTimeMillis(), context = ctx)
+                    AppLog.w(TAG, "ys refresh failed", e)
+                }
         }
-        AppLog.d(TAG, "refresh ys: currentYs=$currentYs")
-        return CloudAppVersionFetcher
-            .fetchCloudYs(httpTransport)
-            .onSuccess { v ->
-                update(v, null, ctx)
-                AppLog.d(TAG, "ys refreshed: $v")
-            }.onFailure { e ->
-                recordFetchAttempt(ys = true, timestampMs = System.currentTimeMillis(), context = ctx)
-                AppLog.w(TAG, "ys refresh failed", e)
-            }
     }
 
     /**
@@ -215,21 +218,24 @@ object CloudVersionRepository {
      * 若 3 天内已刷新过，直接返回本地当前版本；否则请求网络并持久化。
      */
     suspend fun refreshSr(httpTransport: HttpTransport): Result<String> {
-        val ctx = appContext ?: return Result.failure(IllegalStateException("CloudVersionRepository not initialized"))
-        if (isWithinRefreshInterval(lastFetchTimeMsSr)) {
+        val ctx = appContext
+        return if (ctx == null) {
+            Result.failure(IllegalStateException("CloudVersionRepository not initialized"))
+        } else if (isWithinRefreshInterval(lastFetchTimeMsSr)) {
             AppLog.d(TAG, "skip sr refresh: within ${REFRESH_INTERVAL_DAYS}-day interval, currentSr=$currentSr")
-            return Result.success(currentSr)
+            Result.success(currentSr)
+        } else {
+            AppLog.d(TAG, "refresh sr: currentSr=$currentSr")
+            CloudAppVersionFetcher
+                .fetchCloudSr(httpTransport)
+                .onSuccess { v ->
+                    update(null, v, ctx)
+                    AppLog.d(TAG, "sr refreshed: $v")
+                }.onFailure { e ->
+                    recordFetchAttempt(ys = false, timestampMs = System.currentTimeMillis(), context = ctx)
+                    AppLog.w(TAG, "sr refresh failed", e)
+                }
         }
-        AppLog.d(TAG, "refresh sr: currentSr=$currentSr")
-        return CloudAppVersionFetcher
-            .fetchCloudSr(httpTransport)
-            .onSuccess { v ->
-                update(null, v, ctx)
-                AppLog.d(TAG, "sr refreshed: $v")
-            }.onFailure { e ->
-                recordFetchAttempt(ys = false, timestampMs = System.currentTimeMillis(), context = ctx)
-                AppLog.w(TAG, "sr refresh failed", e)
-            }
     }
 
     /**
@@ -239,9 +245,12 @@ object CloudVersionRepository {
     suspend fun refreshRemote(httpTransport: HttpTransport): Result<CloudAppVersionFetcher.CloudVersions> {
         val ysResult = refreshYs(httpTransport)
         val srResult = refreshSr(httpTransport)
-        val ys = ysResult.getOrElse { return Result.failure(it) }
-        val sr = srResult.getOrElse { return Result.failure(it) }
-        return Result.success(CloudAppVersionFetcher.CloudVersions(ys, sr))
+        return ysResult.fold(
+            onSuccess = { ys ->
+                srResult.map { sr -> CloudAppVersionFetcher.CloudVersions(ys, sr) }
+            },
+            onFailure = { Result.failure(it) },
+        )
     }
 
     private fun isWithinRefreshInterval(lastFetchTimeMs: Long): Boolean {
