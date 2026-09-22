@@ -175,26 +175,6 @@
     <ID>LongParameterList:SyncedHorizontalPager.kt$( selectedPage: Int, pageCount: Int, modifier: Modifier = Modifier, beyondViewportPageCount: Int = 1, onVisualPagePositionChange: (Float) -&gt; Unit = {}, onPageSettled: (Int) -&gt; Unit, pageContent: @Composable (page: Int, pageVisible: Boolean) -&gt; Unit, )</ID>
     <ID>LongParameterList:Theme.kt$( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
     <ID>LoopWithTooManyJumpStatements:RewardIconCache.kt$RewardIconCache$for</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$0.45f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$0.5f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$0.65f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$100f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$210f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$24</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$255f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$360f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$3f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$4f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$60f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$6f</ID>
-    <ID>MagicNumber:SettingsAppearancePage.kt$7</ID>
-    <ID>MagicNumber:SettingsCommonComponents.kt$0.45f</ID>
-    <ID>MagicNumber:SettingsCommonComponents.kt$1024.0</ID>
-    <ID>MagicNumber:SettingsCommonComponents.kt$1024L</ID>
-    <ID>MagicNumber:SettingsScreen.kt$23</ID>
-    <ID>MagicNumber:SettingsScreen.kt$500</ID>
-    <ID>MagicNumber:SettingsScreen.kt$59</ID>
-    <ID>MagicNumber:SettingsScreen.kt$6</ID>
     <ID>MatchingDeclarationName:CloudQRLoginScreen.kt$CloudQRLoginResult</ID>
     <ID>MatchingDeclarationName:LocalizationCatalog.kt$Translation</ID>
     <ID>MatchingDeclarationName:QRLoginScreen.kt$QRLoginResult</ID>

@@ -95,6 +95,11 @@ private const val EXPERIMENT_ICON_COLOR = 0xFFB24BC5
 private const val ACT_ID_ICON_COLOR = 0xFFD66D2B
 private const val CACHE_ICON_COLOR = 0xFF2A9D8F
 private const val ABOUT_ICON_COLOR = 0xFF64748B
+private const val MAX_SCHEDULE_HOUR = 23
+private const val MAX_SCHEDULE_MINUTE = 59
+private const val BATTERY_POLL_ATTEMPTS = 6
+private const val BATTERY_POLL_INTERVAL_MS = 500L
+private const val BATTERY_HINT_SPACING_DP = 6
 
 private enum class SettingsPage {
     None,
@@ -539,8 +544,8 @@ private fun ScheduleDetailPage(
                                                 settings.copy(
                                                     scheduleEnabled = true,
                                                     notifyEnabled = notifyEnabled,
-                                                    scheduleHour = hour.toIntOrNull()?.coerceIn(0, 23) ?: 8,
-                                                    scheduleMinute = minute.toIntOrNull()?.coerceIn(0, 59) ?: 0,
+                                                    scheduleHour = hour.toIntOrNull()?.coerceIn(0, MAX_SCHEDULE_HOUR) ?: 8,
+                                                    scheduleMinute = minute.toIntOrNull()?.coerceIn(0, MAX_SCHEDULE_MINUTE) ?: 0,
                                                 ),
                                             )
                                             onBack()
@@ -748,8 +753,8 @@ private fun rememberBatteryExempted(
     // 点击“开启”后短暂轮询，捕捉系统设置变化。
     LaunchedEffect(refreshTrigger) {
         if (refreshTrigger > 0) {
-            repeat(6) {
-                kotlinx.coroutines.delay(500)
+            repeat(BATTERY_POLL_ATTEMPTS) {
+                kotlinx.coroutines.delay(BATTERY_POLL_INTERVAL_MS)
                 val current = pm.isIgnoringBatteryOptimizations(pkgName)
                 if (current != exempted) {
                     exempted = current
@@ -847,7 +852,7 @@ private fun KeepAliveCard(visibleKey: Int) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(BATTERY_HINT_SPACING_DP.dp))
             Text(
                 if (exempted) {
                     "定时签到在后台被系统杀掉的概率已大幅降低。"
