@@ -94,15 +94,7 @@ class HomeViewModel
 
         fun runNow() {
             val currentAccounts = accountRepository.accounts.value
-            if (currentAccounts.isEmpty()) {
-                appStateRepository.triggerToast("请先添加账号后再签到")
-                return
-            }
             val enabledAccounts = currentAccounts.filter { it.enabled }
-            if (enabledAccounts.isEmpty()) {
-                appStateRepository.triggerToast("没有启用的账号，请先启用账号后再签到")
-                return
-            }
             val hasRunnableTask =
                 enabledAccounts.any { account ->
                     account.mysCookie.isNotBlank() ||
@@ -112,8 +104,15 @@ class HomeViewModel
                         account.starrailToken.isNotBlank() ||
                         account.hasStarrailCloudKeepLogin
                 }
-            if (!hasRunnableTask) {
-                appStateRepository.triggerToast("启用账号未配置 Cookie 或 Token，请先完善账号信息")
+            val guardMessage: String? =
+                when {
+                    currentAccounts.isEmpty() -> "请先添加账号后再签到"
+                    enabledAccounts.isEmpty() -> "没有启用的账号，请先启用账号后再签到"
+                    !hasRunnableTask -> "启用账号未配置 Cookie 或 Token，请先完善账号信息"
+                    else -> null
+                }
+            if (guardMessage != null) {
+                appStateRepository.triggerToast(guardMessage)
                 return
             }
             viewModelScope.launch(Dispatchers.IO) {
@@ -148,15 +147,13 @@ class HomeViewModel
                             signInCalendarRepository.reload()
                             logRepository.reload()
 
-                            if (isSecurityBlockedRecord(record)) {
-                                return@tryRun
-                            }
+                            if (!isSecurityBlockedRecord(record)) {
+                                val summary = completionSummary(record)
+                                runCoordinator.finishProgress(RunProgressPhase.FINISHED, summary)
 
-                            val summary = completionSummary(record)
-                            runCoordinator.finishProgress(RunProgressPhase.FINISHED, summary)
-
-                            if (record.total > 0) {
-                                appStateRepository.triggerToast(summary)
+                                if (record.total > 0) {
+                                    appStateRepository.triggerToast(summary)
+                                }
                             }
                         } catch (e: CancellationException) {
                             throw e

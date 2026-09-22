@@ -107,30 +107,35 @@ class PostRunActionWorker
             record: RunRecord,
         ): Result {
             val settings = store.getMailSettings()
-            if (!settings.enabled) {
-                repository.markCancelled(action.actionId, "mail-disabled")
-                return Result.success()
-            }
-            if (!settings.isConfigured) {
-                repository.markCancelled(action.actionId, "mail-configuration-incomplete")
-                return Result.success()
-            }
-            val result =
-                Mailer.send(
-                    settings,
-                    record,
-                    AppLocaleController.resolved(applicationContext),
-                )
-            return result.fold(
-                onSuccess = {
-                    repository.markDelivered(action.actionId)
+            return when {
+                !settings.enabled -> {
+                    repository.markCancelled(action.actionId, "mail-disabled")
                     Result.success()
-                },
-                onFailure = { error ->
-                    appErrorLogger.record("签到结果邮件投递", error)
-                    retryOrFinish(action, error.javaClass.simpleName.ifBlank { "mail-error" })
-                },
-            )
+                }
+
+                !settings.isConfigured -> {
+                    repository.markCancelled(action.actionId, "mail-configuration-incomplete")
+                    Result.success()
+                }
+
+                else -> {
+                    Mailer
+                        .send(
+                            settings,
+                            record,
+                            AppLocaleController.resolved(applicationContext),
+                        ).fold(
+                            onSuccess = {
+                                repository.markDelivered(action.actionId)
+                                Result.success()
+                            },
+                            onFailure = { error ->
+                                appErrorLogger.record("签到结果邮件投递", error)
+                                retryOrFinish(action, error.javaClass.simpleName.ifBlank { "mail-error" })
+                            },
+                        )
+                }
+            }
         }
 
         private fun finishWithoutRetry(

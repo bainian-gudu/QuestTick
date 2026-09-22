@@ -195,14 +195,12 @@
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
     <ID>RedundantSuspendModifier:TrustedRedirects.kt$TrustedRedirects$suspend</ID>
     <ID>ReturnCount:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
-    <ID>ReturnCount:HomeViewModel.kt$HomeViewModel$fun runNow()</ID>
     <ID>ReturnCount:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$private suspend fun refreshActIdAndRetry( cookie: String, game: GameConfig, role: Role, staleActId: String, ): SignResult?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getReward( cookie: String, game: GameConfig, role: Role, ): Reward?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getRole( cookie: String, game: GameConfig, ): RoleResult</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun runForCookie( cookie: String, game: GameConfig, ): Outcome</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun signIn( cookie: String, game: GameConfig, role: Role, retryOnActIdInvalid: Boolean = true, ): SignResult</ID>
-    <ID>ReturnCount:PostRunActionWorker.kt$PostRunActionWorker$private suspend fun deliverEmail( action: com.questtick.data.db.PostRunActionEntity, record: RunRecord, ): Result</ID>
     <ID>ReturnCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun updateFailureGuard( store: SecureStore, record: RunRecord, )</ID>
