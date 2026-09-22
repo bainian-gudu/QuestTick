@@ -161,20 +161,22 @@ object ErrorText {
         e: Throwable?,
         includeStackTrace: Boolean = false,
     ): String {
-        if (e == null) return ""
+        val error = e ?: return ""
         val causes = ArrayList<String>(DETAIL_CAUSE_INITIAL_CAPACITY)
         val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
-        var current: Throwable? = e
+        var current: Throwable? = error
         while (current != null && seen.add(current) && causes.size < DETAIL_CAUSE_LIMIT) {
             val name = current.javaClass.name
             val message = current.message.orEmpty()
             causes += if (message.isBlank()) name else "$name: $message"
             current = current.cause?.takeIf { it !== current }
         }
-        if (!includeStackTrace) return causes.joinToString("\nCaused by: ")
-
-        val stack = e.stackTraceToString()
-        return (causes.joinToString("\nCaused by: ") + "\nStack trace:\n" + stack).trim()
+        val detail = causes.joinToString("\nCaused by: ")
+        return if (!includeStackTrace) {
+            detail
+        } else {
+            (detail + "\nStack trace:\n" + error.stackTraceToString()).trim()
+        }
     }
 
     /**

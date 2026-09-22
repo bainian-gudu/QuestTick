@@ -156,19 +156,23 @@ internal fun taskIdForResult(
 fun runProgressTaskPreview(
     tasks: List<RunTaskProgress>,
     maxItems: Int = 4,
-): List<RunTaskProgress> {
-    if (tasks.isEmpty()) return emptyList()
-    val safeMax = maxItems.coerceAtLeast(1)
-    if (tasks.size <= safeMax) return tasks
-
-    val anchorIndex =
-        tasks
-            .indexOfFirst { it.status == RunTaskStatus.RUNNING }
-            .takeIf { it >= 0 }
-            ?: tasks
-                .indexOfFirst { !it.status.isTerminal }
-                .takeIf { it >= 0 }
-            ?: tasks.indexOfLast { it.status.isTerminal }.coerceAtLeast(0)
-    val start = (anchorIndex - safeMax / 2).coerceIn(0, tasks.size - safeMax)
-    return tasks.subList(start, start + safeMax)
-}
+): List<RunTaskProgress> =
+    if (tasks.isEmpty()) {
+        emptyList()
+    } else {
+        val safeMax = maxItems.coerceAtLeast(1)
+        if (tasks.size <= safeMax) {
+            tasks
+        } else {
+            val anchorIndex =
+                tasks
+                    .indexOfFirst { it.status == RunTaskStatus.RUNNING }
+                    .takeIf { it >= 0 }
+                    ?: tasks
+                        .indexOfFirst { !it.status.isTerminal }
+                        .takeIf { it >= 0 }
+                    ?: tasks.indexOfLast { it.status.isTerminal }.coerceAtLeast(0)
+            val start = (anchorIndex - safeMax / 2).coerceIn(0, tasks.size - safeMax)
+            tasks.subList(start, start + safeMax)
+        }
+    }

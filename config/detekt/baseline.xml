@@ -203,8 +203,6 @@
     <ID>ReturnCount:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$private suspend fun fetchFromNavigation( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$suspend fun fetchLatest( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
-    <ID>ReturnCount:ActIdInvalid.kt$ActIdInvalid$private fun isInvalidMessage(message: String): Boolean</ID>
-    <ID>ReturnCount:ActIdInvalid.kt$ActIdInvalid$private fun isInvalidRetcode(retcode: Int?): Boolean</ID>
     <ID>ReturnCount:AppUpdateCache.kt$AppUpdateCache$fun getFast( context: Context, currentVersion: String, ): CacheResult</ID>
     <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$private fun parseJson( json: JSONObject, currentVersion: String, ): AppUpdateInfo</ID>
     <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$suspend fun checkFast( context: Context, currentVersion: String, httpTransport: HttpTransport, ): AppUpdateInfo</ID>
@@ -221,7 +219,6 @@
     <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$suspend fun exchangeComboToken( gameKey: String, cookieHeader: String, deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;String&gt;</ID>
     <ID>ReturnCount:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
     <ID>ReturnCount:CookieRefresher.kt$CookieRefresher$suspend fun refresh( uid: String, stoken: String, mid: String, httpTransport: HttpTransport, onDiagnostic: (message: String, detail: String) -&gt; Unit = { _, _ -&gt; }, ): RefreshedCookie?</ID>
-    <ID>ReturnCount:ErrorText.kt$ErrorText$fun detailOf( e: Throwable?, includeStackTrace: Boolean = false, ): String</ID>
     <ID>ReturnCount:HomeViewModel.kt$HomeViewModel$fun runNow()</ID>
     <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getBoolean( key: String?, defValue: Boolean, ): Boolean</ID>
     <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getFloat( key: String?, defValue: Float, ): Float</ID>
@@ -246,7 +243,6 @@
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getRole( cookie: String, game: GameConfig, ): RoleResult</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun runForCookie( cookie: String, game: GameConfig, ): Outcome</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun signIn( cookie: String, game: GameConfig, role: Role, retryOnActIdInvalid: Boolean = true, ): SignResult</ID>
-    <ID>ReturnCount:Passport.kt$Passport$fun extractPassportId(value: String?): String</ID>
     <ID>ReturnCount:PostRunActionWorker.kt$PostRunActionWorker$private suspend fun deliverEmail( action: com.questtick.data.db.PostRunActionEntity, record: RunRecord, ): Result</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$internal suspend fun exchangeStokenByLoginTicket( uid: String, loginTicket: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;MultiToken&gt;</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private fun buildConfirmedStatus( uid: String, cookieToken: String, ltoken: String, stoken: String, mid: String, loginTicket: String, nickname: String, ): ScanStatus</ID>
@@ -254,7 +250,6 @@
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun parseConfirmed( setCookieHeaders: List&lt;String&gt;, data: JSONObject, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): ScanStatus</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$suspend fun createQRCode( deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
     <ID>ReturnCount:RootCheckCache.kt$RootCheckCache$fun get(context: Context): RootDetectorV2.RootCheckResult?</ID>
-    <ID>ReturnCount:RunProgress.kt$fun runProgressTaskPreview( tasks: List&lt;RunTaskProgress&gt;, maxItems: Int = 4, ): List&lt;RunTaskProgress&gt;</ID>
     <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveCloudDeviceId(forceCreate: Boolean = true): String</ID>
     <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveMysDeviceId(forceCreate: Boolean = true): String</ID>
     <ID>ReturnCount:SettingsAppearancePage.kt$private fun hexToHsl(hex: String): HslColor</ID>
@@ -262,7 +257,6 @@
     <ID>ReturnCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun updateFailureGuard( store: SecureStore, record: RunRecord, )</ID>
-    <ID>ReturnCount:SignInWorkerDecision.kt$internal fun decideSignInWorkerResult( record: RunRecord, runAttemptCount: Int, maxRetries: Int, ): SignInWorkerDecision</ID>
     <ID>ReturnCount:StreamingHttpTransport.kt$HttpResponseStream$fun read( buffer: ByteArray, offset: Int, byteCount: Int, ): Int</ID>
     <ID>ReturnCount:TransportRetry.kt$TransportFailures$fun shouldRetry( failure: IOException, request: Request, policy: TransportRetryPolicy, attemptsUsed: Int, ): Boolean</ID>
     <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$fun isSameOriginHttps( initialRawUrl: String, candidateRawUrl: String, ): Boolean</ID>

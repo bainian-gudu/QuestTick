@@ -74,19 +74,13 @@ object ActIdInvalid {
             Regex("invalid.*activity", RegexOption.IGNORE_CASE),
         )
 
-    private fun isInvalidRetcode(retcode: Int?): Boolean {
-        if (retcode == null) return false
-        if (retcode in NOT_ACT_ID_RETCODES) return false
-        return retcode in INVALID_RETCODES
-    }
+    private fun isInvalidRetcode(retcode: Int?): Boolean = retcode != null && retcode !in NOT_ACT_ID_RETCODES && retcode in INVALID_RETCODES
 
     private fun isUnrelated(message: String): Boolean = message.isNotBlank() && CLEARLY_NOT_PATTERNS.any { it.containsMatchIn(message) }
 
     private fun isInvalidMessage(message: String): Boolean {
         val text = message.trim()
-        if (text.isEmpty()) return false
-        if (isUnrelated(text)) return false
-        return INVALID_MESSAGE_PATTERNS.any { it.containsMatchIn(text) }
+        return text.isNotEmpty() && !isUnrelated(text) && INVALID_MESSAGE_PATTERNS.any { it.containsMatchIn(text) }
     }
 
     /** 判断接口响应是否疑似 act_id 失效。 */
