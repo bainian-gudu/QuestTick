@@ -1,6 +1,7 @@
 package com.questtick.data
 
 import android.content.Context
+import com.questtick.core.runCatchingCancellable
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
 import com.questtick.net.HttpTransport
@@ -35,6 +36,8 @@ object RewardIconCache {
 
     @Volatile private var lastCleanup = 0L
 
+    // detekt 1.23 未识别 withContext 是内联 suspend 调用，保留真实挂起边界。
+    @Suppress("RedundantSuspendModifier")
     suspend fun cachedFile(
         context: Context,
         url: String,
@@ -43,7 +46,7 @@ object RewardIconCache {
             if (!TrustedUrlPolicy.isRewardIconUrl(url)) return@withContext null
             val appContext = context.applicationContext
             maybeCleanup(appContext)
-            cachedFileBlocking(appContext, url)
+            targetFile(appContext, url).takeIf(::isUsableCacheFile)
         }
 
     suspend fun getOrDownload(
@@ -76,14 +79,6 @@ object RewardIconCache {
             }
         }
 
-    private fun cachedFileBlocking(
-        context: Context,
-        url: String,
-    ): File? {
-        val file = targetFile(context, url)
-        return file.takeIf(::isUsableCacheFile)
-    }
-
     private fun isUsableCacheFile(file: File): Boolean {
         val usable = file.exists() && file.length() > 0L
         if (usable) {
@@ -97,13 +92,31 @@ object RewardIconCache {
         file: File,
         httpTransport: HttpTransport,
         onFailure: ((String) -> Unit)? = null,
-    ): File? {
-        if (!TrustedUrlPolicy.isRewardIconUrl(url)) return null
-        file.parentFile?.mkdirs()
-        // 米游社部分 CDN 会在查询参数中附加缩略图处理；优先尝试去掉处理参数的原图地址。
-        for (candidate in highResolutionCandidates(url)) {
+    ): File? =
+        if (!TrustedUrlPolicy.isRewardIconUrl(url)) {
+            null
+        } else {
+            file.parentFile?.mkdirs()
+            // 米游社部分 CDN 会在查询参数中附加缩略图处理；优先尝试去掉处理参数的原图地址。
+            val downloaded =
+                highResolutionCandidates(url).firstNotNullOfOrNull { candidate ->
+                    downloadIconCandidate(candidate, file, httpTransport, onFailure)
+                }
+            if (downloaded == null) {
+                onFailure?.invoke("奖励图片所有高清候选地址均下载失败: $url")
+            }
+            downloaded
+        }
+
+    private suspend fun downloadIconCandidate(
+        candidate: String,
+        file: File,
+        httpTransport: HttpTransport,
+        onFailure: ((String) -> Unit)?,
+    ): File? =
+        when (
             val response =
-                runCatching {
+                runCatchingCancellable {
                     httpTransport.get(
                         url = candidate,
                         headers = mapOf("User-Agent" to "Mozilla/5.0"),
@@ -111,33 +124,45 @@ object RewardIconCache {
                     )
                 }.getOrElse { error ->
                     onFailure?.invoke("奖励图片请求异常 candidate=$candidate: ${ErrorText.detailOf(error)}")
-                    continue
+                    null
                 }
-            if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
-                onFailure?.invoke("奖励图片请求失败 candidate=$candidate http=${response.code}")
-                continue
-            }
-            val bytes = response.bodyBytes()
-            if (bytes.isEmpty() || bytes.size > MAX_ICON_BYTES) {
-                onFailure?.invoke("奖励图片响应无效 candidate=$candidate bytes=${bytes.size}")
-                continue
+        ) {
+            null -> {
+                null
             }
 
-            val tmp = File(file.parentFile, "${file.name}.tmp")
-            runCatching { tmp.delete() }
-            try {
-                tmp.outputStream().buffered().use { output -> output.write(bytes) }
-                if (!tmp.renameTo(file)) {
-                    tmp.copyTo(file, overwrite = true)
-                    tmp.delete()
+            else -> {
+                if (response.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
+                    onFailure?.invoke("奖励图片请求失败 candidate=$candidate http=${response.code}")
+                    null
+                } else {
+                    val bytes = response.bodyBytes()
+                    if (bytes.isEmpty() || bytes.size > MAX_ICON_BYTES) {
+                        onFailure?.invoke("奖励图片响应无效 candidate=$candidate bytes=${bytes.size}")
+                        null
+                    } else {
+                        writeCandidate(file, bytes)
+                    }
                 }
-                return file.takeIf(::isUsableCacheFile)
-            } finally {
-                if (tmp.exists()) runCatching { tmp.delete() }
             }
         }
-        onFailure?.invoke("奖励图片所有高清候选地址均下载失败: $url")
-        return null
+
+    private fun writeCandidate(
+        file: File,
+        bytes: ByteArray,
+    ): File? {
+        val tmp = File(file.parentFile, "${file.name}.tmp")
+        runCatching { tmp.delete() }
+        return try {
+            tmp.outputStream().buffered().use { output -> output.write(bytes) }
+            if (!tmp.renameTo(file)) {
+                tmp.copyTo(file, overwrite = true)
+                tmp.delete()
+            }
+            file.takeIf(::isUsableCacheFile)
+        } finally {
+            if (tmp.exists()) runCatching { tmp.delete() }
+        }
     }
 
     private fun highResolutionCandidates(url: String): List<String> {
@@ -160,18 +185,16 @@ object RewardIconCache {
         url: String,
     ): File {
         val dir = File(context.applicationContext.filesDir, DIR_NAME)
-        return File(dir, sha256(url) + extensionOf(url))
-    }
-
-    private fun extensionOf(url: String): String {
         val path = url.substringBefore('?').lowercase()
-        return when {
-            path.endsWith(".jpg") || path.endsWith(".jpeg") -> ".jpg"
-            path.endsWith(".webp") -> ".webp"
-            path.endsWith(".gif") -> ".gif"
-            path.endsWith(".png") -> ".png"
-            else -> ".png"
-        }
+        val extension =
+            when {
+                path.endsWith(".jpg") || path.endsWith(".jpeg") -> ".jpg"
+                path.endsWith(".webp") -> ".webp"
+                path.endsWith(".gif") -> ".gif"
+                path.endsWith(".png") -> ".png"
+                else -> ".png"
+            }
+        return File(dir, sha256(url) + extension)
     }
 
     private fun sha256(value: String): String {
@@ -185,22 +208,19 @@ object RewardIconCache {
         // 最多每天清理一次，避免频繁触发额外 IO。
         if (now - lastCleanup < MILLIS_PER_DAY) return
         lastCleanup = now
-        try {
+        runCatching {
             val dir = File(context.applicationContext.filesDir, DIR_NAME)
-            if (!dir.exists()) return
-            val files = dir.listFiles() ?: return
+            val files = dir.listFiles().orEmpty()
             val cutoff = now - MAX_AGE_MILLIS
             files.filter { it.lastModified() < cutoff }.forEach { it.delete() }
-            val remaining = dir.listFiles() ?: return
+            val remaining = dir.listFiles().orEmpty()
             var total = remaining.sumOf { it.length() }
-            if (total > MAX_CACHE_BYTES) {
-                remaining.sortedBy { it.lastModified() }.forEach { f ->
-                    if (total <= MAX_CACHE_BYTES) return@forEach
-                    total -= f.length()
-                    f.delete()
+            remaining.sortedBy { it.lastModified() }.forEach { file ->
+                if (total > MAX_CACHE_BYTES) {
+                    total -= file.length()
+                    file.delete()
                 }
             }
-        } catch (_: Exception) {
         }
     }
 }

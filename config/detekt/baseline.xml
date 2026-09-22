@@ -174,7 +174,6 @@
     <ID>LongParameterList:StatusBadge.kt$( text: String, color: Color, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(8.dp), horizontalPadding: Dp = 8.dp, verticalPadding: Dp = 3.dp, fontSize: TextUnit = 11.sp, fontWeight: FontWeight = FontWeight.Medium, backgroundAlpha: Float = 0.16f, borderAlpha: Float = 0f, selected: Boolean = false, selectedContentColor: Color = Color.White, selectedBackgroundAlpha: Float = 1f, selectedBorderAlpha: Float = 0f, maxLines: Int = 1, leadingDotColor: Color? = null, leadingDotSize: Dp = 6.dp, leadingDotSpacing: Dp = 6.dp, onClick: (() -&gt; Unit)? = null, )</ID>
     <ID>LongParameterList:SyncedHorizontalPager.kt$( selectedPage: Int, pageCount: Int, modifier: Modifier = Modifier, beyondViewportPageCount: Int = 1, onVisualPagePositionChange: (Float) -&gt; Unit = {}, onPageSettled: (Int) -&gt; Unit, pageContent: @Composable (page: Int, pageVisible: Boolean) -&gt; Unit, )</ID>
     <ID>LongParameterList:Theme.kt$( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
-    <ID>LoopWithTooManyJumpStatements:RewardIconCache.kt$RewardIconCache$for</ID>
     <ID>MatchingDeclarationName:CloudQRLoginScreen.kt$CloudQRLoginResult</ID>
     <ID>MatchingDeclarationName:LocalizationCatalog.kt$Translation</ID>
     <ID>MatchingDeclarationName:QRLoginScreen.kt$QRLoginResult</ID>
@@ -185,7 +184,6 @@
     <ID>NestedBlockDepth:MysCoinCheckIn.kt$MysCoinCheckIn$private fun findInt( json: JSONObject, vararg keys: String, ): Int?</ID>
     <ID>NestedBlockDepth:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>NestedBlockDepth:MysSignIn.kt$MysSignIn$suspend fun signIn( cookie: String, game: GameConfig, role: Role, retryOnActIdInvalid: Boolean = true, ): SignResult</ID>
-    <ID>NestedBlockDepth:RewardIconCache.kt$RewardIconCache$private fun maybeCleanup(context: Context)</ID>
     <ID>NestedBlockDepth:TrustedRedirects.kt$TrustedRedirects$fun &lt;T&gt; executeMapped( client: OkHttpClient, request: Request, policy: RedirectTrustPolicy, retryPolicy: TransportRetryPolicy = TransportRetryPolicy.NEVER, transform: (Response) -&gt; T, ): T</ID>
     <ID>RedundantSuspendModifier:AccountRepository.kt$AccountRepository$suspend</ID>
     <ID>RedundantSuspendModifier:AppUpdateInstaller.kt$AppUpdateInstaller$suspend</ID>
@@ -195,7 +193,6 @@
     <ID>RedundantSuspendModifier:Mailer.kt$Mailer$suspend</ID>
     <ID>RedundantSuspendModifier:MysSignExecutor.kt$MysSignExecutor$suspend</ID>
     <ID>RedundantSuspendModifier:OkHttpCoroutines.kt$suspend</ID>
-    <ID>RedundantSuspendModifier:RewardIconCache.kt$RewardIconCache$suspend</ID>
     <ID>RedundantSuspendModifier:SettingsRepository.kt$SettingsRepository$suspend</ID>
     <ID>RedundantSuspendModifier:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
@@ -256,8 +253,6 @@
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun fillCookieTokenByStokenIfNeeded( status: ScanStatus.Confirmed, httpTransport: HttpTransport, ): ScanStatus.Confirmed</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun parseConfirmed( setCookieHeaders: List&lt;String&gt;, data: JSONObject, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): ScanStatus</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$suspend fun createQRCode( deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
-    <ID>ReturnCount:RewardIconCache.kt$RewardIconCache$private fun maybeCleanup(context: Context)</ID>
-    <ID>ReturnCount:RewardIconCache.kt$RewardIconCache$private suspend fun downloadIconToCache( url: String, file: File, httpTransport: HttpTransport, onFailure: ((String) -&gt; Unit)? = null, ): File?</ID>
     <ID>ReturnCount:RootCheckCache.kt$RootCheckCache$fun get(context: Context): RootDetectorV2.RootCheckResult?</ID>
     <ID>ReturnCount:RunProgress.kt$fun runProgressTaskPreview( tasks: List&lt;RunTaskProgress&gt;, maxItems: Int = 4, ): List&lt;RunTaskProgress&gt;</ID>
     <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveCloudDeviceId(forceCreate: Boolean = true): String</ID>
