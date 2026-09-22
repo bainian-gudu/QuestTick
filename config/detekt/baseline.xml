@@ -27,7 +27,6 @@
     <ID>CyclomaticComplexMethod:SettingsViewModel.kt$SettingsViewModel$private fun checkAppUpdateInternal( mode: UpdateCheckMode, onFinished: (AppUpdateInfo?) -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:SignInCalendarCard.kt$@Composable private fun CalendarDayCell( cell: CalendarDayUi?, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
-    <ID>CyclomaticComplexMethod:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
     <ID>CyclomaticComplexMethod:Theme.kt$@Suppress("DEPRECATION") @Composable fun QuestTickTheme( themeMode: String = "SYSTEM", oledPureBlackEnabled: Boolean = false, dynamicColorEnabled: Boolean = false, customThemeColor: String = "", customThemeSecondaryColor: String = "", customThemeTertiaryColor: String = "", content: @Composable () -&gt; Unit, )</ID>
     <ID>InjectDispatcher:AccountRepository.kt$AccountRepository$IO</ID>
     <ID>InjectDispatcher:AccountsViewModel.kt$AccountsViewModel$IO</ID>
@@ -192,10 +191,6 @@
     <ID>RedundantSuspendModifier:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
     <ID>RedundantSuspendModifier:TrustedRedirects.kt$TrustedRedirects$suspend</ID>
-    <ID>ReturnCount:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
-    <ID>ReturnCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
-    <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
-    <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun updateFailureGuard( store: SecureStore, record: RunRecord, )</ID>
     <ID>ThrowsCount:AppUpdateInstaller.kt$AppUpdateInstaller$private suspend fun downloadFromCandidates( urls: List&lt;String&gt;, tmp: File, onProgress: (downloadedBytes: Long, totalBytes: Long) -&gt; Unit, streamingHttpTransport: StreamingHttpTransport, )</ID>
     <ID>ThrowsCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ThrowsCount:TrustedRedirects.kt$TrustedRedirects$internal fun resolveLocation(response: Response): HttpUrl</ID>

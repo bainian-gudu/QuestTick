@@ -58,82 +58,40 @@ internal class MysSignExecutor(
             acc.selectedMysGames().filter { game ->
                 shouldExecuteTask(progressTaskId(acc, RunTaskType.MYS, game.key))
             }
-        if (games.isEmpty() && !(MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled)) {
-            log("INFO", "[${acc.label}] 未选择或未配置可执行的米游社签到任务，跳过米游社签到", "")
-            return acc
-        }
-
-        if (games.isNotEmpty()) {
-            log(
-                "INFO",
-                "[${acc.label}] 米游社签到: ${games.size} 款游戏",
-                "games=${games.joinToString { "${it.key}(act_id=${actIdCache[it.key] ?: it.actId})" }}",
-            )
-            log("DEBUG", "米游社请求画像：mobile_web，client_type=$LOGGED_CLIENT_TYPE，DS=web_md5_v1", "")
-        }
-
-        val mys =
-            MysSignIn(
-                deviceId = mysDeviceId,
-                httpTransport = httpTransport,
-                actIdAutoRefresh = settings.actIdAutoRefresh,
-                actIdCache = actIdCache,
-                onLog = { level, message -> log(level, message, "") },
-                customVersion = runMysAppVersion,
-                cacheMutex = actIdCacheMutex,
-                recordError = recordError,
-            )
-
         var currentAccount = acc
-        var cookie = acc.mysCookie
-        var cookieRefreshed = false
-
-        if (cookie.isBlank()) {
-            log(
-                "WARN",
-                "[${acc.label}] 米游社 Cookie 为空，尝试用 SToken 自动刷新…",
-                "mysUid=${Mask.uid(acc.mysUid)}, hasStoken=${acc.stoken.isNotBlank()}",
-            )
-            val refreshed = credentialCoordinator.refreshMysCookieForRun(acc)
-            if (refreshed != null) {
-                cookie = refreshed.fullCookie
-                cookieRefreshed = true
-                credentialCoordinator.saveRefreshedMysCookieForRun(acc, cookie, refreshed.ltoken)?.let { updated ->
-                    currentAccount = updated
-                }
-                log("OK", "[${acc.label}] Cookie 自动刷新成功，继续执行米游社签到", "newCookieLength=${cookie.length}")
-            } else {
-                log("ERROR", "[${acc.label}] Cookie 自动刷新失败，SToken 可能已过期，请重新扫码登录", "")
-                if (games.isNotEmpty()) emitCookieRefreshFailedResults(acc, games, onTaskCompleted)
-                return currentAccount
+        val skipMysTasks = games.isEmpty() && !(MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled)
+        if (skipMysTasks) {
+            log("INFO", "[${acc.label}] 未选择或未配置可执行的米游社签到任务，跳过米游社签到", "")
+        } else {
+            if (games.isNotEmpty()) {
+                log(
+                    "INFO",
+                    "[${acc.label}] 米游社签到: ${games.size} 款游戏",
+                    "games=${games.joinToString { "${it.key}(act_id=${actIdCache[it.key] ?: it.actId})" }}",
+                )
+                log("DEBUG", "米游社请求画像：mobile_web，client_type=$LOGGED_CLIENT_TYPE，DS=web_md5_v1", "")
             }
-        }
 
-        validateCookie(currentAccount.copy(mysCookie = cookie))
+            val mys =
+                MysSignIn(
+                    deviceId = mysDeviceId,
+                    httpTransport = httpTransport,
+                    actIdAutoRefresh = settings.actIdAutoRefresh,
+                    actIdCache = actIdCache,
+                    onLog = { level, message -> log(level, message, "") },
+                    customVersion = runMysAppVersion,
+                    cacheMutex = actIdCacheMutex,
+                    recordError = recordError,
+                )
 
-        for ((index, game) in games.withIndex()) {
-            val taskStart = System.currentTimeMillis()
-            val taskId = progressTaskId(acc, RunTaskType.MYS, game.key)
-            onProgress("${acc.label} · ${game.name}", done.get(), total)
-            log(
-                "INFO",
-                "[${acc.label} · ${game.name}] 开始签到…",
-                "gameKey=${game.key}, gameBiz=${game.gameBiz}, act_id=${actIdCache[game.key] ?: game.actId}",
-            )
+            var cookie = acc.mysCookie
+            var cookieRefreshed = false
 
-            var outcome =
-                limitedRequest("${acc.label} · ${game.name} 米游社签到") {
-                    check(onTaskStarted(taskId, "${acc.label} · ${game.name}")) {
-                        "无法获取任务执行权: $taskId"
-                    }
-                    safeMysRun(mys, cookie, game)
-                }
-
-            if (credentialCoordinator.shouldRefreshMysCookie(acc, outcome, cookieRefreshed)) {
+            if (cookie.isBlank()) {
                 log(
                     "WARN",
-                    "[${acc.label}] Cookie 失效，尝试用 SToken 自动刷新…",
-                    "mysUid=${Mask.uid(acc.mysUid)}, hasStoken=true",
+                    "[${acc.label}] 米游社 Cookie 为空，尝试用 SToken 自动刷新…",
+                    "mysUid=${Mask.uid(acc.mysUid)}, hasStoken=${acc.stoken.isNotBlank()}",
                 )
                 val refreshed = credentialCoordinator.refreshMysCookieForRun(acc)
                 if (refreshed != null) {
@@ -142,103 +100,144 @@ internal class MysSignExecutor(
                     credentialCoordinator.saveRefreshedMysCookieForRun(acc, cookie, refreshed.ltoken)?.let { updated ->
                         currentAccount = updated
                     }
-                    log("OK", "[${acc.label}] Cookie 自动刷新成功，使用新 Cookie 重试", "newCookieLength=${cookie.length}")
-                    outcome =
-                        limitedRequest("${acc.label} · ${game.name} 米游社签到重试") {
-                            safeMysRun(mys, cookie, game)
-                        }
+                    log("OK", "[${acc.label}] Cookie 自动刷新成功，继续执行米游社签到", "newCookieLength=${cookie.length}")
                 } else {
                     log("ERROR", "[${acc.label}] Cookie 自动刷新失败，SToken 可能已过期，请重新扫码登录", "")
+                    if (games.isNotEmpty()) emitCookieRefreshFailedResults(acc, games, onTaskCompleted)
+                    return currentAccount
                 }
             }
 
-            val taskElapsed = System.currentTimeMillis() - taskStart
-            val result = buildMysTaskResult(game.name, game.key, acc, outcome)
+            validateCookie(currentAccount.copy(mysCookie = cookie))
 
-            val reward = outcome.reward
-            if (reward != null && reward.icon.isBlank()) {
-                recordError?.invoke(
-                    "米游社奖励图片",
-                    "${game.name} 奖励图片地址为空：name=${reward.name}, count=${reward.cnt}, day=${reward.day}",
+            for ((index, game) in games.withIndex()) {
+                val taskStart = System.currentTimeMillis()
+                val taskId = progressTaskId(acc, RunTaskType.MYS, game.key)
+                onProgress("${acc.label} · ${game.name}", done.get(), total)
+                log(
+                    "INFO",
+                    "[${acc.label} · ${game.name}] 开始签到…",
+                    "gameKey=${game.key}, gameBiz=${game.gameBiz}, act_id=${actIdCache[game.key] ?: game.actId}",
                 )
-            } else if (reward != null && !TrustedUrlPolicy.isRewardIconUrl(reward.icon)) {
-                recordError?.invoke("米游社奖励图片", "${game.name} 奖励图片地址不受信任：${reward.icon}")
-            }
-            if (!outcome.success && outcome.detail.isNotBlank()) {
-                recordError?.invoke("米游社签到", "${game.name}: ${outcome.detail}")
-            }
-            val rewardInfo =
-                if (reward != null) {
-                    " | 奖励: ${reward.name}×${reward.cnt}（第${reward.day}天）"
-                } else {
-                    ""
-                }
-            logOutcome(
-                account = acc.label,
-                game = game.name,
-                success = outcome.success,
-                skipped = outcome.skipped,
-                message = outcome.message + rewardInfo,
-                detail = buildMysOutcomeDetail(outcome),
-                elapsedMs = taskElapsed,
-            )
 
-            onTaskCompleted(taskId, result, "${acc.label} · ${game.name}")
-            if (index < games.size - 1) randomSleep(MIN_TASK_DELAY_SECONDS, MAX_TASK_DELAY_SECONDS)
-        }
-
-        if (MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled) {
-            val startedAt = System.currentTimeMillis()
-            val taskId = progressTaskId(acc, RunTaskType.MYS, MysCoinCheckIn.GAME_KEY)
-            onProgress("${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}", done.get(), total)
-            log("DEBUG", "米游币请求画像：android_app，client_type=2，DS=x6_md5_v2", "")
-            val outcome =
-                try {
-                    limitedRequest("${acc.label} · 原神社区米游币打卡") {
-                        check(onTaskStarted(taskId, "${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}")) {
+                var outcome =
+                    limitedRequest("${acc.label} · ${game.name} 米游社签到") {
+                        check(onTaskStarted(taskId, "${acc.label} · ${game.name}")) {
                             "无法获取任务执行权: $taskId"
                         }
-                        MysCoinCheckIn.run(
-                            cookie = cookie,
-                            deviceId = mysDeviceId,
-                            appVersion = runMysAppVersion,
-                            httpTransport = httpTransport,
-                            stoken = currentAccount.stoken,
-                            mid = currentAccount.stmid,
-                            uid = currentAccount.mysUid,
+                        safeMysRun(mys, cookie, game)
+                    }
+
+                if (credentialCoordinator.shouldRefreshMysCookie(acc, outcome, cookieRefreshed)) {
+                    log(
+                        "WARN",
+                        "[${acc.label}] Cookie 失效，尝试用 SToken 自动刷新…",
+                        "mysUid=${Mask.uid(acc.mysUid)}, hasStoken=true",
+                    )
+                    val refreshed = credentialCoordinator.refreshMysCookieForRun(acc)
+                    if (refreshed != null) {
+                        cookie = refreshed.fullCookie
+                        cookieRefreshed = true
+                        credentialCoordinator.saveRefreshedMysCookieForRun(acc, cookie, refreshed.ltoken)?.let { updated ->
+                            currentAccount = updated
+                        }
+                        log("OK", "[${acc.label}] Cookie 自动刷新成功，使用新 Cookie 重试", "newCookieLength=${cookie.length}")
+                        outcome =
+                            limitedRequest("${acc.label} · ${game.name} 米游社签到重试") {
+                                safeMysRun(mys, cookie, game)
+                            }
+                    } else {
+                        log("ERROR", "[${acc.label}] Cookie 自动刷新失败，SToken 可能已过期，请重新扫码登录", "")
+                    }
+                }
+
+                val taskElapsed = System.currentTimeMillis() - taskStart
+                val result = buildMysTaskResult(game.name, game.key, acc, outcome)
+
+                val reward = outcome.reward
+                if (reward != null && reward.icon.isBlank()) {
+                    recordError?.invoke(
+                        "米游社奖励图片",
+                        "${game.name} 奖励图片地址为空：name=${reward.name}, count=${reward.cnt}, day=${reward.day}",
+                    )
+                } else if (reward != null && !TrustedUrlPolicy.isRewardIconUrl(reward.icon)) {
+                    recordError?.invoke("米游社奖励图片", "${game.name} 奖励图片地址不受信任：${reward.icon}")
+                }
+                if (!outcome.success && outcome.detail.isNotBlank()) {
+                    recordError?.invoke("米游社签到", "${game.name}: ${outcome.detail}")
+                }
+                val rewardInfo =
+                    if (reward != null) {
+                        " | 奖励: ${reward.name}×${reward.cnt}（第${reward.day}天）"
+                    } else {
+                        ""
+                    }
+                logOutcome(
+                    account = acc.label,
+                    game = game.name,
+                    success = outcome.success,
+                    skipped = outcome.skipped,
+                    message = outcome.message + rewardInfo,
+                    detail = buildMysOutcomeDetail(outcome),
+                    elapsedMs = taskElapsed,
+                )
+
+                onTaskCompleted(taskId, result, "${acc.label} · ${game.name}")
+                if (index < games.size - 1) randomSleep(MIN_TASK_DELAY_SECONDS, MAX_TASK_DELAY_SECONDS)
+            }
+
+            if (MysCoinCheckIn.featureEnabled && acc.mysCoinEnabled) {
+                val startedAt = System.currentTimeMillis()
+                val taskId = progressTaskId(acc, RunTaskType.MYS, MysCoinCheckIn.GAME_KEY)
+                onProgress("${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}", done.get(), total)
+                log("DEBUG", "米游币请求画像：android_app，client_type=2，DS=x6_md5_v2", "")
+                val outcome =
+                    try {
+                        limitedRequest("${acc.label} · 原神社区米游币打卡") {
+                            check(onTaskStarted(taskId, "${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}")) {
+                                "无法获取任务执行权: $taskId"
+                            }
+                            MysCoinCheckIn.run(
+                                cookie = cookie,
+                                deviceId = mysDeviceId,
+                                appVersion = runMysAppVersion,
+                                httpTransport = httpTransport,
+                                stoken = currentAccount.stoken,
+                                mid = currentAccount.stmid,
+                                uid = currentAccount.mysUid,
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.throwIfCancellation()
+                        MysCoinCheckIn.Outcome(
+                            success = false,
+                            alreadyDone = false,
+                            message = "米游币打卡${ErrorText.fromException(e)}",
+                            detail = ErrorText.detailOf(e),
                         )
                     }
-                } catch (e: Exception) {
-                    e.throwIfCancellation()
-                    MysCoinCheckIn.Outcome(
-                        success = false,
-                        alreadyDone = false,
-                        message = "米游币打卡${ErrorText.fromException(e)}",
-                        detail = ErrorText.detailOf(e),
-                    )
+                logOutcome(
+                    account = acc.label,
+                    game = "米游币打卡",
+                    success = outcome.success,
+                    skipped = false,
+                    message = outcome.message,
+                    detail = outcome.detail,
+                    elapsedMs = System.currentTimeMillis() - startedAt,
+                )
+                if (outcome.warning.isNotBlank()) {
+                    log("WARN", "[${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}] ${outcome.warning}", "")
                 }
-            logOutcome(
-                account = acc.label,
-                game = "米游币打卡",
-                success = outcome.success,
-                skipped = false,
-                message = outcome.message,
-                detail = outcome.detail,
-                elapsedMs = System.currentTimeMillis() - startedAt,
-            )
-            if (outcome.warning.isNotBlank()) {
-                log("WARN", "[${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}] ${outcome.warning}", "")
+                if (!outcome.success) {
+                    recordError?.invoke("米游币签到", outcome.detail.ifBlank { outcome.message })
+                }
+                onTaskCompleted(
+                    taskId,
+                    buildMysCoinTaskResult(acc, outcome),
+                    "${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}",
+                )
             }
-            if (!outcome.success) {
-                recordError?.invoke("米游币签到", outcome.detail.ifBlank { outcome.message })
-            }
-            onTaskCompleted(
-                taskId,
-                buildMysCoinTaskResult(acc, outcome),
-                "${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}",
-            )
         }
-
         return currentAccount
     }
 

@@ -12,6 +12,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.questtick.core.throwIfCancellation
 import com.questtick.R
+import com.questtick.data.AppSettings
 import com.questtick.data.FailureCategory
 import com.questtick.data.LogEntry
 import com.questtick.data.RunRecord
@@ -128,46 +129,71 @@ class SignInWorker
             val scheduledTimeZone = inputData.getString(Scheduler.INPUT_TIME_ZONE).orEmpty()
             val scheduleGeneration = inputData.getLong(Scheduler.INPUT_GENERATION, -1L)
             val scheduledTargetAt = inputData.getLong(Scheduler.INPUT_TARGET_AT, System.currentTimeMillis())
-            if (
+            val scheduleExpired =
                 scheduledHour != settings.scheduleHour ||
-                scheduledMinute != settings.scheduleMinute ||
-                !scheduler.isCurrentSchedule(
-                    scheduledHour,
-                    scheduledMinute,
-                    scheduledTimeZone,
-                    scheduleGeneration,
-                )
-            ) {
-                // 取消与入队是异步的；即使旧任务在竞态窗口中被系统启动，也不能执行过期计划。
-                return Result.success()
+                    scheduledMinute != settings.scheduleMinute ||
+                    !scheduler.isCurrentSchedule(
+                        scheduledHour,
+                        scheduledMinute,
+                        scheduledTimeZone,
+                        scheduleGeneration,
+                    )
+            if (!scheduleExpired) {
+                // 目标时间与代次组成唯一工作名，因此每次退避重试都可安全修复下一日调度而不会重复入队。
+                // 补下一日失败不能反向阻止本次已到点任务；时间/时区广播与下次启动还会再次修复调度。
+                runCatching {
+                    scheduler.scheduleFollowingRun(
+                        scheduledHour,
+                        scheduledMinute,
+                        scheduleGeneration,
+                        scheduledTargetAt,
+                    )
+                }.onFailure { error -> appErrorLogger.record("下一次定时签到调度", error) }
             }
-            // 目标时间与代次组成唯一工作名，因此每次退避重试都可安全修复下一日调度而不会重复入队。
-            // 补下一日失败不能反向阻止本次已到点任务；时间/时区广播与下次启动还会再次修复调度。
-            runCatching {
-                scheduler.scheduleFollowingRun(
-                    scheduledHour,
-                    scheduledMinute,
-                    scheduleGeneration,
-                    scheduledTargetAt,
-                )
-            }.onFailure { error -> appErrorLogger.record("下一次定时签到调度", error) }
 
             val startedAt = System.currentTimeMillis()
             // 延迟启动与跨午夜退避始终归属原计划业务日，确保只重试上一轮明确可重试的失败任务。
             val businessDayKey = dayKey(scheduledTargetAt)
             val workId = id.toString()
             val slotClaim =
-                executionStateRepository.claimScheduledSlot(workId, runAttemptCount, businessDayKey, startedAt)
+                if (scheduleExpired) {
+                    null
+                } else {
+                    executionStateRepository.claimScheduledSlot(workId, runAttemptCount, businessDayKey, startedAt)
+                }
+            // 取消与入队是异步的；即使旧任务在竞态窗口中被系统启动，也不能执行过期计划。
             // 只有 CLAIMED 才继续执行签到；DUPLICATE / NOT_BEFORE 必须立刻返回，避免同一业务日重复投递。
-            // 这里刻意用 if 而不是 when：when 作为语句使用时，兜底分支里的 Unit 会被编译器判定为无用表达式。
-            if (slotClaim == ExecutionStateRepository.SlotClaim.DUPLICATE) {
-                logDuplicateScheduleSkip(businessDayKey)
-                return Result.success()
-            }
-            if (slotClaim == ExecutionStateRepository.SlotClaim.NOT_BEFORE) {
-                return Result.retry()
-            }
+            return when {
+                scheduleExpired -> {
+                    Result.success()
+                }
 
+                slotClaim == ExecutionStateRepository.SlotClaim.DUPLICATE -> {
+                    logDuplicateScheduleSkip(businessDayKey)
+                    Result.success()
+                }
+
+                slotClaim == ExecutionStateRepository.SlotClaim.NOT_BEFORE -> {
+                    Result.retry()
+                }
+
+                else -> {
+                    executeClaimedSignIn(
+                        settings = settings,
+                        scheduledTargetAt = scheduledTargetAt,
+                        workId = workId,
+                        businessDayKey = businessDayKey,
+                    )
+                }
+            }
+        }
+
+        private suspend fun executeClaimedSignIn(
+            settings: AppSettings,
+            scheduledTargetAt: Long,
+            workId: String,
+            businessDayKey: String,
+        ): Result {
             var record: RunRecord? = null
             return try {
                 val allowedTaskIds =
@@ -194,35 +220,9 @@ class SignInWorker
                 if (record.total == 0) {
                     executionStateRepository.completeScheduledSlot(workId, businessDayKey, record)
                     syncRepositoryAfterBackgroundRun()
-                    return Result.success()
-                }
-
-                updateFailureGuard(store, record)
-                syncRepositoryAfterBackgroundRun()
-
-                val decision = decideSignInWorkerResult(record, actualRunCount - 1, MAX_RETRIES)
-                if (decision.retry) {
-                    executionStateRepository.failScheduledSlot(
-                        workId = workId,
-                        businessDayKey = businessDayKey,
-                        record = record,
-                        category = decision.category,
-                        retryAfterMillis = decision.retryDelayMillis,
-                    )
-                    Result.retry()
-                } else if (decision.category == FailureCategory.NONE) {
-                    executionStateRepository.completeScheduledSlot(workId, businessDayKey, record)
                     Result.success()
                 } else {
-                    executionStateRepository.failScheduledSlot(
-                        workId = workId,
-                        businessDayKey = businessDayKey,
-                        record = record,
-                        category = decision.category,
-                        retryAfterMillis = null,
-                    )
-                    // 周期任务的本业务日已形成确定终态；返回 success 以保留下一周期调度。
-                    Result.success()
+                    finishScheduledSignIn(record, actualRunCount, workId, businessDayKey)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -240,48 +240,67 @@ class SignInWorker
             }
         }
 
+        private suspend fun finishScheduledSignIn(
+            record: RunRecord,
+            actualRunCount: Int,
+            workId: String,
+            businessDayKey: String,
+        ): Result {
+            updateFailureGuard(store, record)
+            syncRepositoryAfterBackgroundRun()
+            val decision = decideSignInWorkerResult(record, actualRunCount - 1, MAX_RETRIES)
+            return when {
+                decision.retry -> {
+                    executionStateRepository.failScheduledSlot(
+                        workId = workId,
+                        businessDayKey = businessDayKey,
+                        record = record,
+                        category = decision.category,
+                        retryAfterMillis = decision.retryDelayMillis,
+                    )
+                    Result.retry()
+                }
+
+                decision.category == FailureCategory.NONE -> {
+                    executionStateRepository.completeScheduledSlot(workId, businessDayKey, record)
+                    Result.success()
+                }
+
+                else -> {
+                    executionStateRepository.failScheduledSlot(
+                        workId = workId,
+                        businessDayKey = businessDayKey,
+                        record = record,
+                        category = decision.category,
+                        retryAfterMillis = null,
+                    )
+                    // 周期任务的本业务日已形成确定终态；返回 success 以保留下一周期调度。
+                    Result.success()
+                }
+            }
+        }
+
         /** 连续失败达到阈值时自动关闭定时任务，避免进一步触发风控。 */
         private suspend fun updateFailureGuard(
             store: SecureStore,
             record: RunRecord,
         ) {
-            if (
-                record.terminationReason == RunTerminationReason.ROOT_DETECTED ||
-                record.terminationReason == RunTerminationReason.ROOT_CHECK_FAILED ||
-                record.resultUnknown > 0
-            ) {
-                // 结果待确认既不能计作远端失败，也不能清零已有风控计数。
-                return
-            }
-            val risk = RiskState.fromRecord(record)
-            val countAsFailure = record.total > 0 && (record.failed == record.total || risk != RiskState.NORMAL)
-            if (!countAsFailure) {
-                store.resetSignInFailures()
-                return
-            }
-
-            val failures = store.recordSignInFailure()
-            if (failures < MAX_CONSECUTIVE_FAILURES) return
-
-            val reason =
-                if (risk == RiskState.NORMAL) {
-                    "连续${failures}次签到全部失败"
-                } else {
-                    "连续${failures}次签到异常，检测到风控状态：$risk"
+            val reason = evaluateFailureGuard(store, record, MAX_CONSECUTIVE_FAILURES)
+            if (reason != null) {
+                store.markSignInPaused(reason)
+                val settings = store.getAppSettings()
+                if (settings.scheduleEnabled) {
+                    settingsRepository.saveSettings(settings.copy(scheduleEnabled = false))
                 }
-            store.markSignInPaused(reason)
-            val settings = store.getAppSettings()
-            if (settings.scheduleEnabled) {
-                settingsRepository.saveSettings(settings.copy(scheduleEnabled = false))
+                val entry =
+                    LogEntry(
+                        timestamp = System.currentTimeMillis(),
+                        level = "WARN",
+                        message = "已自动暂停定时签到：$reason",
+                        detail = "可在设置页重新开启定时任务；建议先检查 Cookie / Token 或手动完成验证。",
+                    )
+                logRepository.persistAppended(listOf(entry))
             }
-            val entry =
-                LogEntry(
-                    timestamp = System.currentTimeMillis(),
-                    level = "WARN",
-                    message = "已自动暂停定时签到：$reason",
-                    detail = "可在设置页重新开启定时任务；建议先检查 Cookie / Token 或手动完成验证。",
-                )
-            logRepository.persistAppended(listOf(entry))
         }
 
         private suspend fun syncRepositoryAfterBackgroundRun() {
@@ -331,5 +350,45 @@ class SignInWorker
             private const val FG_NOTIFY_ID = 1002
             private const val MAX_RETRIES = 3
             private const val MAX_CONSECUTIVE_FAILURES = 5
+        }
+    }
+
+private fun shouldSkipFailureGuard(record: RunRecord): Boolean =
+    record.terminationReason == RunTerminationReason.ROOT_DETECTED ||
+        record.terminationReason == RunTerminationReason.ROOT_CHECK_FAILED ||
+        record.resultUnknown > 0
+
+private fun shouldCountAsFailure(
+    record: RunRecord,
+    risk: RiskState,
+): Boolean = record.total > 0 && (record.failed == record.total || risk != RiskState.NORMAL)
+
+private fun failureGuardPauseReason(
+    risk: RiskState,
+    failures: Int,
+    maxFailures: Int,
+): String? =
+    if (failures < maxFailures) {
+        null
+    } else if (risk == RiskState.NORMAL) {
+        "连续${failures}次签到全部失败"
+    } else {
+        "连续${failures}次签到异常，检测到风控状态：$risk"
+    }
+
+private fun evaluateFailureGuard(
+    store: SecureStore,
+    record: RunRecord,
+    maxFailures: Int,
+): String? =
+    if (shouldSkipFailureGuard(record)) {
+        null
+    } else {
+        val risk = RiskState.fromRecord(record)
+        if (!shouldCountAsFailure(record, risk)) {
+            store.resetSignInFailures()
+            null
+        } else {
+            failureGuardPauseReason(risk, store.recordSignInFailure(), maxFailures)
         }
     }

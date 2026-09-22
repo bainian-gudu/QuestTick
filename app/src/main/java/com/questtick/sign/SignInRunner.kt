@@ -246,46 +246,67 @@ class SignInRunner(
         }
         val allAccounts = withContext(Dispatchers.IO) { accountRepository.getAccounts() }
         val enabledAccounts = allAccounts.filter { it.enabled && it.id !in excludedAccountIds }
-        if (allAccounts.isEmpty() || enabledAccounts.isEmpty()) {
-            onProgress("没有启用账号", 0, 0)
-            runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "没有启用账号")
-            return RunRecord(
-                timestamp = System.currentTimeMillis(),
-                results = emptyList(),
-                runId = runId,
-                trigger = trigger,
-                terminationReason = RunTerminationReason.NO_ENABLED_ACCOUNT,
-            )
-        }
+        val noEnabledAccounts = allAccounts.isEmpty() || enabledAccounts.isEmpty()
         // 每次运行随机化账号顺序，减少长期固定请求轨迹带来的风控特征。
-        val accounts = enabledAccounts.shuffled(Random(System.nanoTime()))
+        val accounts =
+            if (noEnabledAccounts) {
+                emptyList()
+            } else {
+                enabledAccounts.shuffled(Random(System.nanoTime()))
+            }
         // 定时签到复用当天手动签到结果；已确认成功的任务不再重复请求，失败任务仍可按定时重试策略处理。
         val signedTaskIdsForDay =
-            if (trigger == RunTrigger.SCHEDULED || trigger == RunTrigger.RETRY) {
+            if (noEnabledAccounts) {
+                emptySet()
+            } else if (trigger == RunTrigger.SCHEDULED || trigger == RunTrigger.RETRY) {
                 runPersistenceRepository.signedTaskIdsForDay(scheduledBusinessDayAt ?: startTime)
             } else {
                 emptySet()
             }
         val taskPlan =
-            buildRunTaskPlan(accounts, cloudGameBindings)
-                .filter { task -> allowedTaskIds == null || task.id in allowedTaskIds }
-                .filter { task -> task.id !in signedTaskIdsForDay }
+            if (noEnabledAccounts) {
+                emptyList()
+            } else {
+                buildRunTaskPlan(accounts, cloudGameBindings)
+                    .filter { task -> allowedTaskIds == null || task.id in allowedTaskIds }
+                    .filter { task -> task.id !in signedTaskIdsForDay }
+            }
         val plannedTaskIds = taskPlan.mapTo(linkedSetOf()) { it.id }
         val resultAccumulator = TaskResultAccumulator(plannedTaskIds)
-        runCoordinator?.setTaskPlan(taskPlan)
+        if (!noEnabledAccounts) runCoordinator?.setTaskPlan(taskPlan)
 
         val total = taskPlan.size
-        if (total == 0) {
-            onProgress("没有可执行任务", 0, 0)
-            runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "没有可执行任务")
-            return RunRecord(
-                timestamp = System.currentTimeMillis(),
-                results = emptyList(),
-                runId = runId,
-                trigger = trigger,
-                terminationReason = RunTerminationReason.NO_RUNNABLE_TASK,
-            )
-        }
+        val earlyResult =
+            when {
+                noEnabledAccounts -> {
+                    onProgress("没有启用账号", 0, 0)
+                    runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "没有启用账号")
+                    RunRecord(
+                        timestamp = System.currentTimeMillis(),
+                        results = emptyList(),
+                        runId = runId,
+                        trigger = trigger,
+                        terminationReason = RunTerminationReason.NO_ENABLED_ACCOUNT,
+                    )
+                }
+
+                total == 0 -> {
+                    onProgress("没有可执行任务", 0, 0)
+                    runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "没有可执行任务")
+                    RunRecord(
+                        timestamp = System.currentTimeMillis(),
+                        results = emptyList(),
+                        runId = runId,
+                        trigger = trigger,
+                        terminationReason = RunTerminationReason.NO_RUNNABLE_TASK,
+                    )
+                }
+
+                else -> {
+                    null
+                }
+            }
+        if (earlyResult != null) return earlyResult
 
         return try {
             withContext(Dispatchers.IO) {
@@ -511,230 +532,230 @@ class SignInRunner(
                         enqueuePostRunActions = false,
                     )
                     runCoordinator?.finishProgress(RunProgressPhase.BLOCKED, blockMessage)
-                    return@withContext record
-                }
-
-                // 上次进程中断时已经发出请求但没有结果的任务，本业务日不再自动重放。
-                if (uncertainTaskIds.isNotEmpty()) {
-                    taskPlan.filter { it.id in uncertainTaskIds }.forEach { task ->
-                        val parts = task.id.split('|', limit = 3)
-                        completeTask(
-                            task.id,
-                            TaskResult(
-                                game = task.targetName,
-                                gameKey = parts.getOrNull(2).orEmpty(),
-                                accountLabel = task.accountLabel,
-                                accountId = parts.getOrNull(0).orEmpty(),
-                                success = false,
-                                skipped = true,
-                                message = RunPersistenceRepository.RESULT_UNKNOWN_MESSAGE,
-                                failureCategory = FailureCategory.RESULT_UNKNOWN,
-                                errorCode = "previous-run-result-unknown",
-                                retryable = false,
-                            ),
-                            "${task.accountLabel} · ${task.targetName}（结果待确认）",
-                        )
-                    }
-                }
-
-                runCoordinator?.setProgressPhase(RunProgressPhase.REFRESHING, "正在准备版本与凭证")
-                // Root 已确认放行后再启动准备任务。这里的并行独立于“并行签到”开关；
-                // 该开关仍只控制多账号处理，米游社与云游戏请求各自等待自己的准备结果。
-                val mysPreparation =
-                    async {
-                        prepareMysRuntime(settings, hasMysTasks)
-                    }
-                val cloudPreparation =
-                    async {
-                        prepareCloudRuntime(settings, hasCloudYsTasks, hasCloudSrTasks, hasCloudTasks)
-                    }
-                log(
-                    "DEBUG",
-                    "运行配置快照",
-                    buildString {
-                        append("parallel=${settings.parallelEnabled}, ")
-                        append("actIdAutoRefresh=${settings.actIdAutoRefresh}, ")
-                        append("mysAppVersion={autoFetch=${settings.mysAppVersionAutoFetch}, ")
-                        append("custom=${settings.mysAppVersion.ifBlank { "<empty>" }}, ")
-                        append("effective=${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion).ifBlank { "<empty>" }}}, ")
-                        append("cloudVersion={autoFetch=${settings.cloudVersionAutoFetch}, ")
-                        append("ysCustom=${settings.cloudYsVersion.ifBlank { "<empty>" }}, ")
-                        append("srCustom=${settings.cloudSrVersion.ifBlank { "<empty>" }}, ")
-                        append("ysEffective=${CloudVersionRepository.effectiveYs()}, ")
-                        append("srEffective=${CloudVersionRepository.effectiveSr()}}, ")
-                        append("rootCheck={enabled=true, mode=evidence, blockRun=true}, ")
-                        append("actIdCacheKeys=${actIdCache.keys.joinToString()}")
-                    },
-                )
-
-                val cpuCores = Runtime.getRuntime().availableProcessors()
-                val maxMem = Runtime.getRuntime().maxMemory() / BYTES_PER_MIB / BYTES_PER_MIB
-                val freeMem = Runtime.getRuntime().freeMemory() / BYTES_PER_MIB / BYTES_PER_MIB
-                val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
-                val mysVersion =
-                    when {
-                        settings.mysAppVersion.isNotBlank() -> {
-                            "自定义(${settings.mysAppVersion})"
-                        }
-
-                        settings.mysAppVersionAutoFetch -> {
-                            "自动准备中(${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion)})"
-                        }
-
-                        else -> {
-                            "默认(${MysAppVersionRepository.currentVersion})"
-                        }
-                    }
-
-                log(
-                    "INFO",
-                    "运行模式: $mode, 启用账号: ${accounts.size} 个",
-                    "parallel=$parallel, cpuCores=$cpuCores, maxHeap=${maxMem}MB, freeHeap=${freeMem}MB, " +
-                        "thread=${Thread.currentThread().name}",
-                )
-                log("INFO", "米游社版本准备已并行启动", "configured=$mysVersion")
-                if (settings.actIdAutoRefresh) {
-                    log("INFO", "act_id 自动刷新已开启")
-                }
-                if (settings.parallelEnabled) {
-                    log("INFO", "并行调度线程上限: $workerParallelism")
-                }
-
-                log("INFO", "任务总数: $total 个游戏签到（${accounts.size} 个账号）")
-
-                accounts.forEach(::logPlannedTasksForAccount)
-                runCoordinator?.setProgressPhase(RunProgressPhase.SIGNING, "准备开始签到任务")
-
-                if (parallel && accounts.size > 1) {
-                    log("INFO", "────── 启动并行调度，${accounts.size} 个协程同时执行 ──────")
-                    coroutineScope {
-                        accounts
-                            .mapIndexed { index, acc ->
-                                async {
-                                    try {
-                                        accountStartJitter(acc.label, index, accounts.size)
-                                        processAccount(
-                                            acc,
-                                            settings,
-                                            mysPreparation,
-                                            cloudPreparation,
-                                            actIdCache,
-                                            total,
-                                            done,
-                                            onProgress,
-                                            shouldExecuteTask = shouldExecuteTask,
-                                            onTaskStarted = startTask,
-                                            onTaskCompleted = completeTask,
-                                        )
-                                    } catch (e: CancellationException) {
-                                        throw e
-                                    } catch (e: RunPersistenceException) {
-                                        throw e
-                                    } catch (e: Exception) {
-                                        e.throwIfCancellation()
-                                        log(
-                                            "ERROR",
-                                            "[${acc.label}] 账号处理异常终止",
-                                            ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
-                                        )
-                                        hadUnexpectedAccountFailure.set(true)
-                                        addFailedResultsForAccount(
-                                            acc,
-                                            e,
-                                            { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
-                                            isTaskRunning,
-                                            completeTask,
-                                        )
-                                    }
-                                }
-                            }.awaitAll()
-                    }
+                    record
                 } else {
-                    for (acc in accounts) {
-                        try {
-                            processAccount(
-                                acc,
-                                settings,
-                                mysPreparation,
-                                cloudPreparation,
-                                actIdCache,
-                                total,
-                                done,
-                                onProgress,
-                                shouldExecuteTask = shouldExecuteTask,
-                                onTaskStarted = startTask,
-                                onTaskCompleted = completeTask,
-                            )
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: RunPersistenceException) {
-                            throw e
-                        } catch (e: Exception) {
-                            e.throwIfCancellation()
-                            log(
-                                "ERROR",
-                                "[${acc.label}] 账号处理异常终止",
-                                ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
-                            )
-                            hadUnexpectedAccountFailure.set(true)
-                            addFailedResultsForAccount(
-                                acc,
-                                e,
-                                { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
-                                isTaskRunning,
-                                completeTask,
+                    // 上次进程中断时已经发出请求但没有结果的任务，本业务日不再自动重放。
+                    if (uncertainTaskIds.isNotEmpty()) {
+                        taskPlan.filter { it.id in uncertainTaskIds }.forEach { task ->
+                            val parts = task.id.split('|', limit = 3)
+                            completeTask(
+                                task.id,
+                                TaskResult(
+                                    game = task.targetName,
+                                    gameKey = parts.getOrNull(2).orEmpty(),
+                                    accountLabel = task.accountLabel,
+                                    accountId = parts.getOrNull(0).orEmpty(),
+                                    success = false,
+                                    skipped = true,
+                                    message = RunPersistenceRepository.RESULT_UNKNOWN_MESSAGE,
+                                    failureCategory = FailureCategory.RESULT_UNKNOWN,
+                                    errorCode = "previous-run-result-unknown",
+                                    retryable = false,
+                                ),
+                                "${task.accountLabel} · ${task.targetName}（结果待确认）",
                             )
                         }
                     }
-                }
 
-                if (resultAccumulator.size != total) {
-                    hadUnexpectedAccountFailure.set(true)
+                    runCoordinator?.setProgressPhase(RunProgressPhase.REFRESHING, "正在准备版本与凭证")
+                    // Root 已确认放行后再启动准备任务。这里的并行独立于“并行签到”开关；
+                    // 该开关仍只控制多账号处理，米游社与云游戏请求各自等待自己的准备结果。
+                    val mysPreparation =
+                        async {
+                            prepareMysRuntime(settings, hasMysTasks)
+                        }
+                    val cloudPreparation =
+                        async {
+                            prepareCloudRuntime(settings, hasCloudYsTasks, hasCloudSrTasks, hasCloudTasks)
+                        }
                     log(
-                        "ERROR",
-                        "签到任务结果不完整，正在补齐未完成任务",
-                        "planned=$total, completed=${resultAccumulator.size}",
+                        "DEBUG",
+                        "运行配置快照",
+                        buildString {
+                            append("parallel=${settings.parallelEnabled}, ")
+                            append("actIdAutoRefresh=${settings.actIdAutoRefresh}, ")
+                            append("mysAppVersion={autoFetch=${settings.mysAppVersionAutoFetch}, ")
+                            append("custom=${settings.mysAppVersion.ifBlank { "<empty>" }}, ")
+                            append("effective=${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion).ifBlank { "<empty>" }}}, ")
+                            append("cloudVersion={autoFetch=${settings.cloudVersionAutoFetch}, ")
+                            append("ysCustom=${settings.cloudYsVersion.ifBlank { "<empty>" }}, ")
+                            append("srCustom=${settings.cloudSrVersion.ifBlank { "<empty>" }}, ")
+                            append("ysEffective=${CloudVersionRepository.effectiveYs()}, ")
+                            append("srEffective=${CloudVersionRepository.effectiveSr()}}, ")
+                            append("rootCheck={enabled=true, mode=evidence, blockRun=true}, ")
+                            append("actIdCacheKeys=${actIdCache.keys.joinToString()}")
+                        },
                     )
-                    accounts.forEach { account ->
-                        buildFailedTaskResults(
-                            account = account,
-                            errorMessage = "任务执行异常中断",
-                            cloudGameBindings = cloudGameBindings,
-                            failure = TaskFailureDescriptor(FailureCategory.INTERNAL_ERROR, "missing-terminal-result"),
-                        ).forEach { result ->
-                            val taskId = taskIdForResult(account, result, cloudGameBindings)
-                            if (resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)) {
-                                val finalResult =
-                                    if (isTaskRunning(taskId)) {
-                                        result.asUnknownAfterRequest("missing-terminal-after-request")
-                                    } else {
-                                        result
+
+                    val cpuCores = Runtime.getRuntime().availableProcessors()
+                    val maxMem = Runtime.getRuntime().maxMemory() / BYTES_PER_MIB / BYTES_PER_MIB
+                    val freeMem = Runtime.getRuntime().freeMemory() / BYTES_PER_MIB / BYTES_PER_MIB
+                    val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
+                    val mysVersion =
+                        when {
+                            settings.mysAppVersion.isNotBlank() -> {
+                                "自定义(${settings.mysAppVersion})"
+                            }
+
+                            settings.mysAppVersionAutoFetch -> {
+                                "自动准备中(${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion)})"
+                            }
+
+                            else -> {
+                                "默认(${MysAppVersionRepository.currentVersion})"
+                            }
+                        }
+
+                    log(
+                        "INFO",
+                        "运行模式: $mode, 启用账号: ${accounts.size} 个",
+                        "parallel=$parallel, cpuCores=$cpuCores, maxHeap=${maxMem}MB, freeHeap=${freeMem}MB, " +
+                            "thread=${Thread.currentThread().name}",
+                    )
+                    log("INFO", "米游社版本准备已并行启动", "configured=$mysVersion")
+                    if (settings.actIdAutoRefresh) {
+                        log("INFO", "act_id 自动刷新已开启")
+                    }
+                    if (settings.parallelEnabled) {
+                        log("INFO", "并行调度线程上限: $workerParallelism")
+                    }
+
+                    log("INFO", "任务总数: $total 个游戏签到（${accounts.size} 个账号）")
+
+                    accounts.forEach(::logPlannedTasksForAccount)
+                    runCoordinator?.setProgressPhase(RunProgressPhase.SIGNING, "准备开始签到任务")
+
+                    if (parallel && accounts.size > 1) {
+                        log("INFO", "────── 启动并行调度，${accounts.size} 个协程同时执行 ──────")
+                        coroutineScope {
+                            accounts
+                                .mapIndexed { index, acc ->
+                                    async {
+                                        try {
+                                            accountStartJitter(acc.label, index, accounts.size)
+                                            processAccount(
+                                                acc,
+                                                settings,
+                                                mysPreparation,
+                                                cloudPreparation,
+                                                actIdCache,
+                                                total,
+                                                done,
+                                                onProgress,
+                                                shouldExecuteTask = shouldExecuteTask,
+                                                onTaskStarted = startTask,
+                                                onTaskCompleted = completeTask,
+                                            )
+                                        } catch (e: CancellationException) {
+                                            throw e
+                                        } catch (e: RunPersistenceException) {
+                                            throw e
+                                        } catch (e: Exception) {
+                                            e.throwIfCancellation()
+                                            log(
+                                                "ERROR",
+                                                "[${acc.label}] 账号处理异常终止",
+                                                ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+                                            )
+                                            hadUnexpectedAccountFailure.set(true)
+                                            addFailedResultsForAccount(
+                                                acc,
+                                                e,
+                                                { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
+                                                isTaskRunning,
+                                                completeTask,
+                                            )
+                                        }
                                     }
-                                completeTask(taskId, finalResult, "${account.label} · 异常收尾")
+                                }.awaitAll()
+                        }
+                    } else {
+                        for (acc in accounts) {
+                            try {
+                                processAccount(
+                                    acc,
+                                    settings,
+                                    mysPreparation,
+                                    cloudPreparation,
+                                    actIdCache,
+                                    total,
+                                    done,
+                                    onProgress,
+                                    shouldExecuteTask = shouldExecuteTask,
+                                    onTaskStarted = startTask,
+                                    onTaskCompleted = completeTask,
+                                )
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: RunPersistenceException) {
+                                throw e
+                            } catch (e: Exception) {
+                                e.throwIfCancellation()
+                                log(
+                                    "ERROR",
+                                    "[${acc.label}] 账号处理异常终止",
+                                    ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+                                )
+                                hadUnexpectedAccountFailure.set(true)
+                                addFailedResultsForAccount(
+                                    acc,
+                                    e,
+                                    { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
+                                    isTaskRunning,
+                                    completeTask,
+                                )
                             }
                         }
                     }
-                }
-                onProgress("完成", resultAccumulator.size.coerceAtMost(total), total)
 
-                val sortedResults = sortTaskResultsForRecord(resultAccumulator.values())
-                val record =
-                    RunRecord(
-                        timestamp = System.currentTimeMillis(),
-                        results = sortedResults,
-                        runId = runId,
-                        trigger = trigger,
-                        terminationReason =
-                            if (hadUnexpectedAccountFailure.get()) {
-                                RunTerminationReason.INTERNAL_ERROR
-                            } else {
-                                RunTerminationReason.COMPLETED
-                            },
-                    )
-                runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存签到结果")
-                runFinalizer.finish(record, actIdCache, startTime, logs.toList().sortedBy { it.timestamp })
-                runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "签到任务已完成")
-                record
+                    if (resultAccumulator.size != total) {
+                        hadUnexpectedAccountFailure.set(true)
+                        log(
+                            "ERROR",
+                            "签到任务结果不完整，正在补齐未完成任务",
+                            "planned=$total, completed=${resultAccumulator.size}",
+                        )
+                        accounts.forEach { account ->
+                            buildFailedTaskResults(
+                                account = account,
+                                errorMessage = "任务执行异常中断",
+                                cloudGameBindings = cloudGameBindings,
+                                failure = TaskFailureDescriptor(FailureCategory.INTERNAL_ERROR, "missing-terminal-result"),
+                            ).forEach { result ->
+                                val taskId = taskIdForResult(account, result, cloudGameBindings)
+                                if (resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)) {
+                                    val finalResult =
+                                        if (isTaskRunning(taskId)) {
+                                            result.asUnknownAfterRequest("missing-terminal-after-request")
+                                        } else {
+                                            result
+                                        }
+                                    completeTask(taskId, finalResult, "${account.label} · 异常收尾")
+                                }
+                            }
+                        }
+                    }
+                    onProgress("完成", resultAccumulator.size.coerceAtMost(total), total)
+
+                    val sortedResults = sortTaskResultsForRecord(resultAccumulator.values())
+                    val record =
+                        RunRecord(
+                            timestamp = System.currentTimeMillis(),
+                            results = sortedResults,
+                            runId = runId,
+                            trigger = trigger,
+                            terminationReason =
+                                if (hadUnexpectedAccountFailure.get()) {
+                                    RunTerminationReason.INTERNAL_ERROR
+                                } else {
+                                    RunTerminationReason.COMPLETED
+                                },
+                        )
+                    runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存签到结果")
+                    runFinalizer.finish(record, actIdCache, startTime, logs.toList().sortedBy { it.timestamp })
+                    runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "签到任务已完成")
+                    record
+                }
             }
         } catch (e: CancellationException) {
             withContext(NonCancellable + Dispatchers.IO) {
