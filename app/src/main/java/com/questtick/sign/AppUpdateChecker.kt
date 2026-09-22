@@ -123,15 +123,14 @@ object AppUpdateChecker {
         }
 
         // 缓存不足时仅请求 GitHub 官方 API。
-        try {
+        return try {
             val res = fetchRace(context, currentVersion, cache.etag, httpTransport)
             AppUpdateCache.put(context, res.first, res.second)
-            return res.first
+            res.first
         } catch (e: Exception) {
             e.throwIfCancellation()
             // 网络失败时尽量回退到已有缓存，避免界面完全无结果。
-            cache.info?.let { return it }
-            throw e
+            cache.info ?: throw e
         }
     }
 

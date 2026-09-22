@@ -78,43 +78,53 @@ object ActId {
     }
 
     /** 从 URL / HTML / JS 等文本中解析 act_id。 */
-    fun parseFromText(text: String?): String? {
-        val source = text ?: return null
-        for (pattern in PATTERNS) {
-            val candidate =
+    fun parseFromText(text: String?): String? =
+        text?.let { source ->
+            PATTERNS.firstNotNullOfOrNull { pattern ->
                 pattern
                     .find(source)
                     ?.groupValues
                     ?.getOrNull(1)
                     ?.trim()
-            if (isValid(candidate)) return candidate
+                    ?.takeIf(::isValid)
+            }
         }
-        return null
-    }
 
     /** 从 HTML 中提取 script src 的绝对地址；相对路径以页面 URL 为基准解析。 */
     fun extractScriptUrls(
         html: String,
         pageUrl: String,
-    ): List<String> {
-        if (!TrustedUrlPolicy.isActivityResourceUrl(pageUrl)) return emptyList()
-        val base =
-            try {
-                java.net.URI(pageUrl)
-            } catch (_: Exception) {
-                return emptyList()
-            }
-        val urls = LinkedHashSet<String>()
-        for (m in SCRIPT_SRC.findAll(html)) {
-            try {
-                val resolved = base.resolve(m.groupValues[1]).toString()
-                if (TrustedUrlPolicy.isActivityResourceUrl(resolved)) urls.add(resolved)
-            } catch (_: Exception) {
-                // 跳过无法解析的 URL。
+    ): List<String> =
+        if (!TrustedUrlPolicy.isActivityResourceUrl(pageUrl)) {
+            emptyList()
+        } else {
+            val base =
+                try {
+                    java.net.URI(pageUrl)
+                } catch (_: Exception) {
+                    null
+                }
+            if (base == null) {
+                emptyList()
+            } else {
+                val urls = LinkedHashSet<String>()
+                for (m in SCRIPT_SRC.findAll(html)) {
+                    resolveActivityScriptUrl(base, m.groupValues[1])?.let(urls::add)
+                }
+                urls.toList()
             }
         }
-        return urls.toList()
-    }
+
+    private fun resolveActivityScriptUrl(
+        base: URI,
+        raw: String,
+    ): String? =
+        try {
+            base.resolve(raw).toString().takeIf(TrustedUrlPolicy::isActivityResourceUrl)
+        } catch (_: Exception) {
+            // 跳过无法解析的 URL。
+            null
+        }
 
     /** 从米游社首页导航 JSON 严格提取当前游戏签到入口的 act_id。 */
     fun parseFromNavigation(

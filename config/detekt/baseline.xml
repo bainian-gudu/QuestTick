@@ -197,13 +197,10 @@
     <ID>RedundantSuspendModifier:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
     <ID>RedundantSuspendModifier:TrustedRedirects.kt$TrustedRedirects$suspend</ID>
-    <ID>ReturnCount:ActId.kt$ActId$fun extractScriptUrls( html: String, pageUrl: String, ): List&lt;String&gt;</ID>
     <ID>ReturnCount:ActId.kt$ActId$fun parseFromNavigation( body: String?, gameKey: String, ): String?</ID>
-    <ID>ReturnCount:ActId.kt$ActId$fun parseFromText(text: String?): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$private suspend fun fetchFromNavigation( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$suspend fun fetchLatest( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
-    <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$suspend fun checkFast( context: Context, currentVersion: String, httpTransport: HttpTransport, ): AppUpdateInfo</ID>
     <ID>ReturnCount:AppUpdateInstaller.kt$AppUpdateInstaller$fun cachedApk( context: Context, info: AppUpdateChecker.AppUpdateInfo, ): File?</ID>
     <ID>ReturnCount:AuthRepository.kt$AuthRepository$fun checkCookieHealth(account: Account): CredentialHealth</ID>
     <ID>ReturnCount:CloudAppVersionFetcher.kt$CloudVersionRepository$suspend fun refreshRemote(httpTransport: HttpTransport): Result&lt;CloudAppVersionFetcher.CloudVersions&gt;</ID>
@@ -232,8 +229,6 @@
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun fillCookieTokenByStokenIfNeeded( status: ScanStatus.Confirmed, httpTransport: HttpTransport, ): ScanStatus.Confirmed</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun parseConfirmed( setCookieHeaders: List&lt;String&gt;, data: JSONObject, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): ScanStatus</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$suspend fun createQRCode( deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
-    <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveCloudDeviceId(forceCreate: Boolean = true): String</ID>
-    <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveMysDeviceId(forceCreate: Boolean = true): String</ID>
     <ID>ReturnCount:SettingsAppearancePage.kt$private fun hexToHsl(hex: String): HslColor</ID>
     <ID>ReturnCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
