@@ -12,6 +12,13 @@ naming:
     # ignoreAnnotated: ['Composable']。
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
 
+coroutines:
+  RedundantSuspendModifier:
+    # detekt 1.23.8 与当前 Kotlin 2.4.0 / coroutines 1.11.0 的元数据组合无法正确识别
+    # withContext、delay、withTransaction、suspendCancellableCoroutine 等挂起调用，
+    # 会把本仓库大量必须保留的 suspend 函数全部误报。待升级 detekt 并确认修复后重新启用。
+    active: false
+
 style:
   MaxLineLength:
     # 与 QUESTTICK_CODE_STYLE.md 的 140 列提示保持一致，避免默认 120 列产生格式噪声。
