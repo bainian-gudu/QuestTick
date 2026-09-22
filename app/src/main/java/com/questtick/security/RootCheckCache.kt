@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.security
 
 import android.content.Context

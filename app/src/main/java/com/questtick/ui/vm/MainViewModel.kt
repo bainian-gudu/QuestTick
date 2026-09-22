@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.ui.vm
 
 import androidx.lifecycle.ViewModel

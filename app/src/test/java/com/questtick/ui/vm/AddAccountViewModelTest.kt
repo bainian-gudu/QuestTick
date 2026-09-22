@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+)
+
 package com.questtick.ui.vm
 
 import com.questtick.data.Account

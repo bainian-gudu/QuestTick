@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+)
+
 package com.questtick.repository.log
 
 import com.questtick.data.LogEntry

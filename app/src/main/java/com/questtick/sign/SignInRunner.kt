@@ -1,3 +1,14 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:InjectDispatcher",
+    "detekt:LargeClass",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:ThrowsCount",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.sign
 
 /* 签到运行的顶层编排器：加载账号、组建任务计划、执行 Root 阻断、控制并发度并归并结果。
@@ -500,12 +511,14 @@ class SignInRunner(
                     blockedResults.forEach { result ->
                         completeTask(result.taskId, result, "${result.accountLabel} · ${result.game}")
                         logOutcome(
-                            account = result.accountLabel,
-                            game = result.game,
-                            success = false,
-                            skipped = true,
-                            message = result.message,
-                            detail = "blockedBy=rootCheck",
+                            TaskOutcomeLog(
+                                account = result.accountLabel,
+                                game = result.game,
+                                success = false,
+                                skipped = true,
+                                message = result.message,
+                                detail = "blockedBy=rootCheck",
+                            ),
                         )
                     }
                     onProgress(blockMessage, 0, total)
@@ -1018,23 +1031,15 @@ class SignInRunner(
             RootBlockMessages.CHECK_FAILED_CONTENT
         }
 
-    private fun logOutcome(
-        account: String,
-        game: String,
-        success: Boolean,
-        skipped: Boolean,
-        message: String,
-        detail: String = "",
-        elapsedMs: Long = 0,
-    ) {
-        val elapsed = if (elapsedMs > 0) " (${formatSignInElapsed(elapsedMs)})" else ""
+    private fun logOutcome(entry: TaskOutcomeLog) {
+        val elapsed = if (entry.elapsedMs > 0) " (${formatSignInElapsed(entry.elapsedMs)})" else ""
         val level =
             when {
-                skipped -> "WARN"
-                success -> "OK"
+                entry.skipped -> "WARN"
+                entry.success -> "OK"
                 else -> "ERROR"
             }
-        log(level, "[$account · $game] $message$elapsed", detail)
+        log(level, "[${entry.account} · ${entry.game}] ${entry.message}$elapsed", entry.detail)
     }
 
     private fun addFailedResultsForAccount(

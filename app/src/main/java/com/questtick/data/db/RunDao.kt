@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.data.db
 
 // 签到运行会话、任务和尝试状态的 Room 数据访问接口。

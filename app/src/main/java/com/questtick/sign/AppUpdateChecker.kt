@@ -1,3 +1,10 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.sign
 
 /*

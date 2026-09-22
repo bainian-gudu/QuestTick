@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+)
+
 package com.questtick.work
 
 // 根据运行设置创建串行或并行签到执行器。

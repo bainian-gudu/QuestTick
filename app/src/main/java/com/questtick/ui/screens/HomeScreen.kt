@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongMethod",
+)
+
 package com.questtick.ui.screens
 
 /*

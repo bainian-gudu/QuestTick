@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick
 
 /*

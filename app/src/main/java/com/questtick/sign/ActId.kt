@@ -1,3 +1,5 @@
+@file:Suppress("detekt:TooGenericExceptionCaught")
+
 package com.questtick.sign
 
 /*

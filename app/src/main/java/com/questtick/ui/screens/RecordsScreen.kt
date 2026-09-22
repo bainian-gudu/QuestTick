@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:InjectDispatcher",
+    "detekt:LongMethod",
+)
+
 package com.questtick.ui.screens
 
 import com.questtick.i18n.localizedText

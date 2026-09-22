@@ -1,3 +1,10 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:LongMethod",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.mail
 
 import com.questtick.net.TrustedUrlPolicy

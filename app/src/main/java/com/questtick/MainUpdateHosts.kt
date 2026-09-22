@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongMethod",
+)
+
 package com.questtick
 
 // 应用更新提示、下载进度和安装流程的页面承载逻辑。

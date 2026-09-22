@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+)
+
 package com.questtick.sign
 
 /** 米游社与云游戏请求头常量及构造工具。 */

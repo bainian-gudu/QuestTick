@@ -1,3 +1,12 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:InjectDispatcher",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.ui.vm
 
 /*

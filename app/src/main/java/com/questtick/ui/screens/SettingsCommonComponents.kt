@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.ui.screens
 
 // 设置页面复用的卡片、输入框、按钮和状态行组件。

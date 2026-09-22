@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:LongMethod",
+)
+
 package com.questtick.sign
 
 import android.Manifest

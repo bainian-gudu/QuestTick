@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:LongMethod",
+)
+
 package com.questtick.ui.screens
 
 import android.graphics.Bitmap

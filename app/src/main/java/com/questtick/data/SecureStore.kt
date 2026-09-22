@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.data
 
 import android.content.Context

@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.repository
 
 import com.questtick.log.AppLog

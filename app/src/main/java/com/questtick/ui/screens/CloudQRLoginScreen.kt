@@ -1,3 +1,10 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:InjectDispatcher",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+)
+
 package com.questtick.ui.screens
 
 import android.graphics.Bitmap

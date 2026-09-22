@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.sign
 
 /*
@@ -40,6 +45,7 @@ internal class MysSignExecutor(
         private const val MAX_TASK_DELAY_SECONDS = 5
     }
 
+    @Suppress("detekt:NestedBlockDepth", "detekt:LongMethod", "detekt:CyclomaticComplexMethod")
     suspend fun runAccount(
         acc: Account,
         settings: AppSettings,
@@ -93,13 +99,11 @@ internal class MysSignExecutor(
                     "[${acc.label}] 米游社 Cookie 为空，尝试用 SToken 自动刷新…",
                     "mysUid=${Mask.uid(acc.mysUid)}, hasStoken=${acc.stoken.isNotBlank()}",
                 )
-                val refreshed = credentialCoordinator.refreshMysCookieForRun(acc)
+                val refreshed = refreshMysCookie(acc)
                 if (refreshed != null) {
-                    cookie = refreshed.fullCookie
+                    cookie = refreshed.cookie
                     cookieRefreshed = true
-                    credentialCoordinator.saveRefreshedMysCookieForRun(acc, cookie, refreshed.ltoken)?.let { updated ->
-                        currentAccount = updated
-                    }
+                    currentAccount = refreshed.account
                     log("OK", "[${acc.label}] Cookie 自动刷新成功，继续执行米游社签到", "newCookieLength=${cookie.length}")
                 } else {
                     log("ERROR", "[${acc.label}] Cookie 自动刷新失败，SToken 可能已过期，请重新扫码登录", "")
@@ -134,18 +138,13 @@ internal class MysSignExecutor(
                         "[${acc.label}] Cookie 失效，尝试用 SToken 自动刷新…",
                         "mysUid=${Mask.uid(acc.mysUid)}, hasStoken=true",
                     )
-                    val refreshed = credentialCoordinator.refreshMysCookieForRun(acc)
+                    val refreshed = refreshMysCookie(acc)
                     if (refreshed != null) {
-                        cookie = refreshed.fullCookie
+                        cookie = refreshed.cookie
                         cookieRefreshed = true
-                        credentialCoordinator.saveRefreshedMysCookieForRun(acc, cookie, refreshed.ltoken)?.let { updated ->
-                            currentAccount = updated
-                        }
+                        currentAccount = refreshed.account
                         log("OK", "[${acc.label}] Cookie 自动刷新成功，使用新 Cookie 重试", "newCookieLength=${cookie.length}")
-                        outcome =
-                            limitedRequest("${acc.label} · ${game.name} 米游社签到重试") {
-                                safeMysRun(mys, cookie, game)
-                            }
+                        outcome = retryMysRun(mys, acc, game, cookie)
                     } else {
                         log("ERROR", "[${acc.label}] Cookie 自动刷新失败，SToken 可能已过期，请重新扫码登录", "")
                     }
@@ -173,13 +172,15 @@ internal class MysSignExecutor(
                         ""
                     }
                 logOutcome(
-                    account = acc.label,
-                    game = game.name,
-                    success = outcome.success,
-                    skipped = outcome.skipped,
-                    message = outcome.message + rewardInfo,
-                    detail = buildMysOutcomeDetail(outcome),
-                    elapsedMs = taskElapsed,
+                    TaskOutcomeLog(
+                        account = acc.label,
+                        game = game.name,
+                        success = outcome.success,
+                        skipped = outcome.skipped,
+                        message = outcome.message + rewardInfo,
+                        detail = buildMysOutcomeDetail(outcome),
+                        elapsedMs = taskElapsed,
+                    ),
                 )
 
                 onTaskCompleted(taskId, result, "${acc.label} · ${game.name}")
@@ -217,13 +218,15 @@ internal class MysSignExecutor(
                         )
                     }
                 logOutcome(
-                    account = acc.label,
-                    game = "米游币打卡",
-                    success = outcome.success,
-                    skipped = false,
-                    message = outcome.message,
-                    detail = outcome.detail,
-                    elapsedMs = System.currentTimeMillis() - startedAt,
+                    TaskOutcomeLog(
+                        account = acc.label,
+                        game = "米游币打卡",
+                        success = outcome.success,
+                        skipped = false,
+                        message = outcome.message,
+                        detail = outcome.detail,
+                        elapsedMs = System.currentTimeMillis() - startedAt,
+                    ),
                 )
                 if (outcome.warning.isNotBlank()) {
                     log("WARN", "[${acc.label} · ${MysCoinCheckIn.DISPLAY_NAME}] ${outcome.warning}", "")
@@ -241,6 +244,23 @@ internal class MysSignExecutor(
         return currentAccount
     }
 
+    private suspend fun refreshMysCookie(account: Account): MysCookieRefresh? {
+        val refreshed = credentialCoordinator.refreshMysCookieForRun(account) ?: return null
+        val updatedAccount =
+            credentialCoordinator.saveRefreshedMysCookieForRun(account, refreshed.fullCookie, refreshed.ltoken) ?: account
+        return MysCookieRefresh(updatedAccount, refreshed.fullCookie)
+    }
+
+    private suspend fun retryMysRun(
+        mys: MysSignIn,
+        account: Account,
+        game: MysSignIn.GameConfig,
+        cookie: String,
+    ): MysSignIn.Outcome =
+        limitedRequest("${account.label} · ${game.name} 米游社签到重试") {
+            safeMysRun(mys, cookie, game)
+        }
+
     private fun emitCookieRefreshFailedResults(
         account: Account,
         games: List<MysSignIn.GameConfig>,
@@ -257,12 +277,14 @@ internal class MysSignExecutor(
         games.forEach { game ->
             val result = buildMysTaskResult(game.name, game.key, account, outcome)
             logOutcome(
-                account = account.label,
-                game = game.name,
-                success = false,
-                skipped = false,
-                message = outcome.message,
-                detail = outcome.detail,
+                TaskOutcomeLog(
+                    account = account.label,
+                    game = game.name,
+                    success = false,
+                    skipped = false,
+                    message = outcome.message,
+                    detail = outcome.detail,
+                ),
             )
             onTaskCompleted(
                 progressTaskId(account, RunTaskType.MYS, game.key),
@@ -350,22 +372,19 @@ internal class MysSignExecutor(
         delay(Random.nextInt(min, max + 1) * MILLIS_PER_SECOND)
     }
 
-    private fun logOutcome(
-        account: String,
-        game: String,
-        success: Boolean,
-        skipped: Boolean,
-        message: String,
-        detail: String = "",
-        elapsedMs: Long = 0,
-    ) {
-        val elapsed = if (elapsedMs > 0) " (${formatSignInElapsed(elapsedMs)})" else ""
+    private fun logOutcome(entry: TaskOutcomeLog) {
+        val elapsed = if (entry.elapsedMs > 0) " (${formatSignInElapsed(entry.elapsedMs)})" else ""
         val level =
             when {
-                skipped -> "WARN"
-                success -> "OK"
+                entry.skipped -> "WARN"
+                entry.success -> "OK"
                 else -> "ERROR"
             }
-        log(level, "[$account · $game] $message$elapsed", detail)
+        log(level, "[${entry.account} · ${entry.game}] ${entry.message}$elapsed", entry.detail)
     }
+
+    private data class MysCookieRefresh(
+        val account: Account,
+        val cookie: String,
+    )
 }

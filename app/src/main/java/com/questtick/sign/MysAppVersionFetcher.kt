@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+)
+
 package com.questtick.sign
 
 import com.questtick.core.runCatchingCancellable

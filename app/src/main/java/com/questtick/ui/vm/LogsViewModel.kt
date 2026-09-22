@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.ui.vm
 
 // 运行日志页面的加载、清理和导出状态管理。

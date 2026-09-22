@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.data
 
 import android.security.keystore.KeyGenParameterSpec

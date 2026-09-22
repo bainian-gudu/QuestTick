@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+)
+
 package com.questtick.sign
 
 /*

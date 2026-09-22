@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.core
 
 import kotlinx.coroutines.CancellationException

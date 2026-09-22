@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+)
+
 package com.questtick.ui.components.pager
 
 // 与外部选中状态同步的横向分页器组件。

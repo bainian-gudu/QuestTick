@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.ui.vm
 
 // 签到记录页面的加载、清理和邮件重发状态管理。

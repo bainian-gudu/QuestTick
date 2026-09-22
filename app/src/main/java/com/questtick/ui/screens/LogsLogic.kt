@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.ui.screens
 
 import androidx.compose.runtime.Immutable

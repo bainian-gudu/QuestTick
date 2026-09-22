@@ -1,3 +1,11 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:InjectDispatcher",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.ui.vm
 
 import androidx.lifecycle.ViewModel

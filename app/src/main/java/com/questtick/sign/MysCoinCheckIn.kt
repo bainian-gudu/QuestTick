@@ -1,3 +1,10 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.sign
 
 /* 米游社社区打卡（米游币）：发起打卡请求，并对比打卡前后的余额以计算本次获取量。

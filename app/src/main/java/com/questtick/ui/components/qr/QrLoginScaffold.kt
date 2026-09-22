@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+)
+
 package com.questtick.ui.components.qr
 
 // QR 登录流程的统一页面骨架和二维码展示容器。

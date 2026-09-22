@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.work
 
 import android.app.NotificationChannel

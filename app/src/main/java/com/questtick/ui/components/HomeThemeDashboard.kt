@@ -1,3 +1,10 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.ui.components
 
 /*

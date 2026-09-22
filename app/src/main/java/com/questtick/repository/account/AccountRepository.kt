@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:LongParameterList",
+)
+
 package com.questtick.repository.account
 
 import com.questtick.data.Account

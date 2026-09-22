@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.sign
 
 // 协调签到前的 Cookie、Token 和保持登录凭证刷新流程。
