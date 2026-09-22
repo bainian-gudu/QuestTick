@@ -24,17 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
-/** 二维码登录结果。 */
-data class QRLoginResult(
-    val cookie: String,
-    val uid: String,
-    val stoken: String,
-    val stmid: String,
-    val ltoken: String,
-    val keepLogin: Boolean,
-    val nickname: String = "",
-)
-
 /**
  * 米游社二维码扫码登录界面。
  *
