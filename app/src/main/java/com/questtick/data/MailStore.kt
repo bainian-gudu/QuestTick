@@ -10,17 +10,21 @@ internal class MailStore(
 ) {
     @Volatile private var cache: MailSettings? = null
 
-    fun get(): MailSettings {
-        cache?.let { return it }
-        val raw =
-            prefs.getString(key, null)
-                ?: return MailSettings().also { cache = it }
-        return try {
-            MailSettings.fromJson(JSONObject(raw)).also { cache = it }
-        } catch (_: Exception) {
-            MailSettings().also { cache = it }
+    fun get(): MailSettings =
+        cache ?: run {
+            val raw = prefs.getString(key, null)
+            val settings =
+                if (raw == null) {
+                    MailSettings()
+                } else {
+                    try {
+                        MailSettings.fromJson(JSONObject(raw))
+                    } catch (_: Exception) {
+                        MailSettings()
+                    }
+                }
+            settings.also { cache = it }
         }
-    }
 
     fun save(settings: MailSettings) {
         val success =

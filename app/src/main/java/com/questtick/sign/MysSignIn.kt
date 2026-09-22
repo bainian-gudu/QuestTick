@@ -487,14 +487,10 @@ class MysSignIn(
     private fun firstPositiveInt(
         json: JSONObject?,
         vararg keys: String,
-    ): Int? {
-        if (json == null) return null
-        keys.forEach { key ->
-            val value = json.optInt(key, 0)
-            if (value > 0) return value
+    ): Int? =
+        json?.let { source ->
+            keys.firstNotNullOfOrNull { key -> source.optInt(key, 0).takeIf { it > 0 } }
         }
-        return null
-    }
 
     private fun normalizeRewardIcon(raw: String): String {
         val value = raw.trim()
@@ -507,13 +503,13 @@ class MysSignIn(
 
     private fun extractRewardIcon(json: JSONObject): String {
         val directKeys = listOf("icon", "icon_url", "iconUrl", "reward_icon", "rewardIcon", "image", "image_url", "imageUrl")
-        directKeys.firstNotNullOfOrNull { key -> json.optString(key).trim().takeIf { it.isNotBlank() } }?.let { return it }
-        listOf("award", "reward", "item").forEach { key ->
-            json.optJSONObject(key)?.let { nested ->
-                directKeys.firstNotNullOfOrNull { name -> nested.optString(name).trim().takeIf { it.isNotBlank() } }?.let { return it }
-            }
-        }
-        return ""
+        return directKeys.firstNotNullOfOrNull { key -> json.optString(key).trim().takeIf { it.isNotBlank() } }
+            ?: listOf("award", "reward", "item")
+                .firstNotNullOfOrNull { key ->
+                    json.optJSONObject(key)?.let { nested ->
+                        directKeys.firstNotNullOfOrNull { name -> nested.optString(name).trim().takeIf { it.isNotBlank() } }
+                    }
+                }.orEmpty()
     }
 
     /** 执行单个 Cookie、单个游戏的完整流程：查角色、查奖励并提交签到。 */

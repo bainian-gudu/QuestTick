@@ -203,8 +203,6 @@
     <ID>ReturnCount:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$private suspend fun fetchFromNavigation( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
     <ID>ReturnCount:ActId.kt$ActId$suspend fun fetchLatest( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
-    <ID>ReturnCount:AppUpdateCache.kt$AppUpdateCache$fun getFast( context: Context, currentVersion: String, ): CacheResult</ID>
-    <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$private fun parseJson( json: JSONObject, currentVersion: String, ): AppUpdateInfo</ID>
     <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$suspend fun checkFast( context: Context, currentVersion: String, httpTransport: HttpTransport, ): AppUpdateInfo</ID>
     <ID>ReturnCount:AppUpdateInstaller.kt$AppUpdateInstaller$fun cachedApk( context: Context, info: AppUpdateChecker.AppUpdateInfo, ): File?</ID>
     <ID>ReturnCount:AuthRepository.kt$AuthRepository$fun checkCookieHealth(account: Account): CredentialHealth</ID>
@@ -227,14 +225,10 @@
     <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$private fun decodeStoredValue(plain: String): Any</ID>
     <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$private fun decodeStringSet(plain: String): MutableSet&lt;String&gt;?</ID>
     <ID>ReturnCount:Localization.kt$fun localizeText( text: String, language: AppLanguage, ): String</ID>
-    <ID>ReturnCount:LogRepository.kt$internal fun mergeLogSnapshots( persisted: List&lt;LogEntry&gt;, current: List&lt;LogEntry&gt;, maxKeep: Int = RoomLogStore.DEFAULT_MAX_KEEP, ): List&lt;LogEntry&gt;</ID>
-    <ID>ReturnCount:MailStore.kt$MailStore$fun get(): MailSettings</ID>
     <ID>ReturnCount:Mailer.kt$Mailer$private fun renderMysRewardContent(row: TaskResult): String</ID>
     <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$fun scan( value: Any?, depth: Int, ): Int?</ID>
     <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$private fun appAuthCookie( cookie: String, stoken: String, mid: String, uid: String, ): CookieBuildResult</ID>
     <ID>ReturnCount:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
-    <ID>ReturnCount:MysSignIn.kt$MysSignIn$private fun extractRewardIcon(json: JSONObject): String</ID>
-    <ID>ReturnCount:MysSignIn.kt$MysSignIn$private fun firstPositiveInt( json: JSONObject?, vararg keys: String, ): Int?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$private suspend fun refreshActIdAndRetry( cookie: String, game: GameConfig, role: Role, staleActId: String, ): SignResult?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getReward( cookie: String, game: GameConfig, role: Role, ): Reward?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getRole( cookie: String, game: GameConfig, ): RoleResult</ID>

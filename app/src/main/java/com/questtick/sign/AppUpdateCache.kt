@@ -49,69 +49,84 @@ object AppUpdateCache {
         currentVersion: String,
     ): CacheResult {
         val now = System.currentTimeMillis()
+        return readMemoryCache(currentVersion, now)
+            ?: readDiskCache(context, currentVersion, now)
+            ?: CacheResult(null, Long.MAX_VALUE, false, true, "")
+    }
 
-        // 1. 内存缓存 0ms
+    // 1. 内存缓存 0ms
+    private fun readMemoryCache(
+        currentVersion: String,
+        now: Long,
+    ): CacheResult? =
         memoryCache.get()?.let { mem ->
             if (mem.info.hasUpdate && !TrustedUrlPolicy.isUpdateAssetUrl(mem.info.apkUrl)) {
                 memoryCache.compareAndSet(mem, null)
+                null
             } else if (mem.info.currentVersion == currentVersion) {
                 val age = now - mem.timestamp
-                return CacheResult(
+                CacheResult(
                     info = mem.info,
                     ageMs = age,
                     isStrong = age < STRONG_CACHE_MS,
                     isStale = age >= STRONG_CACHE_MS,
                     etag = mem.etag,
                 )
+            } else {
+                null
             }
         }
 
-        // 2. 磁盘缓存 <5ms
+    // 2. 磁盘缓存 <5ms
+    private fun readDiskCache(
+        context: Context,
+        currentVersion: String,
+        now: Long,
+    ): CacheResult? {
         val prefs = prefs(context)
         val jsonStr = prefs.getString(KEY_JSON, null)
         val ts = prefs.getLong(KEY_TIMESTAMP, 0L)
         val etag = prefs.getString(KEY_ETAG, "").orEmpty()
         val cachedVersion = prefs.getString(KEY_CURRENT_VERSION, "")
 
-        if (!jsonStr.isNullOrBlank() && ts > 0) {
-            try {
-                val obj = JSONObject(jsonStr)
-                // 只反序列化更新提示所需字段，避免额外对象构造。
-                val cachedLatest = obj.optString("latestVersion", currentVersion)
-                val info =
-                    AppUpdateChecker.AppUpdateInfo(
-                        currentVersion = currentVersion,
-                        latestVersion = cachedLatest,
-                        tagName = obj.optString("tagName", ""),
-                        releaseUrl = obj.optString("releaseUrl", ""),
-                        releaseNotes = obj.optString("releaseNotes", ""),
-                        publishedAt = obj.optString("publishedAt", ""),
-                        apkName = obj.optString("apkName", ""),
-                        apkUrl = obj.optString("apkUrl", ""),
-                        apkSha256 = obj.optString("apkSha256", ""),
-                        // 缓存里的 hasUpdate 是相对于写入时的 currentVersion；读取时必须按当前版本重新计算，
-                        // 否则应用版本号变化后会出现“最新版本号已变高但缓存仍认为无需更新”的情况。
-                        hasUpdate = isVersionNewerFast(cachedLatest, currentVersion),
-                    )
-                if (info.hasUpdate && !TrustedUrlPolicy.isUpdateAssetUrl(info.apkUrl)) {
-                    clear(context)
-                    return CacheResult(null, Long.MAX_VALUE, false, true, "")
-                }
+        if (jsonStr.isNullOrBlank() || ts <= 0) return null
+        return try {
+            val obj = JSONObject(jsonStr)
+            // 只反序列化更新提示所需字段，避免额外对象构造。
+            val cachedLatest = obj.optString("latestVersion", currentVersion)
+            val info =
+                AppUpdateChecker.AppUpdateInfo(
+                    currentVersion = currentVersion,
+                    latestVersion = cachedLatest,
+                    tagName = obj.optString("tagName", ""),
+                    releaseUrl = obj.optString("releaseUrl", ""),
+                    releaseNotes = obj.optString("releaseNotes", ""),
+                    publishedAt = obj.optString("publishedAt", ""),
+                    apkName = obj.optString("apkName", ""),
+                    apkUrl = obj.optString("apkUrl", ""),
+                    apkSha256 = obj.optString("apkSha256", ""),
+                    // 缓存里的 hasUpdate 是相对于写入时的 currentVersion；读取时必须按当前版本重新计算，
+                    // 否则应用版本号变化后会出现“最新版本号已变高但缓存仍认为无需更新”的情况。
+                    hasUpdate = isVersionNewerFast(cachedLatest, currentVersion),
+                )
+            if (info.hasUpdate && !TrustedUrlPolicy.isUpdateAssetUrl(info.apkUrl)) {
+                clear(context)
+                CacheResult(null, Long.MAX_VALUE, false, true, "")
+            } else {
                 val age = now - ts
                 // 读到磁盘缓存后同步回填内存，便于后续快速命中。
                 memoryCache.set(MemoryEntry(info, ts, etag))
-                return CacheResult(
+                CacheResult(
                     info = info,
                     ageMs = age,
                     isStrong = age < STRONG_CACHE_MS && cachedVersion == currentVersion,
                     isStale = age >= STRONG_CACHE_MS,
                     etag = etag,
                 )
-            } catch (_: Exception) {
             }
+        } catch (_: Exception) {
+            null
         }
-
-        return CacheResult(null, Long.MAX_VALUE, false, true, "")
     }
 
     /** 同时更新内存与磁盘缓存；磁盘写入使用 apply 避免阻塞主线程。 */
