@@ -207,8 +207,6 @@
     <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$private fun parseJson( json: JSONObject, currentVersion: String, ): AppUpdateInfo</ID>
     <ID>ReturnCount:AppUpdateChecker.kt$AppUpdateChecker$suspend fun checkFast( context: Context, currentVersion: String, httpTransport: HttpTransport, ): AppUpdateInfo</ID>
     <ID>ReturnCount:AppUpdateInstaller.kt$AppUpdateInstaller$fun cachedApk( context: Context, info: AppUpdateChecker.AppUpdateInfo, ): File?</ID>
-    <ID>ReturnCount:AppUpdateInstaller.kt$AppUpdateInstaller$private fun isApkValidForUpdate( context: Context, info: AppUpdateChecker.AppUpdateInfo, file: File, ): Boolean</ID>
-    <ID>ReturnCount:AppUpdateInstaller.kt$AppUpdateInstaller$private fun isSha256Valid( info: AppUpdateChecker.AppUpdateInfo, file: File, ): Boolean</ID>
     <ID>ReturnCount:AuthRepository.kt$AuthRepository$fun checkCookieHealth(account: Account): CredentialHealth</ID>
     <ID>ReturnCount:CloudAppVersionFetcher.kt$CloudVersionRepository$suspend fun refreshRemote(httpTransport: HttpTransport): Result&lt;CloudAppVersionFetcher.CloudVersions&gt;</ID>
     <ID>ReturnCount:CloudAppVersionFetcher.kt$CloudVersionRepository$suspend fun refreshSr(httpTransport: HttpTransport): Result&lt;String&gt;</ID>
@@ -232,7 +230,6 @@
     <ID>ReturnCount:LogRepository.kt$internal fun mergeLogSnapshots( persisted: List&lt;LogEntry&gt;, current: List&lt;LogEntry&gt;, maxKeep: Int = RoomLogStore.DEFAULT_MAX_KEEP, ): List&lt;LogEntry&gt;</ID>
     <ID>ReturnCount:MailStore.kt$MailStore$fun get(): MailSettings</ID>
     <ID>ReturnCount:Mailer.kt$Mailer$private fun renderMysRewardContent(row: TaskResult): String</ID>
-    <ID>ReturnCount:Mask.kt$Mask$fun uid(uid: String?): String</ID>
     <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$fun scan( value: Any?, depth: Int, ): Int?</ID>
     <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$private fun appAuthCookie( cookie: String, stoken: String, mid: String, uid: String, ): CookieBuildResult</ID>
     <ID>ReturnCount:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
@@ -249,20 +246,14 @@
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun fillCookieTokenByStokenIfNeeded( status: ScanStatus.Confirmed, httpTransport: HttpTransport, ): ScanStatus.Confirmed</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun parseConfirmed( setCookieHeaders: List&lt;String&gt;, data: JSONObject, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): ScanStatus</ID>
     <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$suspend fun createQRCode( deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
-    <ID>ReturnCount:RootCheckCache.kt$RootCheckCache$fun get(context: Context): RootDetectorV2.RootCheckResult?</ID>
     <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveCloudDeviceId(forceCreate: Boolean = true): String</ID>
     <ID>ReturnCount:SecureStore.kt$SecureStore$fun effectiveMysDeviceId(forceCreate: Boolean = true): String</ID>
     <ID>ReturnCount:SettingsAppearancePage.kt$private fun hexToHsl(hex: String): HslColor</ID>
-    <ID>ReturnCount:SettingsViewModel.kt$SettingsViewModel$private fun directorySize(file: File): Long</ID>
     <ID>ReturnCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun updateFailureGuard( store: SecureStore, record: RunRecord, )</ID>
     <ID>ReturnCount:StreamingHttpTransport.kt$HttpResponseStream$fun read( buffer: ByteArray, offset: Int, byteCount: Int, ): Int</ID>
     <ID>ReturnCount:TransportRetry.kt$TransportFailures$fun shouldRetry( failure: IOException, request: Request, policy: TransportRetryPolicy, attemptsUsed: Int, ): Boolean</ID>
-    <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$fun isSameOriginHttps( initialRawUrl: String, candidateRawUrl: String, ): Boolean</ID>
-    <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$fun isUpdateAssetRedirect( initialRawUrl: String, candidateRawUrl: String, ): Boolean</ID>
-    <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$private fun isDirectUpdateMetadataUrl(rawUrl: String): Boolean</ID>
-    <ID>ReturnCount:TrustedUrlPolicy.kt$TrustedUrlPolicy$private fun parseHttps(rawUrl: String): HttpUrl?</ID>
     <ID>ThrowsCount:AppUpdateInstaller.kt$AppUpdateInstaller$private suspend fun downloadFromCandidates( urls: List&lt;String&gt;, tmp: File, onProgress: (downloadedBytes: Long, totalBytes: Long) -&gt; Unit, streamingHttpTransport: StreamingHttpTransport, )</ID>
     <ID>ThrowsCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ThrowsCount:TrustedRedirects.kt$TrustedRedirects$internal fun resolveLocation(response: Response): HttpUrl</ID>

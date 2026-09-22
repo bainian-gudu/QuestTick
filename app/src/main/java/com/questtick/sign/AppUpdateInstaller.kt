@@ -314,26 +314,27 @@ object AppUpdateInstaller {
         context: Context,
         info: AppUpdateChecker.AppUpdateInfo,
         file: File,
-    ): Boolean {
-        if (!isSha256Valid(info, file)) return false
-        val archiveInfo = archivePackageInfo(context, file) ?: return false
-        if (archiveInfo.packageName != context.packageName) return false
-
-        val currentInfo = currentPackageInfo(context) ?: return false
-        if (!hasMatchingSignature(currentInfo, archiveInfo)) return false
-
-        val apkVersionCode = longVersionCode(archiveInfo)
-        val currentVersionCode = longVersionCode(currentInfo)
-        if (apkVersionCode <= currentVersionCode) return false
-
-        val apkVersion = normalizeVersion(archiveInfo.versionName.orEmpty())
-        val expectedVersion = normalizeVersion(info.latestVersion)
-        val versionNameCompatible =
-            apkVersion.isBlank() ||
-                expectedVersion.isBlank() ||
-                !AppUpdateChecker.isVersionNewer(expectedVersion, apkVersion)
-        return versionNameCompatible
-    }
+    ): Boolean =
+        if (!isSha256Valid(info, file)) {
+            false
+        } else {
+            val archiveInfo = archivePackageInfo(context, file)
+            val currentInfo = currentPackageInfo(context)
+            if (archiveInfo == null || currentInfo == null) {
+                false
+            } else {
+                val apkVersion = normalizeVersion(archiveInfo.versionName.orEmpty())
+                val expectedVersion = normalizeVersion(info.latestVersion)
+                val versionNameCompatible =
+                    apkVersion.isBlank() ||
+                        expectedVersion.isBlank() ||
+                        !AppUpdateChecker.isVersionNewer(expectedVersion, apkVersion)
+                archiveInfo.packageName == context.packageName &&
+                    hasMatchingSignature(currentInfo, archiveInfo) &&
+                    longVersionCode(archiveInfo) > longVersionCode(currentInfo) &&
+                    versionNameCompatible
+            }
+        }
 
     private fun archivePackageInfo(
         context: Context,
@@ -425,14 +426,22 @@ object AppUpdateInstaller {
         file: File,
     ): Boolean {
         val expected = info.apkSha256
-        if (expected.isBlank()) {
-            // 无校验值时拒绝安装，防止供应链投毒
-            // 仅在 DEBUG 构建允许降级以便本地测试
-            return com.questtick.BuildConfig.DEBUG
+        return when {
+            expected.isBlank() -> {
+                // 无校验值时拒绝安装，防止供应链投毒
+                // 仅在 DEBUG 构建允许降级以便本地测试
+                com.questtick.BuildConfig.DEBUG
+            }
+
+            !expected.matches(Regex("^[a-fA-F0-9]{64}$")) -> {
+                false
+            }
+
+            else -> {
+                val actual = sha256(file)
+                actual.equals(expected, ignoreCase = true)
+            }
         }
-        if (!expected.matches(Regex("^[a-fA-F0-9]{64}$"))) return false
-        val actual = sha256(file)
-        return actual.equals(expected, ignoreCase = true)
     }
 
     private fun sha256(file: File): String {

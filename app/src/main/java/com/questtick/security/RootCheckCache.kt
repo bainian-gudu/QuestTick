@@ -15,15 +15,17 @@ object RootCheckCache {
 
     fun get(context: Context): RootDetectorV2.RootCheckResult? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val jsonStr = prefs.getString(KEY_RESULT, null) ?: return null
+        val jsonStr = prefs.getString(KEY_RESULT, null)
         val cachedTime = prefs.getLong(KEY_TIME, 0)
-        if (System.currentTimeMillis() - cachedTime > CACHE_VALID_MS) return null
-
-        return try {
-            parseFromJson(jsonStr)
-        } catch (e: Exception) {
-            AppLog.w(TAG, "Root 检测结果缓存解析失败，将重新检测", e)
+        return if (jsonStr.isNullOrBlank() || System.currentTimeMillis() - cachedTime > CACHE_VALID_MS) {
             null
+        } else {
+            try {
+                parseFromJson(jsonStr)
+            } catch (e: Exception) {
+                AppLog.w(TAG, "Root 检测结果缓存解析失败，将重新检测", e)
+                null
+            }
         }
     }
 
