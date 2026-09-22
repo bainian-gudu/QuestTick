@@ -212,18 +212,27 @@ object AppUpdateInstaller {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: HttpTransportException) {
+                if (!e.failure.retryable || e.failure.outcomeUnknown || index == urls.lastIndex) {
+                    cleanupAndThrow(tmp, e)
+                }
                 runCatching { tmp.delete() }
-                if (!e.failure.retryable || e.failure.outcomeUnknown || index == urls.lastIndex) throw e
                 delay(CANDIDATE_RETRY_DELAY_MS)
             } catch (e: UpdateCandidateHttpException) {
+                if (index == urls.lastIndex) cleanupAndThrow(tmp, e)
                 runCatching { tmp.delete() }
-                if (index == urls.lastIndex) throw e
             } catch (e: Exception) {
-                runCatching { tmp.delete() }
-                throw e
+                cleanupAndThrow(tmp, e)
             }
         }
         error("没有可用的更新下载地址")
+    }
+
+    private fun cleanupAndThrow(
+        tmp: File,
+        error: Exception,
+    ): Nothing {
+        runCatching { tmp.delete() }
+        throw error
     }
 
     private suspend fun downloadOnce(
