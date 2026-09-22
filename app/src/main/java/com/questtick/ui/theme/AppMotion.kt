@@ -18,6 +18,7 @@ object AppMotion {
     const val EXPAND_DURATION_MILLIS = 220
     const val EXPAND_FADE_DURATION_MILLIS = 180
     const val ARROW_DURATION_MILLIS = EXPAND_DURATION_MILLIS
+    const val ARROW_EXPANDED_ROTATION_DEGREES = 180f
 
     fun screenEnter(): EnterTransition =
         slideInVertically(

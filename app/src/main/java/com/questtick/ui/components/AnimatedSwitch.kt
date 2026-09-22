@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.questtick.ui.theme.SuccessGreen
 
+private const val OFF_TRACK_COLOR = 0xFF2C2747
+private const val DISABLED_TRACK_COLOR = 0xFFB8C0CC
+
 /** 带弹性滑块与平滑轨道过渡的自定义开关。 */
 @Composable
 fun AnimatedSwitch(
@@ -30,8 +33,8 @@ fun AnimatedSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onColor: Color = SuccessGreen,
-    offColor: Color = Color(0xFF2C2747),
-    disabledColor: Color = Color(0xFFB8C0CC),
+    offColor: Color = Color(OFF_TRACK_COLOR),
+    disabledColor: Color = Color(DISABLED_TRACK_COLOR),
     thumbColor: Color = Color.White,
 ) {
     val trackWidth = 46.dp

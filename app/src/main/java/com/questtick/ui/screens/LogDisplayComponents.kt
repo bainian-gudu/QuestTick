@@ -131,7 +131,7 @@ internal fun LogRunGroupCard(
     searchQuery: String,
 ) {
     val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
+        targetValue = if (expanded) AppMotion.ARROW_EXPANDED_ROTATION_DEGREES else 0f,
         animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
         label = "logGroupArrowRotation",
     )
@@ -160,7 +160,7 @@ internal fun LogRunGroupCard(
                             Icons.Filled.KeyboardArrowDown,
                             contentDescription = localizedText("收起"),
                             tint = TextSecondary.copy(alpha = 0.65f),
-                            modifier = Modifier.size(15.dp).rotate(180f),
+                            modifier = Modifier.size(15.dp).rotate(AppMotion.ARROW_EXPANDED_ROTATION_DEGREES),
                         )
                         Spacer(Modifier.width(4.dp))
                         Text("收起", fontSize = 11.sp, color = TextSecondary.copy(alpha = 0.75f))

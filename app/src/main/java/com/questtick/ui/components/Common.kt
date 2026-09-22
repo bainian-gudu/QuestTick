@@ -37,6 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.ui.theme.LocalAppUiTheme
 import kotlinx.coroutines.flow.StateFlow
 
+private const val SKELETON_LAST_LINE_WIDTH_FRACTION = 0.72f
+
 /**
  * 主分页器会预组合相邻页面；隐藏页面保留最后一次 UI 快照，
  * 但不持续订阅状态流，避免后台数据变化反复触发不可见页面重组。
@@ -202,7 +204,7 @@ fun SkeletonCard(
                 Spacer(Modifier.height(if (index == 0) 14.dp else 10.dp))
                 SkeletonBlock(
                     Modifier
-                        .fillMaxWidth(if (index == lineCount - 1) 0.72f else 1f)
+                        .fillMaxWidth(if (index == lineCount - 1) SKELETON_LAST_LINE_WIDTH_FRACTION else 1f)
                         .height(12.dp),
                 )
             }

@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.questtick.data.GameInfo
 import com.questtick.i18n.localizedText
 
+internal const val ACCOUNT_GAME_ICON_LIMIT = 6
+
 /** 可复用的圆角游戏图标。 */
 @Composable
 fun GameIcon(

@@ -53,6 +53,7 @@ import com.questtick.repository.run.ExecutionStateRepository
 import com.questtick.ui.components.AppDialogActionStyle
 import com.questtick.ui.components.AppMessageDialog
 import com.questtick.ui.components.AccountTagChip
+import com.questtick.ui.components.ACCOUNT_GAME_ICON_LIMIT
 import com.questtick.ui.components.EmptyState
 import com.questtick.ui.components.GalaxyBackground
 import com.questtick.ui.components.GameIcon
@@ -60,10 +61,13 @@ import com.questtick.ui.components.PageTitle
 import com.questtick.ui.components.PanelCard
 import com.questtick.ui.components.SkeletonCard
 import com.questtick.ui.components.clickableNoRipple
+import com.questtick.ui.theme.CoinGold
 import com.questtick.ui.theme.DangerRed
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.vm.AccountsViewModel
+
+private const val BUTTON_ICON_SPACING_DP = 6
 
 @Composable
 fun AccountsScreen(
@@ -108,7 +112,7 @@ fun AccountsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(Icons.Filled.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(6.dp))
+                        Spacer(Modifier.size(BUTTON_ICON_SPACING_DP.dp))
                         Text("添加账号", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -309,7 +313,7 @@ private fun AccountCard(
                     }
                     if (com.questtick.sign.MysCoinCheckIn.featureEnabled && account.mysCoinEnabled) {
                         Spacer(Modifier.width(8.dp))
-                        AccountTagChip("米游币", color = Color(0xFFE0A22B))
+                        AccountTagChip("米游币", color = CoinGold)
                     }
                 }
                 executionGuard?.let { guard ->
@@ -341,11 +345,11 @@ private fun AccountCard(
                     if (activeGames.isEmpty()) {
                         AccountTagChip("未配置")
                     } else {
-                        activeGames.take(6).forEach { g ->
+                        activeGames.take(ACCOUNT_GAME_ICON_LIMIT).forEach { g ->
                             GameIcon(g, size = 22.dp, corner = 7.dp)
                         }
-                        if (activeGames.size > 6) {
-                            AccountTagChip("+${activeGames.size - 6}", color = TextSecondary)
+                        if (activeGames.size > ACCOUNT_GAME_ICON_LIMIT) {
+                            AccountTagChip("+${activeGames.size - ACCOUNT_GAME_ICON_LIMIT}", color = TextSecondary)
                         }
                     }
                 }

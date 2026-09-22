@@ -26,6 +26,7 @@ private const val SUCCESS_GREEN_COLOR = 0xFF34D399
 private const val WARN_AMBER_COLOR = 0xFFF6B24A
 private const val DANGER_RED_COLOR = 0xFFF65B6B
 private const val INFO_BLUE_COLOR = 0xFF5AA8F0
+private const val COIN_GOLD_COLOR = 0xFFE0A22B
 private const val DARK_ON_PRIMARY_COLOR = 0xFF0B1120
 
 private const val CUSTOM_DARK_BACKGROUND_TINT = 0.08f
@@ -44,6 +45,7 @@ val SuccessGreen = Color(SUCCESS_GREEN_COLOR)
 val WarnAmber = Color(WARN_AMBER_COLOR)
 val DangerRed = Color(DANGER_RED_COLOR)
 val InfoBlue = Color(INFO_BLUE_COLOR)
+val CoinGold = Color(COIN_GOLD_COLOR)
 
 private val AppTypography = Typography()
 
