@@ -203,11 +203,6 @@
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun runForCookie( cookie: String, game: GameConfig, ): Outcome</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun signIn( cookie: String, game: GameConfig, role: Role, retryOnActIdInvalid: Boolean = true, ): SignResult</ID>
     <ID>ReturnCount:PostRunActionWorker.kt$PostRunActionWorker$private suspend fun deliverEmail( action: com.questtick.data.db.PostRunActionEntity, record: RunRecord, ): Result</ID>
-    <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$internal suspend fun exchangeStokenByLoginTicket( uid: String, loginTicket: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;MultiToken&gt;</ID>
-    <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private fun buildConfirmedStatus( uid: String, cookieToken: String, ltoken: String, stoken: String, mid: String, loginTicket: String, nickname: String, ): ScanStatus</ID>
-    <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun fillCookieTokenByStokenIfNeeded( status: ScanStatus.Confirmed, httpTransport: HttpTransport, ): ScanStatus.Confirmed</ID>
-    <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$private suspend fun parseConfirmed( setCookieHeaders: List&lt;String&gt;, data: JSONObject, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): ScanStatus</ID>
-    <ID>ReturnCount:QRLoginManager.kt$QRLoginManager$suspend fun createQRCode( deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
     <ID>ReturnCount:SignInRunner.kt$SignInRunner$suspend fun runAll( onProgress: (label: String, done: Int, total: Int) -&gt; Unit = { _, _, _ -&gt; }, precheckedRootResult: RootDetectorV2.RootCheckResult? = null, rootCheckAlreadyPerformed: Boolean = false, trigger: RunTrigger = RunTrigger.MANUAL, allowedTaskIds: Set&lt;String&gt;? = null, excludedAccountIds: Set&lt;String&gt; = emptySet(), scheduledBusinessDayAt: Long? = null, ): RunRecord</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun executeSignIn(): Result</ID>
     <ID>ReturnCount:SignInWorker.kt$SignInWorker$private suspend fun updateFailureGuard( store: SecureStore, record: RunRecord, )</ID>
