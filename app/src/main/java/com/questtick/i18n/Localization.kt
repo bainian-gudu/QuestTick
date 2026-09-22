@@ -13,12 +13,14 @@ import com.questtick.i18n.languages.zhHantTranslations
 fun localizeText(
     text: String,
     language: AppLanguage,
-): String {
-    if (language == AppLanguage.SIMPLIFIED_CHINESE || language == AppLanguage.SYSTEM) return text
-    dictionaryValue(text, language)?.let { return it }
-    localizeDynamicText(text, language)?.let { return it }
-    return text
-}
+): String =
+    if (language == AppLanguage.SIMPLIFIED_CHINESE || language == AppLanguage.SYSTEM) {
+        text
+    } else {
+        dictionaryValue(text, language)
+            ?: localizeDynamicText(text, language)
+            ?: text
+    }
 
 /** 语言文件是唯一译文来源；这里仅按语言选择对应词典。 */
 private fun dictionaryValue(
