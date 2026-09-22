@@ -71,6 +71,29 @@ import com.questtick.ui.components.consumeHorizontalScrollOverflow
 import com.questtick.ui.theme.TextSecondary
 import kotlin.math.roundToInt
 
+private const val DISABLED_THEME_ALPHA = 0.45f
+private const val DEFAULT_THEME_HUE = 210f
+private const val DEFAULT_THEME_SATURATION = 0.65f
+private const val DEFAULT_THEME_LIGHTNESS = 0.5f
+private const val HSL_MIDPOINT = 0.5f
+private const val HSL_HUE_MAX = 360f
+private const val HSL_HUE_SECTOR_DEGREES = 60f
+private const val HSL_HUE_SECTOR_COUNT = 6f
+private const val HSL_HUE_BLUE_OFFSET = 4f
+private const val HSL_ONE_SIXTH = 1f / 6f
+private const val HSL_ONE_HALF = 1f / 2f
+private const val HSL_ONE_THIRD = 1f / 3f
+private const val HSL_TWO_THIRDS = 2f / 3f
+private const val COLOR_CHANNEL_MAX = 255f
+private const val PERCENT_MAX = 100f
+private const val HEX_COLOR_LENGTH = 7
+private const val THEME_NAME_MAX_LENGTH = 24
+private const val THEME_HEADER_ICON_SIZE_DP = 24
+private const val COMPACT_PRESET_SWATCH_SIZE_DP = 24
+private const val THEME_PAGE_BOTTOM_SPACING_DP = 24
+private const val THEME_PRESET_SPACING_DP = 7
+private const val SELECTED_ICON_END_PADDING_DP = 7
+
 /** 外观与主题设置页面；语言切换位于独立的二级页面。 */
 @Composable
 @Suppress("detekt:LongMethod", "detekt:CyclomaticComplexMethod", "detekt:FunctionNaming")
@@ -173,7 +196,7 @@ internal fun AppearanceDetailPage(
                                 imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                                 contentDescription = if (expanded) "收起自定义配色" else "展开自定义配色",
                                 tint = customTextColor,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(THEME_HEADER_ICON_SIZE_DP.dp),
                             )
                         }
                         AnimatedVisibility(
@@ -238,7 +261,7 @@ internal fun AppearanceDetailPage(
                                         .fillMaxWidth()
                                         .consumeHorizontalScrollOverflow()
                                         .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(THEME_PRESET_SPACING_DP.dp),
                                 ) {
                                     presets.forEach { preset ->
                                         ThemePresetOption(
@@ -305,7 +328,7 @@ internal fun AppearanceDetailPage(
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     OutlinedTextField(
                                         value = customHex,
-                                        onValueChange = { customHex = it.take(7) },
+                                        onValueChange = { customHex = it.take(HEX_COLOR_LENGTH) },
                                         modifier = Modifier.weight(1f),
                                         enabled = customEnabled,
                                         singleLine = true,
@@ -377,7 +400,7 @@ internal fun LanguageDetailPage(
                                 imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                                 contentDescription = if (expanded) "收起语言选项" else "展开语言选项",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(THEME_HEADER_ICON_SIZE_DP.dp),
                             )
                         }
                         AnimatedVisibility(
@@ -424,7 +447,7 @@ private fun CustomColorOption(
                 .getOrDefault(MaterialTheme.colorScheme.outline)
         }
     val isSelected = selected.equals(colorHex, ignoreCase = true)
-    val displayColor = if (enabled) color else Color.Gray.copy(alpha = 0.45f)
+    val displayColor = if (enabled) color else Color.Gray.copy(alpha = DISABLED_THEME_ALPHA)
     val borderColor =
         if (enabled && isSelected) {
             MaterialTheme.colorScheme.onSurface
@@ -433,7 +456,7 @@ private fun CustomColorOption(
         }
     Box(
         Modifier
-            .size(if (compact) 24.dp else 34.dp)
+            .size(if (compact) COMPACT_PRESET_SWATCH_SIZE_DP.dp else 34.dp)
             .clip(RoundedCornerShape(17.dp))
             .background(displayColor)
             .border(if (isSelected) 3.dp else 1.dp, borderColor, RoundedCornerShape(17.dp))
@@ -474,7 +497,7 @@ private fun CustomThemeColorPage(
                     SettingsCard {
                         OutlinedTextField(
                             value = themeName,
-                            onValueChange = { themeName = it.take(24) },
+                            onValueChange = { themeName = it.take(THEME_NAME_MAX_LENGTH) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             label = { Text("主题名称") },
@@ -542,7 +565,7 @@ private fun CustomThemeColorPage(
                         ) { Text("保存", color = MaterialTheme.colorScheme.onPrimary) }
                     }
                 }
-                item { Spacer(Modifier.height(24.dp)) }
+                item { Spacer(Modifier.height(THEME_PAGE_BOTTOM_SPACING_DP.dp)) }
             }
         }
     }
@@ -611,7 +634,12 @@ private fun ThemePresetOption(
                 )
             }
         }
-        Text(preset.name, fontSize = 9.sp, color = if (enabled) TextSecondary else TextSecondary.copy(alpha = 0.45f), maxLines = 1)
+        Text(
+            preset.name,
+            fontSize = 9.sp,
+            color = if (enabled) TextSecondary else TextSecondary.copy(alpha = DISABLED_THEME_ALPHA),
+            maxLines = 1,
+        )
     }
 }
 
@@ -639,7 +667,7 @@ private fun ThemePresetSwatch(
                 shape = CircleShape,
             ),
     ) {
-        val alpha = if (enabled) 1f else 0.45f
+        val alpha = if (enabled) 1f else DISABLED_THEME_ALPHA
         drawRect(secondary.copy(alpha = alpha), size = size)
         drawRect(
             tertiary.copy(alpha = alpha),
@@ -683,7 +711,7 @@ private fun HslEditor(
                 color = TextSecondary,
             )
         }
-        HslSlider("色相", "${value.hue.roundToInt()}°", value.hue, 0f..360f) { onValueChange(value.copy(hue = it)) }
+        HslSlider("色相", "${value.hue.roundToInt()}°", value.hue, 0f..HSL_HUE_MAX) { onValueChange(value.copy(hue = it)) }
         HslSlider("饱和度", "${percent(value.saturation)}%", value.saturation, 0f..1f) { onValueChange(value.copy(saturation = it)) }
         HslSlider("明度", "${percent(value.lightness)}%", value.lightness, 0f..1f) { onValueChange(value.copy(lightness = it)) }
     }
@@ -709,15 +737,17 @@ private fun HslSlider(
     }
 }
 
-private fun percent(value: Float): Int = (value * 100f).roundToInt()
+private fun percent(value: Float): Int = (value * PERCENT_MAX).roundToInt()
 
 /** 使用标准 HSL 公式转换，保证保存后的 HEX 与预览颜色一致。 */
 private fun hexToHsl(hex: String): HslColor {
-    if (hex.isBlank()) return HslColor(210f, 0.65f, 0.5f)
-    val color = runCatching { android.graphics.Color.parseColor(hex) }.getOrNull() ?: return HslColor(210f, 0.65f, 0.5f)
-    val r = android.graphics.Color.red(color) / 255f
-    val g = android.graphics.Color.green(color) / 255f
-    val b = android.graphics.Color.blue(color) / 255f
+    if (hex.isBlank()) return HslColor(DEFAULT_THEME_HUE, DEFAULT_THEME_SATURATION, DEFAULT_THEME_LIGHTNESS)
+    val color =
+        runCatching { android.graphics.Color.parseColor(hex) }.getOrNull()
+            ?: return HslColor(DEFAULT_THEME_HUE, DEFAULT_THEME_SATURATION, DEFAULT_THEME_LIGHTNESS)
+    val r = android.graphics.Color.red(color) / COLOR_CHANNEL_MAX
+    val g = android.graphics.Color.green(color) / COLOR_CHANNEL_MAX
+    val b = android.graphics.Color.blue(color) / COLOR_CHANNEL_MAX
     val max = maxOf(r, g, b)
     val min = minOf(r, g, b)
     val lightness = (max + min) / 2f
@@ -726,18 +756,18 @@ private fun hexToHsl(hex: String): HslColor {
     val saturation = delta / (1f - kotlin.math.abs(2f * lightness - 1f))
     val hue =
         when (max) {
-            r -> 60f * (((g - b) / delta) % 6f)
-            g -> 60f * (((b - r) / delta) + 2f)
-            else -> 60f * (((r - g) / delta) + 4f)
-        }.let { if (it < 0f) it + 360f else it }
+            r -> HSL_HUE_SECTOR_DEGREES * (((g - b) / delta) % HSL_HUE_SECTOR_COUNT)
+            g -> HSL_HUE_SECTOR_DEGREES * (((b - r) / delta) + 2f)
+            else -> HSL_HUE_SECTOR_DEGREES * (((r - g) / delta) + HSL_HUE_BLUE_OFFSET)
+        }.let { if (it < 0f) it + HSL_HUE_MAX else it }
     return HslColor(hue, saturation, lightness)
 }
 
 private fun hslToHex(value: HslColor): String {
-    val h = (value.hue % 360f) / 360f
+    val h = (value.hue % HSL_HUE_MAX) / HSL_HUE_MAX
     val s = value.saturation.coerceIn(0f, 1f)
     val l = value.lightness.coerceIn(0f, 1f)
-    val q = if (l < 0.5f) l * (1f + s) else l + s - l * s
+    val q = if (l < HSL_MIDPOINT) l * (1f + s) else l + s - l * s
     val p = 2f * l - q
 
     fun hueToRgb(t0: Float): Float {
@@ -745,14 +775,23 @@ private fun hslToHex(value: HslColor): String {
         if (t < 0f) t += 1f
         if (t > 1f) t -= 1f
         return when {
-            t < 1f / 6f -> p + (q - p) * 6f * t
-            t < 1f / 2f -> q
-            t < 2f / 3f -> p + (q - p) * (2f / 3f - t) * 6f
+            t < HSL_ONE_SIXTH -> p + (q - p) * HSL_HUE_SECTOR_COUNT * t
+            t < HSL_ONE_HALF -> q
+            t < HSL_TWO_THIRDS -> p + (q - p) * (HSL_TWO_THIRDS - t) * HSL_HUE_SECTOR_COUNT
             else -> p
         }
     }
-    val (r, g, b) = if (s == 0f) Triple(l, l, l) else Triple(hueToRgb(h + 1f / 3f), hueToRgb(h), hueToRgb(h - 1f / 3f))
-    return "#%02X%02X%02X".format((r * 255f).roundToInt(), (g * 255f).roundToInt(), (b * 255f).roundToInt())
+    val (r, g, b) =
+        if (s == 0f) {
+            Triple(l, l, l)
+        } else {
+            Triple(hueToRgb(h + HSL_ONE_THIRD), hueToRgb(h), hueToRgb(h - HSL_ONE_THIRD))
+        }
+    return "#%02X%02X%02X".format(
+        (r * COLOR_CHANNEL_MAX).roundToInt(),
+        (g * COLOR_CHANNEL_MAX).roundToInt(),
+        (b * COLOR_CHANNEL_MAX).roundToInt(),
+    )
 }
 
 private fun hslToComposeColor(value: HslColor): Color = Color(android.graphics.Color.parseColor(hslToHex(value)))
@@ -815,7 +854,7 @@ private fun ThemeModeOptionChip(
                 Icons.Filled.CheckCircle,
                 contentDescription = localizedText("已选中"),
                 tint = contentColor,
-                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 7.dp).size(15.dp),
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = SELECTED_ICON_END_PADDING_DP.dp).size(15.dp),
             )
         }
     }

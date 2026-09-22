@@ -64,14 +64,21 @@ import com.questtick.ui.components.clickableNoRipple
 import com.questtick.ui.theme.TextSecondary
 import java.util.UUID
 
+private const val BYTES_PER_KIB = 1024L
+private const val DISABLED_PROVIDER_CHIP_ALPHA = 0.45f
+
 internal fun formatCacheSize(bytes: Long): String {
     val safeBytes = bytes.coerceAtLeast(0L)
+    val kib = BYTES_PER_KIB
+    val mib = kib * kib
+    val gib = mib * kib
+    val kibDouble = kib.toDouble()
     return when {
         safeBytes == 0L -> "0 B"
-        safeBytes < 1024L -> "$safeBytes B"
-        safeBytes < 1024L * 1024L -> "%.1f KB".format(safeBytes / 1024.0)
-        safeBytes < 1024L * 1024L * 1024L -> "%.2f MB".format(safeBytes / 1024.0 / 1024.0)
-        else -> "%.2f GB".format(safeBytes / 1024.0 / 1024.0 / 1024.0)
+        safeBytes < kib -> "$safeBytes B"
+        safeBytes < mib -> "%.1f KB".format(safeBytes / kibDouble)
+        safeBytes < gib -> "%.2f MB".format(safeBytes / kibDouble / kibDouble)
+        else -> "%.2f GB".format(safeBytes / kibDouble / kibDouble / kibDouble)
     }
 }
 
@@ -506,7 +513,7 @@ internal fun ProviderChip(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val bgAlpha = if (selected) 1f else 0.45f
+    val bgAlpha = if (selected) 1f else DISABLED_PROVIDER_CHIP_ALPHA
     val borderColor = if (selected) Color.White.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.15f)
     Box(
         modifier
