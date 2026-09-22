@@ -194,7 +194,6 @@
     <ID>RedundantSuspendModifier:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
     <ID>RedundantSuspendModifier:TrustedRedirects.kt$TrustedRedirects$suspend</ID>
-    <ID>ReturnCount:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
     <ID>ReturnCount:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$private suspend fun refreshActIdAndRetry( cookie: String, game: GameConfig, role: Role, staleActId: String, ): SignResult?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getReward( cookie: String, game: GameConfig, role: Role, ): Reward?</ID>

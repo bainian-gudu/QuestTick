@@ -148,7 +148,7 @@ class CloudSignIn(
 
         val beforeWallet = getWallet(game, token, version, DEFAULT_CLIENT_TYPE)
         if (!beforeWallet.ok) {
-            if (beforeWallet.detail.isNotBlank()) details.add(beforeWallet.detail)
+            details.addDetailIfNotBlank(beforeWallet.detail)
             return Outcome(
                 success = false,
                 skipped = false,
@@ -157,16 +157,15 @@ class CloudSignIn(
                 failure = beforeWallet.failure,
             )
         }
-        if (beforeWallet.detail.isNotBlank()) details.add("before ${beforeWallet.detail}")
+        details.addDetailIfNotBlank(beforeWallet.detail, "before ")
 
         // 云游戏页面展示的是 free_time.free_time（免费时长）。本次领取量不能直接使用
         // send_freetime，而应在领取前后各查询一次钱包，确认弹窗通知后再查询一次，
         // 用领取后免费时长 - 领取前免费时长计算。
         var afterWallet = beforeWallet
+        var unknownAckFailure: TaskFailureDescriptor? = null
         val notifications = listNotifications(game, token, version, beforeWallet.clientType)
-        if (notifications.detail.isNotBlank()) {
-            details.add(notifications.detail)
-        }
+        details.addDetailIfNotBlank(notifications.detail)
         if (notifications.ok && notifications.ids.isNotEmpty()) {
             var ackOk = 0
             var ackFailed = 0
@@ -178,44 +177,52 @@ class CloudSignIn(
                     ackFailed++
                     details.add(ack.detail.ifBlank { "ackNotification(${maskNotificationId(id)}) failed" })
                     if (ack.failure.category == FailureCategory.RESULT_UNKNOWN) {
-                        return Outcome(
-                            success = false,
-                            skipped = false,
-                            message = "签到结果待确认：为避免重复请求，今日不会自动重试",
-                            detail = details.joinToString("; "),
-                            failure = ack.failure,
-                        )
+                        unknownAckFailure = ack.failure
+                        break
                     }
                 }
             }
-            details.add("ackNotifications: total=${notifications.ids.size}, ok=$ackOk, failed=$ackFailed")
-            if (ackOk > 0) {
-                delay(WALLET_REFRESH_DELAY_MS)
-                afterWallet = getWallet(game, token, version, beforeWallet.clientType)
-                if (afterWallet.detail.isNotBlank()) details.add("after ${afterWallet.detail}")
+            if (unknownAckFailure == null) {
+                details.add("ackNotifications: total=${notifications.ids.size}, ok=$ackOk, failed=$ackFailed")
+                if (ackOk > 0) {
+                    delay(WALLET_REFRESH_DELAY_MS)
+                    afterWallet = getWallet(game, token, version, beforeWallet.clientType)
+                    details.addDetailIfNotBlank(afterWallet.detail, "after ")
+                }
             }
         }
 
-        val claimedTime = calculateClaimedFreeTime(beforeWallet, afterWallet)
-        val currentFreeTime = if (afterWallet.ok) afterWallet.freeTime else beforeWallet.freeTime
-        details.add(
-            "claimed: beforeFree=${beforeWallet.freeTime}, afterFree=$currentFreeTime, " +
-                "claimed=$claimedTime",
-        )
-        val message =
-            if (claimedTime > 0) {
-                "领取完成 · 本次+${formatMinutes(claimedTime)} · " +
-                    "当前${formatMinutes(currentFreeTime)} · v$version"
-            } else {
-                "检查完成 · 本次+0分钟 · 当前${formatMinutes(currentFreeTime)} · " +
-                    "可能今日已领取或已达上限 · v$version"
-            }
-        return Outcome(
-            success = true,
-            skipped = false,
-            message = message,
-            detail = details.joinToString("; "),
-        )
+        val unknownFailure = unknownAckFailure
+        return if (unknownFailure != null) {
+            Outcome(
+                success = false,
+                skipped = false,
+                message = "签到结果待确认：为避免重复请求，今日不会自动重试",
+                detail = details.joinToString("; "),
+                failure = unknownFailure,
+            )
+        } else {
+            val claimedTime = calculateClaimedFreeTime(beforeWallet, afterWallet)
+            val currentFreeTime = if (afterWallet.ok) afterWallet.freeTime else beforeWallet.freeTime
+            details.add(
+                "claimed: beforeFree=${beforeWallet.freeTime}, afterFree=$currentFreeTime, " +
+                    "claimed=$claimedTime",
+            )
+            val message =
+                if (claimedTime > 0) {
+                    "领取完成 · 本次+${formatMinutes(claimedTime)} · " +
+                        "当前${formatMinutes(currentFreeTime)} · v$version"
+                } else {
+                    "检查完成 · 本次+0分钟 · 当前${formatMinutes(currentFreeTime)} · " +
+                        "可能今日已领取或已达上限 · v$version"
+                }
+            Outcome(
+                success = true,
+                skipped = false,
+                message = message,
+                detail = details.joinToString("; "),
+            )
+        }
     }
 
     private data class Wallet(
@@ -251,6 +258,13 @@ class CloudSignIn(
         } else {
             0
         }
+
+    private fun MutableList<String>.addDetailIfNotBlank(
+        detail: String,
+        prefix: String = "",
+    ) {
+        if (detail.isNotBlank()) add("$prefix$detail")
+    }
 
     private suspend fun getWallet(
         game: GameConfig,
