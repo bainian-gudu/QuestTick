@@ -85,6 +85,34 @@ class RewardIconCacheTest {
         }
 
     @Test
+    fun fallsBackToOriginalUrlWhenFirstCandidateFails() =
+        runBlocking {
+            val root = Files.createTempDirectory("reward-icon-cache-fallback-test").toFile()
+            val context = mockk<Context>()
+            every { context.applicationContext } returns context
+            every { context.filesDir } returns root
+            val resized = "https://upload-bbs.miyoushe.com/test/coin.png?x-oss-process=image/resize,w_80"
+            val original = "https://upload-bbs.miyoushe.com/test/coin.png"
+            try {
+                val transport =
+                    FakeHttpTransport { request ->
+                        if (request.url == original) {
+                            HttpResponse.bytes(404, byteArrayOf(), request.url)
+                        } else {
+                            HttpResponse.bytes(200, byteArrayOf(4, 5, 6), request.url)
+                        }
+                    }
+
+                val file = RewardIconCache.getOrDownload(context, resized, transport)
+
+                assertNotNull(file)
+                assertEquals(listOf(original, resized), transport.requests.map { it.url })
+            } finally {
+                root.deleteRecursively()
+            }
+        }
+
+    @Test
     fun existingUsableFileIsReturnedWithoutCallingTransport() =
         runBlocking {
             val root = Files.createTempDirectory("reward-icon-cache-hit-test").toFile()
