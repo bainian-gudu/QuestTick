@@ -4,7 +4,6 @@
   <CurrentIssues>
     <ID>CyclomaticComplexMethod:AccountEditScreen.kt$@Composable private fun CloudTab( genshin: String, onGenshin: (String) -&gt; Unit, starrail: String, onStarrail: (String) -&gt; Unit, genshinKeepLogin: Boolean = false, starrailKeepLogin: Boolean = false, refreshingGenshinToken: Boolean = false, genshinTokenRefreshDone: Boolean = false, genshinTokenRefreshFailed: Boolean = false, refreshingStarrailToken: Boolean = false, starrailTokenRefreshDone: Boolean = false, starrailTokenRefreshFailed: Boolean = false, /** 扫码获取云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onStartCloudQR: ((gameKey: String) -&gt; Unit)? = null, /** 手动刷新云游戏 Token；gameKey 为 "CloudYS" 或 "CloudSR"。 */ onRefreshCloudToken: ((gameKey: String) -&gt; Unit)? = null, /** 退出云游戏扫码登录；保留当前 Token。 */ onLogoutCloud: ((gameKey: String) -&gt; Unit)? = null, )</ID>
     <ID>CyclomaticComplexMethod:AccountsScreen.kt$@Composable private fun AccountCard( account: Account, onEdit: () -&gt; Unit, onDelete: () -&gt; Unit, onToggle: (Boolean) -&gt; Unit, executionGuard: ExecutionStateRepository.AccountGuard?, onResume: () -&gt; Unit, )</ID>
-    <ID>CyclomaticComplexMethod:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
     <ID>CyclomaticComplexMethod:CloudQRLoginScreen.kt$@Composable fun CloudQRLoginScreen( gameKey: String, deviceId: String, visible: Boolean = true, onResult: (CloudQRLoginResult) -&gt; Unit, onCancel: () -&gt; Unit, onError: (String) -&gt; Unit = {}, )</ID>
     <ID>CyclomaticComplexMethod:ErrorText.kt$ErrorText$fun fromException(e: Throwable?): String</ID>
     <ID>CyclomaticComplexMethod:HomeAccountCard.kt$@Composable fun HomeAccountCard( account: Account, onToggle: (Boolean) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -197,10 +196,6 @@
     <ID>RedundantSuspendModifier:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
     <ID>RedundantSuspendModifier:TrustedRedirects.kt$TrustedRedirects$suspend</ID>
-    <ID>ReturnCount:ActId.kt$ActId$fun parseFromNavigation( body: String?, gameKey: String, ): String?</ID>
-    <ID>ReturnCount:ActId.kt$ActId$private fun parseNavigationPath( raw: String, source: NavigationSource, ): String?</ID>
-    <ID>ReturnCount:ActId.kt$ActId$private suspend fun fetchFromNavigation( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
-    <ID>ReturnCount:ActId.kt$ActId$suspend fun fetchLatest( game: MysSignIn.GameConfig, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): String?</ID>
     <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$internal fun parsePassportConfirmedCookies( setCookieHeaders: List&lt;String&gt;, userUid: String = "", userMid: String = "", ): ScanStatus</ID>
     <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$internal fun parseWebLoginComboToken( gameKey: String, json: JSONObject, ): Result&lt;String&gt;</ID>
     <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$suspend fun createQRCode( gameKey: String, deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
