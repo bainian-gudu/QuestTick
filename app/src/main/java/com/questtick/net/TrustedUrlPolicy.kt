@@ -72,9 +72,11 @@ object TrustedUrlPolicy {
         initialRawUrl: String,
         candidateRawUrl: String,
     ): Boolean {
-        val initial = parseHttps(initialRawUrl) ?: return false
-        val candidate = parseHttps(candidateRawUrl) ?: return false
-        return initial.scheme == candidate.scheme &&
+        val initial = parseHttps(initialRawUrl)
+        val candidate = parseHttps(candidateRawUrl)
+        return initial != null &&
+            candidate != null &&
+            initial.scheme == candidate.scheme &&
             initial.host == candidate.host &&
             initial.port == candidate.port
     }
@@ -117,12 +119,17 @@ object TrustedUrlPolicy {
         initialRawUrl: String,
         candidateRawUrl: String,
     ): Boolean {
-        if (!isUpdateAssetUrl(initialRawUrl)) return false
-        val initial = parseHttps(initialRawUrl) ?: return false
-        val candidate = parseHttps(candidateRawUrl) ?: return false
-        if (isDirectUpdateAssetUrl(candidateRawUrl)) return candidate.host == initial.host
-        return candidate.host == GITHUB_RELEASE_ASSET_HOST &&
-            candidate.encodedPath.startsWith(GITHUB_RELEASE_ASSET_PATH_PREFIX)
+        val initial = parseHttps(initialRawUrl)
+        val candidate = parseHttps(candidateRawUrl)
+        return initial != null &&
+            candidate != null &&
+            isUpdateAssetUrl(initialRawUrl) &&
+            if (isDirectUpdateAssetUrl(candidateRawUrl)) {
+                candidate.host == initial.host
+            } else {
+                candidate.host == GITHUB_RELEASE_ASSET_HOST &&
+                    candidate.encodedPath.startsWith(GITHUB_RELEASE_ASSET_PATH_PREFIX)
+            }
     }
 
     /** 更新详情页只接受当前仓库的 GitHub HTTPS 页面。 */
@@ -136,22 +143,22 @@ object TrustedUrlPolicy {
     }
 
     private fun isDirectUpdateMetadataUrl(rawUrl: String): Boolean {
-        val url = parseHttps(rawUrl) ?: return false
-        if (url.host != "api.github.com") return false
-        val path = url.encodedPath
-        return when (path) {
-            "$GITHUB_API_REPOSITORY_PATH/releases/latest" -> {
-                url.query == null
-            }
+        val url = parseHttps(rawUrl)
+        return url != null &&
+            url.host == "api.github.com" &&
+            when (url.encodedPath) {
+                "$GITHUB_API_REPOSITORY_PATH/releases/latest" -> {
+                    url.query == null
+                }
 
-            "$GITHUB_API_REPOSITORY_PATH/releases" -> {
-                url.queryParameterNames == setOf("per_page") && url.queryParameter("per_page") == "20"
-            }
+                "$GITHUB_API_REPOSITORY_PATH/releases" -> {
+                    url.queryParameterNames == setOf("per_page") && url.queryParameter("per_page") == "20"
+                }
 
-            else -> {
-                false
+                else -> {
+                    false
+                }
             }
-        }
     }
 
     private fun isDirectUpdateAssetUrl(rawUrl: String): Boolean {
@@ -161,15 +168,21 @@ object TrustedUrlPolicy {
     }
 
     private fun parseHttps(rawUrl: String): HttpUrl? {
-        if (rawUrl.isBlank() || rawUrl != rawUrl.trim()) return null
-        if (rawUrl.any { it.isISOControl() || it.isWhitespace() } || '\\' in rawUrl) return null
-        val url = rawUrl.toHttpUrlOrNull() ?: return null
-        if (url.scheme != "https" || url.port != HTTPS_PORT) return null
-        if (url.username.isNotEmpty() || url.password.isNotEmpty()) return null
-        if (url.fragment != null) return null
-        if (isIpLiteral(url.host)) return null
-        return url
+        if (rawUrl.isBlank() || rawUrl != rawUrl.trim() || hasUnsafeUrlChars(rawUrl)) {
+            return null
+        }
+        val url = rawUrl.toHttpUrlOrNull()
+        return url?.takeIf {
+            it.scheme == "https" &&
+                it.port == HTTPS_PORT &&
+                it.username.isEmpty() &&
+                it.password.isEmpty() &&
+                it.fragment == null &&
+                !isIpLiteral(it.host)
+        }
     }
+
+    private fun hasUnsafeUrlChars(rawUrl: String): Boolean = rawUrl.any { it.isISOControl() || it.isWhitespace() } || '\\' in rawUrl
 
     private fun isIpLiteral(host: String): Boolean {
         if (':' in host) return true

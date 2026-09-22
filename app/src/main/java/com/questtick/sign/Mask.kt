@@ -64,13 +64,17 @@ object Mask {
      */
     fun uid(uid: String?): String {
         val value = uid?.trim().orEmpty()
-        if (value.isEmpty()) return ""
-        val n = value.length
-        // 单字符 ID 直接显示并追加星号。
-        if (n <= 1) return value
-        // 2 到 4 字符：保留原文并追加星号。
-        if (n <= SHORT_ID_MAX_LENGTH) return "$value****"
-        // 5 字符及以上：保留前 2 与后 2，中间替换为星号。
-        return "${value.take(2)}****${value.takeLast(2)}"
+        return when {
+            value.isEmpty() -> ""
+
+            // 单字符 ID 直接显示并追加星号。
+            value.length <= 1 -> value
+
+            // 2 到 4 字符：保留原文并追加星号。
+            value.length <= SHORT_ID_MAX_LENGTH -> "$value****"
+
+            // 5 字符及以上：保留前 2 与后 2，中间替换为星号。
+            else -> "${value.take(2)}****${value.takeLast(2)}"
+        }
     }
 }

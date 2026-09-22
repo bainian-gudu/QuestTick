@@ -664,11 +664,12 @@ class SettingsViewModel
                 context.externalCacheDir?.let(::add)
             }
 
-        private fun directorySize(file: File): Long {
-            if (!file.exists()) return 0L
-            if (file.isFile) return file.length()
-            return file.listFiles()?.sumOf { directorySize(it) } ?: 0L
-        }
+        private fun directorySize(file: File): Long =
+            when {
+                !file.exists() -> 0L
+                file.isFile -> file.length()
+                else -> file.listFiles()?.sumOf { directorySize(it) } ?: 0L
+            }
 
         private fun clearDirectory(file: File) {
             if (!file.exists() || !file.isDirectory) return
