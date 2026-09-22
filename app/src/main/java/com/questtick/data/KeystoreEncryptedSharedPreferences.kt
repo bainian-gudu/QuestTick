@@ -33,9 +33,8 @@ internal class KeystoreEncryptedSharedPreferences(
         key: String?,
         defValue: String?,
     ): String? {
-        key ?: return defValue
-        val plain = decryptStoredValue(key) ?: return defValue
-        return if (isTypedPayload(plain)) defValue else plain
+        val plain = key?.let(::decryptStoredValue)
+        return if (plain == null || isTypedPayload(plain)) defValue else plain
     }
 
     override fun getAll(): MutableMap<String, *> {
@@ -55,46 +54,29 @@ internal class KeystoreEncryptedSharedPreferences(
         key: String?,
         defValues: MutableSet<String>?,
     ): MutableSet<String>? {
-        key ?: return defValues
-        val plain = decryptStoredValue(key) ?: return defValues
-        return decodeStringSet(plain) ?: defValues
+        val plain = key?.let(::decryptStoredValue)
+        return if (plain == null) defValues else decodeStringSet(plain) ?: defValues
     }
 
     override fun getInt(
         key: String?,
         defValue: Int,
-    ): Int {
-        key ?: return defValue
-        val plain = decryptStoredValue(key) ?: return defValue
-        return decodeTypedPayload(plain, TYPE_INT)?.toIntOrNull() ?: defValue
-    }
+    ): Int = typedValue(key, defValue, TYPE_INT, String::toIntOrNull)
 
     override fun getLong(
         key: String?,
         defValue: Long,
-    ): Long {
-        key ?: return defValue
-        val plain = decryptStoredValue(key) ?: return defValue
-        return decodeTypedPayload(plain, TYPE_LONG)?.toLongOrNull() ?: defValue
-    }
+    ): Long = typedValue(key, defValue, TYPE_LONG, String::toLongOrNull)
 
     override fun getFloat(
         key: String?,
         defValue: Float,
-    ): Float {
-        key ?: return defValue
-        val plain = decryptStoredValue(key) ?: return defValue
-        return decodeTypedPayload(plain, TYPE_FLOAT)?.toFloatOrNull() ?: defValue
-    }
+    ): Float = typedValue(key, defValue, TYPE_FLOAT, String::toFloatOrNull)
 
     override fun getBoolean(
         key: String?,
         defValue: Boolean,
-    ): Boolean {
-        key ?: return defValue
-        val plain = decryptStoredValue(key) ?: return defValue
-        return decodeTypedPayload(plain, TYPE_BOOLEAN)?.toBooleanStrictOrNull() ?: defValue
-    }
+    ): Boolean = typedValue(key, defValue, TYPE_BOOLEAN, String::toBooleanStrictOrNull)
 
     override fun registerOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener?,
@@ -195,14 +177,25 @@ internal class KeystoreEncryptedSharedPreferences(
 
     private fun isTypedPayload(plain: String): Boolean = plain.startsWith(TYPE_PREFIX)
 
-    private fun decodeStoredValue(plain: String): Any {
-        decodeTypedPayload(plain, TYPE_BOOLEAN)?.toBooleanStrictOrNull()?.let { return it }
-        decodeTypedPayload(plain, TYPE_INT)?.toIntOrNull()?.let { return it }
-        decodeTypedPayload(plain, TYPE_LONG)?.toLongOrNull()?.let { return it }
-        decodeTypedPayload(plain, TYPE_FLOAT)?.toFloatOrNull()?.let { return it }
-        decodeStringSet(plain)?.let { return it }
-        return plain
-    }
+    private fun <T> typedValue(
+        key: String?,
+        defValue: T,
+        type: String,
+        parse: (String) -> T?,
+    ): T =
+        key
+            ?.let(::decryptStoredValue)
+            ?.let { decodeTypedPayload(it, type) }
+            ?.let(parse)
+            ?: defValue
+
+    private fun decodeStoredValue(plain: String): Any =
+        decodeTypedPayload(plain, TYPE_BOOLEAN)?.toBooleanStrictOrNull()
+            ?: decodeTypedPayload(plain, TYPE_INT)?.toIntOrNull()
+            ?: decodeTypedPayload(plain, TYPE_LONG)?.toLongOrNull()
+            ?: decodeTypedPayload(plain, TYPE_FLOAT)?.toFloatOrNull()
+            ?: decodeStringSet(plain)
+            ?: plain
 
     private fun encodeStringSet(values: Set<String>): String {
         val encodedValues =
@@ -214,16 +207,19 @@ internal class KeystoreEncryptedSharedPreferences(
 
     private fun decodeStringSet(plain: String): MutableSet<String>? {
         val payload = decodeTypedPayload(plain, TYPE_STRING_SET) ?: return null
-        if (payload.isEmpty()) return linkedSetOf()
-        return try {
-            payload
-                .split(STRING_SET_SEPARATOR)
-                .mapTo(linkedSetOf()) { encoded ->
-                    String(Base64.decode(encoded, Base64.NO_WRAP), StandardCharsets.UTF_8)
-                }
-        } catch (e: IllegalArgumentException) {
-            AppLog.w(TAG, "Failed to decode secure string set: ${e.message}")
-            null
+        return if (payload.isEmpty()) {
+            linkedSetOf()
+        } else {
+            try {
+                payload
+                    .split(STRING_SET_SEPARATOR)
+                    .mapTo(linkedSetOf()) { encoded ->
+                        String(Base64.decode(encoded, Base64.NO_WRAP), StandardCharsets.UTF_8)
+                    }
+            } catch (e: IllegalArgumentException) {
+                AppLog.w(TAG, "Failed to decode secure string set: ${e.message}")
+                null
+            }
         }
     }
 

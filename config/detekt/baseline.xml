@@ -216,14 +216,6 @@
     <ID>ReturnCount:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
     <ID>ReturnCount:CookieRefresher.kt$CookieRefresher$suspend fun refresh( uid: String, stoken: String, mid: String, httpTransport: HttpTransport, onDiagnostic: (message: String, detail: String) -&gt; Unit = { _, _ -&gt; }, ): RefreshedCookie?</ID>
     <ID>ReturnCount:HomeViewModel.kt$HomeViewModel$fun runNow()</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getBoolean( key: String?, defValue: Boolean, ): Boolean</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getFloat( key: String?, defValue: Float, ): Float</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getInt( key: String?, defValue: Int, ): Int</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getLong( key: String?, defValue: Long, ): Long</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getString( key: String?, defValue: String?, ): String?</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$override fun getStringSet( key: String?, defValues: MutableSet&lt;String&gt;?, ): MutableSet&lt;String&gt;?</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$private fun decodeStoredValue(plain: String): Any</ID>
-    <ID>ReturnCount:KeystoreEncryptedSharedPreferences.kt$KeystoreEncryptedSharedPreferences$private fun decodeStringSet(plain: String): MutableSet&lt;String&gt;?</ID>
     <ID>ReturnCount:Localization.kt$fun localizeText( text: String, language: AppLanguage, ): String</ID>
     <ID>ReturnCount:Mailer.kt$Mailer$private fun renderMysRewardContent(row: TaskResult): String</ID>
     <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$fun scan( value: Any?, depth: Int, ): Int?</ID>
