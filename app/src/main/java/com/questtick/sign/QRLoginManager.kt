@@ -7,6 +7,7 @@ package com.questtick.sign
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.net.HttpRequestConfig
+import com.questtick.net.HttpResponse
 import com.questtick.net.HttpTransport
 import com.questtick.net.get
 import com.questtick.net.getIdempotent
@@ -95,33 +96,44 @@ object QRLoginManager {
         deviceId: String,
         httpTransport: HttpTransport,
         recordError: ((String) -> Unit)? = null,
-    ): Result<QRCode> {
-        return try {
+    ): Result<QRCode> =
+        try {
             val headers = qrPassportHeaders(deviceId)
             val resp = httpTransport.postJson(CREATE_URL, headers, JSONObject())
             val json = resp.json()
             val retcode = json.optInt("retcode", DEFAULT_RETCODE)
-            if (retcode != 0) {
-                recordError?.invoke("createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
-                AppLog.w(TAG, "createQRCode failed: retcode=$retcode")
-                return Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
+            when {
+                retcode != 0 -> {
+                    recordError?.invoke("createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
+                    AppLog.w(TAG, "createQRCode failed: retcode=$retcode")
+                    Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
+                }
+
+                else -> {
+                    val data = json.optJSONObject("data")
+                    val ticket = data?.optString("ticket").orEmpty()
+                    val url = data?.optString("url").orEmpty()
+                    when {
+                        data == null -> {
+                            Result.failure(RuntimeException("createQRLogin: data is null"))
+                        }
+
+                        ticket.isBlank() || url.isBlank() -> {
+                            Result.failure(RuntimeException("createQRLogin: ticket or url is blank"))
+                        }
+
+                        else -> {
+                            Result.success(QRCode(ticket = ticket, url = url))
+                        }
+                    }
+                }
             }
-            val data =
-                json.optJSONObject("data")
-                    ?: return Result.failure(RuntimeException("createQRLogin: data is null"))
-            val ticket = data.optString("ticket")
-            val url = data.optString("url")
-            if (ticket.isBlank() || url.isBlank()) {
-                return Result.failure(RuntimeException("createQRLogin: ticket or url is blank"))
-            }
-            Result.success(QRCode(ticket = ticket, url = url))
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("createQRLogin exception: ${ErrorText.detailOf(e)}")
             AppLog.w(TAG, "createQRCode failed", e)
             Result.failure(e)
         }
-    }
 
     /** 查询一次扫码状态；需要底层 OkHttp 读取 Set-Cookie 响应头。 */
     suspend fun queryStatus(
@@ -301,24 +313,28 @@ object QRLoginManager {
         mid: String,
         loginTicket: String,
         nickname: String,
-    ): ScanStatus {
-        if (uid.isBlank()) {
-            return ScanStatus.Error("扫码确认成功，但未能解析账号 UID")
-        }
-        if (cookieToken.isBlank() && stoken.isBlank() && loginTicket.isBlank()) {
-            return ScanStatus.Error("扫码确认成功，但响应未返回 cookie_token、stoken 或 login_ticket")
-        }
+    ): ScanStatus =
+        when {
+            uid.isBlank() -> {
+                ScanStatus.Error("扫码确认成功，但未能解析账号 UID")
+            }
 
-        return ScanStatus.Confirmed(
-            uid = uid,
-            cookieToken = cookieToken,
-            ltoken = ltoken,
-            stoken = stoken,
-            mid = mid,
-            loginTicket = loginTicket,
-            nickname = nickname,
-        )
-    }
+            cookieToken.isBlank() && stoken.isBlank() && loginTicket.isBlank() -> {
+                ScanStatus.Error("扫码确认成功，但响应未返回 cookie_token、stoken 或 login_ticket")
+            }
+
+            else -> {
+                ScanStatus.Confirmed(
+                    uid = uid,
+                    cookieToken = cookieToken,
+                    ltoken = ltoken,
+                    stoken = stoken,
+                    mid = mid,
+                    loginTicket = loginTicket,
+                    nickname = nickname,
+                )
+            }
+        }
 
     private data class ConfirmedBodyTokens(
         val uid: String = "",
@@ -425,12 +441,21 @@ object QRLoginManager {
         loginTicket: String,
         httpTransport: HttpTransport,
         recordError: ((String) -> Unit)? = null,
-    ): Result<MultiToken> {
+    ): Result<MultiToken> =
         if (uid.isBlank() || loginTicket.isBlank()) {
             recordError?.invoke("getMultiTokenByLoginTicket 缺少 login_ticket 或 UID")
-            return Result.failure(IllegalArgumentException("login_ticket 或 UID 为空"))
+            Result.failure(IllegalArgumentException("login_ticket 或 UID 为空"))
+        } else {
+            exchangeStokenRequest(uid, loginTicket, httpTransport, recordError)
         }
-        return try {
+
+    private suspend fun exchangeStokenRequest(
+        uid: String,
+        loginTicket: String,
+        httpTransport: HttpTransport,
+        recordError: ((String) -> Unit)?,
+    ): Result<MultiToken> =
+        try {
             val url =
                 MULTI_TOKEN_URL +
                     "?login_ticket=${urlEncode(loginTicket)}&token_types=$MULTI_TOKEN_TYPES_STOKEN&uid=${urlEncode(uid)}"
@@ -446,24 +471,32 @@ object QRLoginManager {
                     "x-rpc-app_id" to APP_ID,
                 )
             val resp = httpTransport.get(url, headers)
-            val json = resp.json()
-            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
-            if (retcode != 0) {
-                recordError?.invoke("getMultiTokenByLoginTicket http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
-                return Result.failure(
-                    RuntimeException("getMultiTokenByLoginTicket retcode=$retcode: ${json.optString("message")}"),
-                )
-            }
-            val token = parseMultiTokenResponse(json)
-            if (token.stoken.isBlank()) {
-                Result.failure(RuntimeException("getMultiTokenByLoginTicket 未返回 stoken"))
-            } else {
-                Result.success(token)
-            }
+            parseMultiTokenExchangeResponse(resp, recordError)
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("getMultiTokenByLoginTicket exception: ${ErrorText.detailOf(e)}")
             Result.failure(e)
+        }
+
+    private fun parseMultiTokenExchangeResponse(
+        resp: HttpResponse,
+        recordError: ((String) -> Unit)?,
+    ): Result<MultiToken> {
+        val json = resp.json()
+        val retcode = json.optInt("retcode", DEFAULT_RETCODE)
+        val message = json.optString("message")
+        if (retcode != 0) {
+            recordError?.invoke(
+                "getMultiTokenByLoginTicket http=${resp.code}, " +
+                    "retcode=$retcode, message=$message",
+            )
+            return Result.failure(RuntimeException("getMultiTokenByLoginTicket retcode=$retcode: $message"))
+        }
+        val token = parseMultiTokenResponse(json)
+        return if (token.stoken.isBlank()) {
+            Result.failure(RuntimeException("getMultiTokenByLoginTicket 未返回 stoken"))
+        } else {
+            Result.success(token)
         }
     }
 
@@ -527,14 +560,17 @@ object QRLoginManager {
     private suspend fun fillCookieTokenByStokenIfNeeded(
         status: ScanStatus.Confirmed,
         httpTransport: HttpTransport,
-    ): ScanStatus.Confirmed {
-        if (status.cookieToken.isNotBlank() || status.stoken.isBlank()) return status
-        val refreshed = CookieRefresher.refresh(status.uid, status.stoken, status.mid, httpTransport) ?: return status
-        return status.copy(
-            cookieToken = refreshed.cookieToken,
-            ltoken = refreshed.ltoken.ifBlank { status.ltoken },
-        )
-    }
+    ): ScanStatus.Confirmed =
+        if (status.cookieToken.isNotBlank() || status.stoken.isBlank()) {
+            status
+        } else {
+            CookieRefresher.refresh(status.uid, status.stoken, status.mid, httpTransport)?.let { refreshed ->
+                status.copy(
+                    cookieToken = refreshed.cookieToken,
+                    ltoken = refreshed.ltoken.ifBlank { status.ltoken },
+                )
+            } ?: status
+        }
 
     /** 从 Confirmed 响应中提取登录凭证，必要时用 login_ticket 兜底兑换 stoken。 */
     private suspend fun parseConfirmed(
@@ -548,38 +584,40 @@ object QRLoginManager {
                 setCookieHeaders = setCookieHeaders,
                 data = data,
             )
-        if (parsed !is ScanStatus.Confirmed) {
-            return parsed
-        }
-
-        val named = parsed.copy(nickname = parsed.nickname.ifBlank { fetchMysUserNickname(parsed.uid, httpTransport, recordError) })
-        val withBodyStokenCookie = fillCookieTokenByStokenIfNeeded(named, httpTransport)
-        if (withBodyStokenCookie.stoken.isNotBlank()) {
-            return withBodyStokenCookie
-        }
-
-        val exchanged =
-            exchangeStokenByLoginTicket(
-                uid = named.uid,
-                loginTicket = named.loginTicket,
-                httpTransport = httpTransport,
-                recordError = recordError,
-            ).getOrElse { e ->
-                recordError?.invoke("扫码确认凭据解析失败: ${ErrorText.detailOf(e)}")
-                AppLog.w(TAG, "exchange stoken by login_ticket failed: ${e.message}")
-                return if (named.cookieToken.isBlank() && named.stoken.isBlank()) {
-                    ScanStatus.Error("扫码确认成功，但未能通过 login_ticket 换取 stoken")
-                } else {
-                    named
-                }
+        return if (parsed !is ScanStatus.Confirmed) {
+            parsed
+        } else {
+            val named = parsed.copy(nickname = parsed.nickname.ifBlank { fetchMysUserNickname(parsed.uid, httpTransport, recordError) })
+            val withBodyStokenCookie = fillCookieTokenByStokenIfNeeded(named, httpTransport)
+            if (withBodyStokenCookie.stoken.isNotBlank()) {
+                withBodyStokenCookie
+            } else {
+                exchangeStokenByLoginTicket(
+                    uid = named.uid,
+                    loginTicket = named.loginTicket,
+                    httpTransport = httpTransport,
+                    recordError = recordError,
+                ).fold(
+                    onSuccess = { exchanged ->
+                        fillCookieTokenByStokenIfNeeded(
+                            named.copy(
+                                stoken = exchanged.stoken.ifBlank { named.stoken },
+                                ltoken = exchanged.ltoken.ifBlank { named.ltoken },
+                            ),
+                            httpTransport,
+                        )
+                    },
+                    onFailure = { e ->
+                        recordError?.invoke("扫码确认凭据解析失败: ${ErrorText.detailOf(e)}")
+                        AppLog.w(TAG, "exchange stoken by login_ticket failed: ${e.message}")
+                        if (named.cookieToken.isBlank() && named.stoken.isBlank()) {
+                            ScanStatus.Error("扫码确认成功，但未能通过 login_ticket 换取 stoken")
+                        } else {
+                            named
+                        }
+                    },
+                )
             }
-
-        return fillCookieTokenByStokenIfNeeded(
-            named.copy(
-                stoken = exchanged.stoken.ifBlank { named.stoken },
-                ltoken = exchanged.ltoken.ifBlank { named.ltoken },
-            ),
-            httpTransport,
-        )
+        }
     }
 }
