@@ -36,76 +36,84 @@ object CookieRefresher {
         mid: String,
         httpTransport: HttpTransport,
         onDiagnostic: (message: String, detail: String) -> Unit = { _, _ -> },
-    ): RefreshedCookie? {
-        if (uid.isBlank() || stoken.isBlank()) return null
-
-        val stokenCookie =
-            buildString {
-                append("stoken=$stoken; stuid=$uid")
-                if (mid.isNotBlank()) {
-                    append("; stmid=$mid; mid=$mid")
+    ): RefreshedCookie? =
+        if (uid.isBlank() || stoken.isBlank()) {
+            null
+        } else {
+            val stokenCookie =
+                buildString {
+                    append("stoken=$stoken; stuid=$uid")
+                    if (mid.isNotBlank()) {
+                        append("; stmid=$mid; mid=$mid")
+                    }
                 }
+            val cookieToken = fetchCookieToken(uid, stokenCookie, httpTransport, onDiagnostic)
+            if (cookieToken.isNullOrBlank()) {
+                null
+            } else {
+                val ltoken = fetchLtoken(uid, stokenCookie, httpTransport, onDiagnostic)
+                RefreshedCookie(cookieToken, ltoken, buildCookie(uid, cookieToken, ltoken, mid))
             }
+        }
 
-        val cookieToken =
-            try {
-                val headers = mapOf("Cookie" to stokenCookie)
-                val resp =
-                    httpTransport.get(
-                        getCookieAccountInfoUrl(uid),
-                        headers,
-                    )
-                val json = resp.json()
-                val retcode = json.optInt("retcode", DEFAULT_RETCODE)
-                if (retcode != 0) {
-                    AppLog.w(TAG, "getCookieAccountInfoBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
-                    onDiagnostic(
-                        "Cookie Token 刷新接口返回错误",
-                        "getCookieAccountInfoBySToken http=${resp.code}, retcode=$retcode, " +
-                            "message=${json.optString("message")}",
-                    )
-                    return null
-                }
+    private suspend fun fetchCookieToken(
+        uid: String,
+        stokenCookie: String,
+        httpTransport: HttpTransport,
+        onDiagnostic: (message: String, detail: String) -> Unit,
+    ): String? =
+        try {
+            val resp = httpTransport.get(getCookieAccountInfoUrl(uid), mapOf("Cookie" to stokenCookie))
+            val json = resp.json()
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
+            if (retcode != 0) {
+                AppLog.w(TAG, "getCookieAccountInfoBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
+                onDiagnostic(
+                    "Cookie Token 刷新接口返回错误",
+                    "getCookieAccountInfoBySToken http=${resp.code}, retcode=$retcode, " +
+                        "message=${json.optString("message")}",
+                )
+                null
+            } else {
                 json.optJSONObject("data")?.optString("cookie_token").orEmpty()
-            } catch (e: Exception) {
-                e.throwIfCancellation()
-                AppLog.w(TAG, "getCookieAccountInfoBySToken exception, uid=${Mask.uid(uid)}", e)
-                onDiagnostic("Cookie Token 刷新请求异常", ErrorText.detailOf(e))
-                return null
             }
+        } catch (e: Exception) {
+            e.throwIfCancellation()
+            AppLog.w(TAG, "getCookieAccountInfoBySToken exception, uid=${Mask.uid(uid)}", e)
+            onDiagnostic("Cookie Token 刷新请求异常", ErrorText.detailOf(e))
+            null
+        }
 
-        if (cookieToken.isBlank()) return null
-
-        val ltoken =
-            try {
-                val headers = mapOf("Cookie" to stokenCookie)
-                val resp =
-                    httpTransport.get(
-                        "https://api-takumi.mihoyo.com/auth/api/getLTokenBySToken",
-                        headers,
-                    )
-                val json = resp.json()
-                val retcode = json.optInt("retcode", DEFAULT_RETCODE)
-                if (retcode != 0) {
-                    AppLog.w(TAG, "getLTokenBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
-                    onDiagnostic(
-                        "LToken 刷新接口返回错误",
-                        "getLTokenBySToken http=${resp.code}, retcode=$retcode, message=${json.optString("message")}",
-                    )
-                    ""
-                } else {
-                    json.optJSONObject("data")?.optString("ltoken").orEmpty()
-                }
-            } catch (e: Exception) {
-                e.throwIfCancellation()
-                AppLog.w(TAG, "getLTokenBySToken exception, uid=${Mask.uid(uid)}", e)
-                onDiagnostic("LToken 刷新请求异常", ErrorText.detailOf(e))
+    private suspend fun fetchLtoken(
+        uid: String,
+        stokenCookie: String,
+        httpTransport: HttpTransport,
+        onDiagnostic: (message: String, detail: String) -> Unit,
+    ): String =
+        try {
+            val resp =
+                httpTransport.get(
+                    "https://api-takumi.mihoyo.com/auth/api/getLTokenBySToken",
+                    mapOf("Cookie" to stokenCookie),
+                )
+            val json = resp.json()
+            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
+            if (retcode != 0) {
+                AppLog.w(TAG, "getLTokenBySToken failed: retcode=$retcode, uid=${Mask.uid(uid)}")
+                onDiagnostic(
+                    "LToken 刷新接口返回错误",
+                    "getLTokenBySToken http=${resp.code}, retcode=$retcode, message=${json.optString("message")}",
+                )
                 ""
+            } else {
+                json.optJSONObject("data")?.optString("ltoken").orEmpty()
             }
-
-        val fullCookie = buildCookie(uid, cookieToken, ltoken, mid)
-        return RefreshedCookie(cookieToken, ltoken, fullCookie)
-    }
+        } catch (e: Exception) {
+            e.throwIfCancellation()
+            AppLog.w(TAG, "getLTokenBySToken exception, uid=${Mask.uid(uid)}", e)
+            onDiagnostic("LToken 刷新请求异常", ErrorText.detailOf(e))
+            ""
+        }
 
     /** 拼接签到接口需要的完整 Cookie 字符串。 */
     fun buildCookie(
