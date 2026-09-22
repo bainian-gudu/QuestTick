@@ -167,24 +167,24 @@ class CloudSignIn(
         val notifications = listNotifications(game, token, version, beforeWallet.clientType)
         details.addDetailIfNotBlank(notifications.detail)
         if (notifications.ok && notifications.ids.isNotEmpty()) {
-            var ackOk = 0
-            var ackFailed = 0
-            for (id in notifications.ids) {
-                val ack = ack(game, token, id, version, beforeWallet.clientType)
-                if (ack.ok) {
-                    ackOk++
-                } else {
-                    ackFailed++
-                    details.add(ack.detail.ifBlank { "ackNotification(${maskNotificationId(id)}) failed" })
-                    if (ack.failure.category == FailureCategory.RESULT_UNKNOWN) {
-                        unknownAckFailure = ack.failure
-                        break
-                    }
-                }
-            }
-            if (unknownAckFailure == null) {
-                details.add("ackNotifications: total=${notifications.ids.size}, ok=$ackOk, failed=$ackFailed")
-                if (ackOk > 0) {
+            val ackSummary =
+                acknowledgeNotifications(
+                    request =
+                        AckRequest(
+                            game = game,
+                            token = token,
+                            version = version,
+                            clientType = beforeWallet.clientType,
+                            ids = notifications.ids,
+                        ),
+                    details = details,
+                )
+            unknownAckFailure = ackSummary.unknownFailure
+            if (ackSummary.unknownFailure == null) {
+                details.add(
+                    "ackNotifications: total=${notifications.ids.size}, ok=${ackSummary.ackOk}, failed=${ackSummary.ackFailed}",
+                )
+                if (ackSummary.ackOk > 0) {
                     delay(WALLET_REFRESH_DELAY_MS)
                     afterWallet = getWallet(game, token, version, beforeWallet.clientType)
                     details.addDetailIfNotBlank(afterWallet.detail, "after ")
@@ -247,6 +247,20 @@ class CloudSignIn(
         val ok: Boolean,
         val detail: String = "",
         val failure: TaskFailureDescriptor = TaskFailureDescriptor(FailureCategory.NONE),
+    )
+
+    private data class AckSummary(
+        val ackOk: Int,
+        val ackFailed: Int,
+        val unknownFailure: TaskFailureDescriptor?,
+    )
+
+    private data class AckRequest(
+        val game: GameConfig,
+        val token: String,
+        val version: String,
+        val clientType: String,
+        val ids: List<String>,
     )
 
     private fun calculateClaimedFreeTime(
@@ -344,17 +358,7 @@ class CloudSignIn(
             val retcode = data.optInt("retcode", DEFAULT_RETCODE)
             val message = data.optString("message")
             if (isSuccessfulResponse(res.code, retcode, message)) {
-                val arr = data.optJSONObject("data")?.optJSONArray("list")
-                val ids = ArrayList<String>()
-                if (arr != null) {
-                    for (i in 0 until arr.length()) {
-                        arr
-                            .optJSONObject(i)
-                            ?.optString("id")
-                            ?.takeIf { it.isNotEmpty() }
-                            ?.let { ids.add(it) }
-                    }
-                }
+                val ids = extractNotificationIds(data)
                 val detail =
                     "listNotifications ok: http=${res.code}, retcode=$retcode, " +
                         "message=$message, count=${ids.size}, version=$version, client_type=$clientType"
@@ -370,6 +374,40 @@ class CloudSignIn(
             AppLog.w(TAG, "listNotifications failed: ${game.key}, version=$version", e)
             Notifications(false, emptyList(), e.message ?: "notifications exception")
         }
+
+    private fun extractNotificationIds(data: JSONObject): List<String> {
+        val list = data.optJSONObject("data")?.optJSONArray("list") ?: return emptyList()
+        return buildList {
+            for (index in 0 until list.length()) {
+                list
+                    .optJSONObject(index)
+                    ?.optString("id")
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let(::add)
+            }
+        }
+    }
+
+    private suspend fun acknowledgeNotifications(
+        request: AckRequest,
+        details: MutableList<String>,
+    ): AckSummary {
+        var ackOk = 0
+        var ackFailed = 0
+        for (id in request.ids) {
+            val ack = ack(request.game, request.token, id, request.version, request.clientType)
+            if (ack.ok) {
+                ackOk++
+                continue
+            }
+            ackFailed++
+            details.add(ack.detail.ifBlank { "ackNotification(${maskNotificationId(id)}) failed" })
+            if (ack.failure.category == FailureCategory.RESULT_UNKNOWN) {
+                return AckSummary(ackOk, ackFailed, ack.failure)
+            }
+        }
+        return AckSummary(ackOk, ackFailed, null)
+    }
 
     private suspend fun ack(
         game: GameConfig,
