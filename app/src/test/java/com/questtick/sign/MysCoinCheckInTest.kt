@@ -50,6 +50,27 @@ class MysCoinCheckInTest {
         }
 
     @Test
+    fun `balance lookup scans nested objects and arrays`() =
+        runBlocking {
+            val transport =
+                HttpTransport { request ->
+                    if (request.method == HttpMethod.GET) {
+                        HttpResponse.text(
+                            200,
+                            """{"retcode":0,"message":"OK","data":{"items":[{"meta":{"total_points":321}}]}}""",
+                        )
+                    } else {
+                        HttpResponse.text(200, "{\"retcode\":0,\"message\":\"OK\"}")
+                    }
+                }
+
+            val outcome = MysCoinCheckIn.run("stoken=s; mid=m; stuid=1; ltoken=l; account_id=1", "device", "2.109.0", transport)
+
+            assertEquals(321, outcome.coinBalance)
+            assertEquals(0, outcome.coinGained)
+        }
+
+    @Test
     fun `balance query keeps legacy web parameters separate from check-in`() =
         runBlocking {
             val requests = mutableListOf<HttpRequest>()
