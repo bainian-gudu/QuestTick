@@ -195,10 +195,6 @@
     <ID>RedundantSuspendModifier:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
     <ID>RedundantSuspendModifier:SignInRunner.kt$SignInRunner$suspend</ID>
     <ID>RedundantSuspendModifier:TrustedRedirects.kt$TrustedRedirects$suspend</ID>
-    <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$internal fun parsePassportConfirmedCookies( setCookieHeaders: List&lt;String&gt;, userUid: String = "", userMid: String = "", ): ScanStatus</ID>
-    <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$internal fun parseWebLoginComboToken( gameKey: String, json: JSONObject, ): Result&lt;String&gt;</ID>
-    <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$suspend fun createQRCode( gameKey: String, deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;QRCode&gt;</ID>
-    <ID>ReturnCount:CloudQRLogin.kt$CloudQRLogin$suspend fun exchangeComboToken( gameKey: String, cookieHeader: String, deviceId: String, httpTransport: HttpTransport, recordError: ((String) -&gt; Unit)? = null, ): Result&lt;String&gt;</ID>
     <ID>ReturnCount:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
     <ID>ReturnCount:CookieRefresher.kt$CookieRefresher$suspend fun refresh( uid: String, stoken: String, mid: String, httpTransport: HttpTransport, onDiagnostic: (message: String, detail: String) -&gt; Unit = { _, _ -&gt; }, ): RefreshedCookie?</ID>
     <ID>ReturnCount:HomeViewModel.kt$HomeViewModel$fun runNow()</ID>

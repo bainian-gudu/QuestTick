@@ -132,8 +132,8 @@ object CloudQRLogin {
         deviceId: String,
         httpTransport: HttpTransport,
         recordError: ((String) -> Unit)? = null,
-    ): Result<QRCode> {
-        return try {
+    ): Result<QRCode> =
+        try {
             val config = configFor(gameKey)
             val resp =
                 httpTransport.postJson(
@@ -143,27 +143,38 @@ object CloudQRLogin {
                 )
             val json = resp.json()
             val retcode = json.optInt("retcode", DEFAULT_RETCODE)
-            if (retcode != 0) {
-                recordError?.invoke("$gameKey createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
-                AppLog.w(TAG, "createQRLogin failed: retcode=$retcode")
-                return Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
+            when {
+                retcode != 0 -> {
+                    recordError?.invoke("$gameKey createQRLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
+                    AppLog.w(TAG, "createQRLogin failed: retcode=$retcode")
+                    Result.failure(RuntimeException("createQRLogin retcode=$retcode: ${json.optString("message")}"))
+                }
+
+                else -> {
+                    val data = json.optJSONObject("data")
+                    val ticket = data?.optString("ticket").orEmpty()
+                    val qrUrl = data?.optString("url").orEmpty()
+                    when {
+                        data == null -> {
+                            Result.failure(RuntimeException("createQRLogin: data is null"))
+                        }
+
+                        ticket.isBlank() || qrUrl.isBlank() -> {
+                            Result.failure(RuntimeException("createQRLogin: ticket or url is blank"))
+                        }
+
+                        else -> {
+                            Result.success(QRCode(ticket = ticket, url = qrUrl))
+                        }
+                    }
+                }
             }
-            val data =
-                json.optJSONObject("data")
-                    ?: return Result.failure(RuntimeException("createQRLogin: data is null"))
-            val ticket = data.optString("ticket")
-            val qrUrl = data.optString("url")
-            if (ticket.isBlank() || qrUrl.isBlank()) {
-                return Result.failure(RuntimeException("createQRLogin: ticket or url is blank"))
-            }
-            Result.success(QRCode(ticket = ticket, url = qrUrl))
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("$gameKey createQRLogin exception: ${ErrorText.detailOf(e)}")
             AppLog.w(TAG, "createQRCode failed", e)
             Result.failure(e)
         }
-    }
 
     /** 查询一次扫码状态；确认登录时需要读取 Set-Cookie，因此直接使用 OkHttp。 */
     suspend fun queryStatus(
@@ -296,40 +307,39 @@ object CloudQRLogin {
         deviceId: String,
         httpTransport: HttpTransport,
         recordError: ((String) -> Unit)? = null,
-    ): Result<String> {
-        return try {
+    ): Result<String> =
+        try {
             val config = configFor(gameKey)
             if (cookieHeader.isBlank()) {
-                return Result.failure(RuntimeException("webLogin: Cookie 为空"))
-            }
-
-            val body =
-                JSONObject().apply {
-                    put("app_id", config.sdkAppId.toIntOrNull() ?: config.sdkAppId)
-                    put("channel_id", config.channelId.toIntOrNull() ?: config.channelId)
+                Result.failure(RuntimeException("webLogin: Cookie 为空"))
+            } else {
+                val body =
+                    JSONObject().apply {
+                        put("app_id", config.sdkAppId.toIntOrNull() ?: config.sdkAppId)
+                        put("channel_id", config.channelId.toIntOrNull() ?: config.channelId)
+                    }
+                val resp =
+                    httpTransport.postJson(
+                        config.comboWebLoginUrl,
+                        comboWebLoginHeaders(config, deviceId, cookieHeader),
+                        body,
+                    )
+                val json = resp.json()
+                val retcode = json.optInt("retcode", DEFAULT_RETCODE)
+                if (retcode != 0) {
+                    recordError?.invoke("$gameKey webLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
+                    AppLog.w(TAG, "combo webLogin failed: retcode=$retcode")
+                    Result.failure(RuntimeException("combo webLogin retcode=$retcode: ${json.optString("message")}"))
+                } else {
+                    parseWebLoginComboToken(gameKey, json)
                 }
-            val resp =
-                httpTransport.postJson(
-                    config.comboWebLoginUrl,
-                    comboWebLoginHeaders(config, deviceId, cookieHeader),
-                    body,
-                )
-            val json = resp.json()
-            val retcode = json.optInt("retcode", DEFAULT_RETCODE)
-            if (retcode != 0) {
-                recordError?.invoke("$gameKey webLogin http=${resp.code}, retcode=$retcode, message=${json.optString("message")}")
-                AppLog.w(TAG, "combo webLogin failed: retcode=$retcode")
-                return Result.failure(RuntimeException("combo webLogin retcode=$retcode: ${json.optString("message")}"))
             }
-
-            parseWebLoginComboToken(gameKey, json)
         } catch (e: Exception) {
             e.throwIfCancellation()
             recordError?.invoke("$gameKey webLogin exception: ${ErrorText.detailOf(e)}")
             AppLog.w(TAG, "exchangeComboToken failed", e)
             Result.failure(e)
         }
-    }
 
     internal fun parseWebLoginComboToken(
         gameKey: String,
@@ -360,11 +370,11 @@ object CloudQRLogin {
                 .optString("combo_token")
                 .ifBlank { nested?.optString("combo_token").orEmpty() }
 
-        if (openId.isBlank() || comboToken.isBlank()) {
-            return Result.failure(RuntimeException("combo webLogin: open_id 或 combo_token 为空"))
+        return if (openId.isBlank() || comboToken.isBlank()) {
+            Result.failure(RuntimeException("combo webLogin: open_id 或 combo_token 为空"))
+        } else {
+            Result.success(buildWebComboToken(config, appId, channelId, openId, comboToken))
         }
-
-        return Result.success(buildWebComboToken(config, appId, channelId, openId, comboToken))
     }
 
     internal fun buildWebComboToken(
@@ -381,8 +391,6 @@ object CloudQRLogin {
         userMid: String = "",
     ): ScanStatus {
         val cookieHeader = buildCookieHeader(setCookieHeaders)
-        if (cookieHeader.isBlank()) return ScanStatus.Error("扫码确认成功，但响应未返回 Cookie")
-
         val uid =
             userUid
                 .ifBlank { cookieValue(cookieHeader, "account_id") }
@@ -393,11 +401,11 @@ object CloudQRLogin {
                 .ifBlank { cookieValue(cookieHeader, "account_mid_v2") }
                 .ifBlank { cookieValue(cookieHeader, "ltmid_v2") }
 
-        if (uid.isBlank()) {
-            return ScanStatus.Error("扫码确认成功，但未能确认账号 UID")
+        return when {
+            cookieHeader.isBlank() -> ScanStatus.Error("扫码确认成功，但响应未返回 Cookie")
+            uid.isBlank() -> ScanStatus.Error("扫码确认成功，但未能确认账号 UID")
+            else -> ScanStatus.Confirmed(uid = uid, mid = mid, cookieHeader = cookieHeader)
         }
-
-        return ScanStatus.Confirmed(uid = uid, mid = mid, cookieHeader = cookieHeader)
     }
 
     private fun configFor(gameKey: String): CloudWebConfig = CONFIGS[gameKey] ?: CONFIGS.getValue("CloudYS")
