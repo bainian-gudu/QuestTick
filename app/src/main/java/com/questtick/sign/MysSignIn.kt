@@ -187,7 +187,7 @@ class MysSignIn(
                         ErrorText.fromRetcode(retcode) ?: "登录校验失败，请检查 Cookie 是否有效"
                     }
                 AppLog.w(TAG, "getRole failed: ${game.key}, http=${res.code}, retcode=$retcode")
-                return RoleResult.Failed(
+                RoleResult.Failed(
                     message = friendly,
                     detail =
                         "getUserGameRolesByCookie http=${res.code}, retcode=$retcode, " +
@@ -199,18 +199,22 @@ class MysSignIn(
                             TaskFailureClassifier.fromRetcode(retcode)
                         },
                 )
+            } else {
+                val list = data.optJSONObject("data")?.optJSONArray("list")
+                val first = if (list != null && list.length() > 0) list.optJSONObject(0) else null
+                val uid = first?.optString("game_uid").orEmpty()
+                if (first == null || uid.isEmpty()) {
+                    RoleResult.NoRole
+                } else {
+                    RoleResult.Ok(
+                        Role(
+                            gameUid = uid,
+                            region = first.optString("region"),
+                            nickname = first.optString("nickname"),
+                        ),
+                    )
+                }
             }
-            val list = data.optJSONObject("data")?.optJSONArray("list")
-            val first = if (list != null && list.length() > 0) list.optJSONObject(0) else null
-            val uid = first?.optString("game_uid").orEmpty()
-            if (first == null || uid.isEmpty()) return RoleResult.NoRole
-            RoleResult.Ok(
-                Role(
-                    gameUid = uid,
-                    region = first.optString("region"),
-                    nickname = first.optString("nickname"),
-                ),
-            )
         } catch (e: Exception) {
             e.throwIfCancellation()
             AppLog.w(TAG, "getRole exception: ${game.key}", e)
@@ -301,48 +305,54 @@ class MysSignIn(
             val httpSuccess = res.code in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX
             val captchaRequired = httpSuccess && data.optJSONObject("data")?.optInt("success", 0) == 1
             if (captchaRequired) {
-                return SignResult(
+                SignResult(
                     ok = false,
                     already = false,
                     message = "触发风控验证码，请前往米游社 App 手动签到一次后再试",
                     detail = "luna sign captcha required (data.success == 1), retcode=$retcode",
                     failure = TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode"),
                 )
-            }
-            // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
-            // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
-            val already = httpSuccess && (retcode == RETCODE_ALREADY_SIGNED || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
-            when {
-                already -> {
-                    SignResult(true, true, "今日已签到")
-                }
-
-                httpSuccess && (message == "OK" || retcode == 0) -> {
-                    SignResult(true, false, "签到成功")
-                }
-
-                else -> {
-                    // act_id 疑似失效时尝试动态刷新并重试一次。
-                    val canRefreshActId = httpSuccess && retryOnActIdInvalid
-                    val shouldRefreshActId = canRefreshActId && actIdAutoRefresh && ActIdInvalid.isInvalid(retcode, message)
-                    if (shouldRefreshActId) {
-                        val retryResult = refreshActIdAndRetry(cookie, game, role, actId)
-                        if (retryResult != null) return retryResult
+            } else {
+                // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
+                // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
+                val already =
+                    httpSuccess &&
+                        (retcode == RETCODE_ALREADY_SIGNED || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
+                when {
+                    already -> {
+                        SignResult(true, true, "今日已签到")
                     }
-                    SignResult(
-                        ok = false,
-                        already = false,
-                        message =
-                            if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
-                                "签到服务暂时不可用，请稍后重试"
+
+                    httpSuccess && (message == "OK" || retcode == 0) -> {
+                        SignResult(true, false, "签到成功")
+                    }
+
+                    else -> {
+                        // act_id 疑似失效时尝试动态刷新并重试一次。
+                        val canRefreshActId = httpSuccess && retryOnActIdInvalid
+                        val shouldRefreshActId =
+                            canRefreshActId && actIdAutoRefresh && ActIdInvalid.isInvalid(retcode, message)
+                        val retryResult =
+                            if (shouldRefreshActId) {
+                                refreshActIdAndRetry(cookie, game, role, actId)
                             } else {
-                                ErrorText.fromRetcode(retcode) ?: "签到失败：$message"
-                            },
-                        detail = "luna sign http=${res.code}, retcode=$retcode, message=$message, act_id=$actId",
-                        // 签到 POST 已获得完整服务端响应，但仍属于非幂等操作；除上方明确的 act_id 刷新外，
-                        // HTTP 或业务错误都不能交给 Worker 自动重发。
-                        failure = TaskFailureClassifier.fromNonIdempotentResponse(res.code, retcode),
-                    )
+                                null
+                            }
+                        retryResult ?: SignResult(
+                            ok = false,
+                            already = false,
+                            message =
+                                if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
+                                    "签到服务暂时不可用，请稍后重试"
+                                } else {
+                                    ErrorText.fromRetcode(retcode) ?: "签到失败：$message"
+                                },
+                            detail = "luna sign http=${res.code}, retcode=$retcode, message=$message, act_id=$actId",
+                            // 签到 POST 已获得完整服务端响应，但仍属于非幂等操作；除上方明确的 act_id 刷新外，
+                            // HTTP 或业务错误都不能交给 Worker 自动重发。
+                            failure = TaskFailureClassifier.fromNonIdempotentResponse(res.code, retcode),
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -381,22 +391,27 @@ class MysSignIn(
             ActId.fetchLatest(game, httpTransport) { detail ->
                 recordError?.invoke("ACT_ID 自动刷新", detail)
             }
-        if (latest == null) {
-            onLog("WARN", "[${game.name}] 未能获取最新 act_id，跳过重试")
-            return null
-        }
-        if (latest == staleActId) {
-            onLog("WARN", "[${game.name}] 获取到的 act_id 与当前相同，跳过重试")
-            return null
-        }
+        return when {
+            latest == null -> {
+                onLog("WARN", "[${game.name}] 未能获取最新 act_id，跳过重试")
+                null
+            }
 
-        if (cacheMutex != null) {
-            cacheMutex.withLock { actIdCache[game.key] = latest }
-        } else {
-            actIdCache[game.key] = latest
+            latest == staleActId -> {
+                onLog("WARN", "[${game.name}] 获取到的 act_id 与当前相同，跳过重试")
+                null
+            }
+
+            else -> {
+                if (cacheMutex != null) {
+                    cacheMutex.withLock { actIdCache[game.key] = latest }
+                } else {
+                    actIdCache[game.key] = latest
+                }
+                onLog("INFO", "[${game.name}] 已获取最新 act_id=$latest，重试签到…")
+                signIn(cookie, game, role, retryOnActIdInvalid = false)
+            }
         }
-        onLog("INFO", "[${game.name}] 已获取最新 act_id=$latest，重试签到…")
-        return signIn(cookie, game, role, retryOnActIdInvalid = false)
     }
 
     private fun infoUrl(game: GameConfig): String =
@@ -431,56 +446,106 @@ class MysSignIn(
             val homeDs = Ds.generateWeb()
             val homeData = httpTransport.getIdempotent("${homeUrl(game)}?$homeQuery", signHeaders(cookie, game, homeDs)).json()
 
-            val infoRetcode = infoData.optInt("retcode", DEFAULT_RETCODE)
-            val homeRetcode = homeData.optInt("retcode", DEFAULT_RETCODE)
-            if (infoRetcode != 0 || homeRetcode != 0) {
-                AppLog.w(TAG, "getReward failed: ${game.key}, infoRetcode=$infoRetcode, homeRetcode=$homeRetcode")
-                onLog(
-                    "ERROR",
-                    "[${game.name}] 奖励查询失败：infoRetcode=$infoRetcode, infoMessage=${infoData.optString("message")}, " +
-                        "homeRetcode=$homeRetcode, homeMessage=${homeData.optString("message")}",
-                )
-                return null
-            }
-
-            val infoObject = infoData.optJSONObject("data")
-            val homeObject = homeData.optJSONObject("data")
-            val totalSignDay =
-                firstPositiveInt(infoObject, "total_sign_day", "totalSignDay", "sign_day", "signDay")
-                    ?: firstPositiveInt(homeObject, "total_sign_day", "totalSignDay", "sign_day", "signDay")
-                    ?: 0
-            val awards =
-                homeObject?.optJSONArray("awards")
-                    ?: homeObject?.optJSONArray("award_list")
-                    ?: infoObject?.optJSONArray("awards")
-            if (totalSignDay <= 0 || awards == null || awards.length() == 0) {
-                onLog(
-                    "ERROR",
-                    "[${game.name}] 奖励数据缺失：totalSignDay=$totalSignDay, awards=${awards?.length() ?: 0}",
-                )
-                return null
-            }
-
-            val award = awards.optJSONObject(totalSignDay - 1)
-            if (award == null) {
-                onLog("ERROR", "[${game.name}] 奖励数据缺失：无法读取第${totalSignDay}天奖励")
-                return null
-            }
-            val icon = normalizeRewardIcon(extractRewardIcon(award))
-            if (icon.isBlank()) {
-                onLog("ERROR", "[${game.name}] 奖励图片地址缺失：$award")
-            }
-            Reward(
-                day = totalSignDay,
-                name = award.optString("name"),
-                cnt = award.optString("cnt"),
-                icon = icon,
-            )
+            parseReward(game, infoData, homeData)
         } catch (e: Exception) {
             e.throwIfCancellation()
             AppLog.w(TAG, "getReward exception: ${game.key}", e)
             onLog("ERROR", "[${game.name}] 奖励查询异常：${ErrorText.detailOf(e)}")
             null
+        }
+    }
+
+    private fun parseReward(
+        game: GameConfig,
+        infoData: JSONObject,
+        homeData: JSONObject,
+    ): Reward? {
+        val infoRetcode = infoData.optInt("retcode", DEFAULT_RETCODE)
+        val homeRetcode = homeData.optInt("retcode", DEFAULT_RETCODE)
+        val infoObject = infoData.optJSONObject("data")
+        val homeObject = homeData.optJSONObject("data")
+        val totalSignDay =
+            firstPositiveInt(infoObject, "total_sign_day", "totalSignDay", "sign_day", "signDay")
+                ?: firstPositiveInt(homeObject, "total_sign_day", "totalSignDay", "sign_day", "signDay")
+                ?: 0
+        val awards =
+            homeObject?.optJSONArray("awards")
+                ?: homeObject?.optJSONArray("award_list")
+                ?: infoObject?.optJSONArray("awards")
+        val award = awards?.optJSONObject(totalSignDay - 1)
+        val awardsLength = awards?.length() ?: 0
+        val dataMissing = totalSignDay <= 0 || awardsLength == 0
+        val snapshot =
+            RewardSnapshot(
+                infoRetcode = infoRetcode,
+                homeRetcode = homeRetcode,
+                totalSignDay = totalSignDay,
+                awardsLength = awardsLength,
+                awardMissing = award == null,
+                dataMissing = dataMissing,
+            )
+        val failureMessage =
+            rewardFailureMessage(
+                game = game,
+                infoData = infoData,
+                homeData = homeData,
+                snapshot = snapshot,
+            )
+        val currentAward = award
+        if (failureMessage != null || currentAward == null) {
+            if (failureMessage != null) onLog("ERROR", failureMessage)
+            return null
+        }
+        val icon = normalizeRewardIcon(extractRewardIcon(currentAward))
+        if (icon.isBlank()) {
+            onLog("ERROR", "[${game.name}] 奖励图片地址缺失：$currentAward")
+        }
+        return Reward(
+            day = totalSignDay,
+            name = currentAward.optString("name"),
+            cnt = currentAward.optString("cnt"),
+            icon = icon,
+        )
+    }
+
+    private data class RewardSnapshot(
+        val infoRetcode: Int,
+        val homeRetcode: Int,
+        val totalSignDay: Int,
+        val awardsLength: Int,
+        val awardMissing: Boolean,
+        val dataMissing: Boolean,
+    )
+
+    private fun rewardFailureMessage(
+        game: GameConfig,
+        infoData: JSONObject,
+        homeData: JSONObject,
+        snapshot: RewardSnapshot,
+    ): String? {
+        val infoFailed = snapshot.infoRetcode != 0 || snapshot.homeRetcode != 0
+        return when {
+            infoFailed -> {
+                AppLog.w(
+                    TAG,
+                    "getReward failed: ${game.key}, infoRetcode=${snapshot.infoRetcode}, homeRetcode=${snapshot.homeRetcode}",
+                )
+                "[${game.name}] 奖励查询失败：infoRetcode=${snapshot.infoRetcode}, " +
+                    "infoMessage=${infoData.optString("message")}, homeRetcode=${snapshot.homeRetcode}, " +
+                    "homeMessage=${homeData.optString("message")}"
+            }
+
+            snapshot.dataMissing -> {
+                "[${game.name}] 奖励数据缺失：totalSignDay=${snapshot.totalSignDay}, awards=${snapshot.awardsLength}"
+            }
+
+            snapshot.awardMissing -> {
+                "[${game.name}] 奖励数据缺失：无法读取第${snapshot.totalSignDay}天奖励"
+            }
+
+            else -> {
+                null
+            }
         }
     }
 
@@ -516,10 +581,10 @@ class MysSignIn(
     suspend fun runForCookie(
         cookie: String,
         game: GameConfig,
-    ): Outcome {
+    ): Outcome =
         when (val rr = getRole(cookie, game)) {
             is RoleResult.NoRole -> {
-                return Outcome(
+                Outcome(
                     success = true,
                     skipped = true,
                     message = "未注册该游戏，已跳过签到",
@@ -529,7 +594,7 @@ class MysSignIn(
             }
 
             is RoleResult.Failed -> {
-                return Outcome(
+                Outcome(
                     success = false,
                     skipped = false,
                     message = rr.message,
@@ -542,30 +607,30 @@ class MysSignIn(
                 val role = rr.role
                 val sr = signIn(cookie, game, role)
                 if (!sr.ok) {
-                    return Outcome(
+                    Outcome(
                         success = false,
                         skipped = false,
                         message = sr.message,
                         detail = sr.detail,
                         failure = sr.failure,
                     )
+                } else {
+                    val reward = getReward(cookie, game, role)
+                    val base = if (sr.already) "今日已签到" else "签到成功"
+                    val display =
+                        if (reward != null) {
+                            "$base · 第${reward.day}天 · ${reward.name} ×${reward.cnt}"
+                        } else {
+                            base
+                        }
+                    Outcome(
+                        success = true,
+                        skipped = false,
+                        message = display,
+                        alreadySigned = sr.already,
+                        reward = reward,
+                    )
                 }
-                val reward = getReward(cookie, game, role)
-                val base = if (sr.already) "今日已签到" else "签到成功"
-                val display =
-                    if (reward != null) {
-                        "$base · 第${reward.day}天 · ${reward.name} ×${reward.cnt}"
-                    } else {
-                        base
-                    }
-                return Outcome(
-                    success = true,
-                    skipped = false,
-                    message = display,
-                    alreadySigned = sr.already,
-                    reward = reward,
-                )
             }
         }
-    }
 }
