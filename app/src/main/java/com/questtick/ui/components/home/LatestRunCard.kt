@@ -63,7 +63,7 @@ fun LatestRunCard(
 
     var expanded by rememberSaveable(record.timestamp) { mutableStateOf(false) }
     val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
+        targetValue = if (expanded) AppMotion.ARROW_EXPANDED_ROTATION_DEGREES else 0f,
         animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
         label = "arrowRotation",
     )
@@ -154,7 +154,7 @@ fun LatestRunCard(
                             Icons.Filled.KeyboardArrowDown,
                             contentDescription = localizedText("收起"),
                             tint = TextSecondary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(16.dp).rotate(180f),
+                            modifier = Modifier.size(16.dp).rotate(AppMotion.ARROW_EXPANDED_ROTATION_DEGREES),
                         )
                         Spacer(Modifier.size(4.dp))
                         Text("收起", fontSize = 12.sp, color = TextSecondary.copy(alpha = 0.6f))

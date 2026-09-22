@@ -54,6 +54,8 @@ import com.questtick.ui.theme.DangerRed
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.TextSecondary
 
+private const val SCANNED_QR_ALPHA = 0.3f
+
 @Composable
 internal fun QrLoginScaffold(
     title: String,
@@ -235,7 +237,7 @@ private fun QrBitmapCard(
                     Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp))
-                        .alpha(if (scanned) 0.3f else 1f),
+                        .alpha(if (scanned) SCANNED_QR_ALPHA else 1f),
             )
             if (scanned) {
                 QrPendingConfirmOverlay()

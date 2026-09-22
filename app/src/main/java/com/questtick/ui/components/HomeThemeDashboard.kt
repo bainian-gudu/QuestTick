@@ -50,6 +50,16 @@ import com.questtick.ui.theme.LocalAppUiTheme
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.WarnAmber
 
+private const val RUNNING_BUTTON_BORDER_ALPHA = 0.28f
+private const val IDLE_BUTTON_BORDER_ALPHA = 0.46f
+private const val SPARK_LONG_RADIUS_FRACTION = 0.46f
+private const val SPARK_SHORT_RADIUS_FRACTION = 0.20f
+private const val TASK_PREVIEW_OUTLINE_ALPHA = 0.20f
+private const val TASK_PREVIEW_SPACER_DP = 10
+private const val TASK_PREVIEW_TEXT_SIZE_SP = 10
+private const val COMPACT_NODE_COUNT_THRESHOLD = 10
+private const val MEDIUM_NODE_COUNT_THRESHOLD = 24
+
 /** 首页状态卡片：纯白卡片、蓝色强调与签到进度。 */
 @Composable
 fun HomeThemeDashboard(
@@ -254,8 +264,11 @@ private fun SigninButton(
         modifier
             .clip(shape)
             .background(Brush.horizontalGradient(listOf(theme.brandAlt, theme.brand)))
-            .border(1.dp, theme.brandAlt.copy(alpha = if (running) 0.28f else 0.46f), shape)
-            .then(if (!running) Modifier.clickableNoRipple(onRun) else Modifier),
+            .border(
+                1.dp,
+                theme.brandAlt.copy(alpha = if (running) RUNNING_BUTTON_BORDER_ALPHA else IDLE_BUTTON_BORDER_ALPHA),
+                shape,
+            ).then(if (!running) Modifier.clickableNoRipple(onRun) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -352,7 +365,7 @@ fun HomeThemeProgressCard(
                 ) {
                     CenteredSparkIcon(Modifier.size(20.dp))
                 }
-                Spacer(Modifier.size(10.dp))
+                Spacer(Modifier.size(TASK_PREVIEW_SPACER_DP.dp))
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         headline,
@@ -403,7 +416,7 @@ fun HomeThemeProgressCard(
 
                 val preview = runProgressTaskPreview(progress.tasks)
                 if (preview.isNotEmpty()) {
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(TASK_PREVIEW_SPACER_DP.dp))
                     ProgressTaskQueuePreview(preview)
                 }
             }
@@ -448,8 +461,8 @@ private fun CenteredSparkIcon(modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val cx = size.width / 2f
         val cy = size.height / 2f
-        val longRadius = size.minDimension * 0.46f
-        val shortRadius = size.minDimension * 0.20f
+        val longRadius = size.minDimension * SPARK_LONG_RADIUS_FRACTION
+        val shortRadius = size.minDimension * SPARK_SHORT_RADIUS_FRACTION
         val path =
             Path().apply {
                 moveTo(cx, cy - longRadius)
@@ -473,8 +486,11 @@ private fun ProgressTaskQueuePreview(tasks: List<RunTaskProgress>) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.20f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = TASK_PREVIEW_OUTLINE_ALPHA),
+                RoundedCornerShape(16.dp),
+            ).padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Text(
             "任务队列",
@@ -511,7 +527,7 @@ private fun ProgressTaskRow(task: RunTaskProgress) {
                         ?.let { " · $it" }
                         .orEmpty(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
+                fontSize = TASK_PREVIEW_TEXT_SIZE_SP.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -585,8 +601,8 @@ private fun StarTrackProgress(
         val centerY = size.height / 2f
         val nodeRadius =
             when {
-                safeTotal <= 10 -> 5.2.dp.toPx()
-                safeTotal <= 24 -> 4.2.dp.toPx()
+                safeTotal <= COMPACT_NODE_COUNT_THRESHOLD -> 5.2.dp.toPx()
+                safeTotal <= MEDIUM_NODE_COUNT_THRESHOLD -> 4.2.dp.toPx()
                 else -> 3.2.dp.toPx()
             }
         val horizontalInset = nodeRadius + 1.dp.toPx()

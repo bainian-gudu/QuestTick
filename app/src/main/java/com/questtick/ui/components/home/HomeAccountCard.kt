@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,10 +23,14 @@ import com.questtick.data.Account
 import com.questtick.data.Games
 import com.questtick.ui.components.AnimatedSwitch
 import com.questtick.ui.components.AccountTagChip
+import com.questtick.ui.components.ACCOUNT_GAME_ICON_LIMIT
 import com.questtick.ui.components.GameIcon
 import com.questtick.ui.components.PanelCard
+import com.questtick.ui.theme.CoinGold
 import com.questtick.ui.theme.SuccessGreen
 import com.questtick.ui.theme.TextSecondary
+
+private const val ACCOUNT_STATUS_SPACING_DP = 6
 
 @Composable
 fun HomeAccountCard(
@@ -74,7 +77,7 @@ fun HomeAccountCard(
                     }
                     if (com.questtick.sign.MysCoinCheckIn.featureEnabled && account.mysCoinEnabled) {
                         Spacer(Modifier.size(8.dp))
-                        AccountTagChip("米游币", color = Color(0xFFE0A22B))
+                        AccountTagChip("米游币", color = CoinGold)
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -85,11 +88,11 @@ fun HomeAccountCard(
                     if (activeGames.isEmpty()) {
                         AccountTagChip("未配置")
                     } else {
-                        activeGames.take(6).forEach { game ->
+                        activeGames.take(ACCOUNT_GAME_ICON_LIMIT).forEach { game ->
                             GameIcon(game, size = 22.dp, corner = 7.dp)
                         }
-                        if (activeGames.size > 6) {
-                            AccountTagChip("+${activeGames.size - 6}", color = TextSecondary)
+                        if (activeGames.size > ACCOUNT_GAME_ICON_LIMIT) {
+                            AccountTagChip("+${activeGames.size - ACCOUNT_GAME_ICON_LIMIT}", color = TextSecondary)
                         }
                     }
                 }
@@ -97,7 +100,7 @@ fun HomeAccountCard(
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(ACCOUNT_STATUS_SPACING_DP.dp),
             ) {
                 AnimatedSwitch(
                     checked = account.enabled,

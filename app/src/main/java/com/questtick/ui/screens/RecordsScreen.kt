@@ -79,6 +79,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+private const val RECORD_LIST_SPACING_DP = 12
+private const val RECORD_TEXT_SIZE_SP = 12
+private const val COLLAPSED_RESULT_LIMIT = 12
+
 private fun formatRecordTime(timestamp: Long): String = formatLocalizedShortDateTime(timestamp)
 
 private const val RECORD_RUN_INITIAL_LIMIT = 24
@@ -187,7 +191,7 @@ fun RecordsScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(RECORD_LIST_SPACING_DP.dp),
         ) {
             item(key = "spacer_top") { Spacer(Modifier.height(8.dp)) }
             item(key = "page_title") {
@@ -300,7 +304,7 @@ fun RecordsScreen(
                                 "正在加载更多记录…",
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 12.sp,
+                                fontSize = RECORD_TEXT_SIZE_SP.sp,
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -392,7 +396,7 @@ private fun RunCard(
             }
         }
     val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
+        targetValue = if (expanded) AppMotion.ARROW_EXPANDED_ROTATION_DEGREES else 0f,
         animationSpec = tween(AppMotion.ARROW_DURATION_MILLIS),
         label = "arrow",
     )
@@ -426,7 +430,7 @@ private fun RunCard(
                             if (resultUnknown > 0) MiniStat("待确认$resultUnknown", WarnAmber)
                         }
                         Spacer(Modifier.size(8.dp))
-                        Text("$resultCount 项任务", fontSize = 12.sp, color = TextSecondary)
+                        Text("$resultCount 项任务", fontSize = RECORD_TEXT_SIZE_SP.sp, color = TextSecondary)
                     }
                 }
                 Spacer(Modifier.size(8.dp))
@@ -463,10 +467,10 @@ private fun RunCard(
                             Icons.Filled.KeyboardArrowDown,
                             contentDescription = localizedText("收起"),
                             tint = TextSecondary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(16.dp).rotate(180f),
+                            modifier = Modifier.size(16.dp).rotate(AppMotion.ARROW_EXPANDED_ROTATION_DEGREES),
                         )
                         Spacer(Modifier.size(4.dp))
-                        Text("收起", fontSize = 12.sp, color = TextSecondary.copy(alpha = 0.6f))
+                        Text("收起", fontSize = RECORD_TEXT_SIZE_SP.sp, color = TextSecondary.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -529,7 +533,7 @@ private fun EmailDeliveryStatusRow(
             text = label,
             modifier = Modifier.weight(1f),
             color = color,
-            fontSize = 12.sp,
+            fontSize = RECORD_TEXT_SIZE_SP.sp,
             fontWeight = FontWeight.Medium,
         )
         if (canRetry) {
@@ -545,7 +549,7 @@ private fun RunResultRows(
     results: List<TaskResult>,
     loadRewardImages: Boolean,
 ) {
-    if (results.size > 12) {
+    if (results.size > COLLAPSED_RESULT_LIMIT) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
         ) {

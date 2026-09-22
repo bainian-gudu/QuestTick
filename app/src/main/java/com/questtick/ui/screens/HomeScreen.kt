@@ -63,7 +63,12 @@ import com.questtick.ui.vm.HomeViewModel
 import kotlinx.coroutines.isActive
 
 // 游戏网格行布局预计算；Games.ALL 是静态列表。
-private val GamesGridRows: List<List<GameInfo>> = Games.ALL.chunked(4)
+private const val GAME_GRID_COLUMNS = 4
+private const val MILLIS_PER_SECOND = 1_000L
+private const val MILLIS_PER_MINUTE = 60_000L
+private const val LATEST_RUN_SKELETON_LINE_COUNT = 4
+
+private val GamesGridRows: List<List<GameInfo>> = Games.ALL.chunked(GAME_GRID_COLUMNS)
 private const val SIGN_IN_COMPLETED_BUTTON_DURATION_MS = 3_000L
 
 private fun formatDay(ts: Long) = formatLocalizedFullDate(ts)
@@ -106,7 +111,7 @@ fun HomeScreen(
         while (isActive) {
             // 先同步当前时间再 delay，确保 Tab 重新可见时第一帧就是准确时间。
             now = System.currentTimeMillis()
-            kotlinx.coroutines.delay(1000)
+            kotlinx.coroutines.delay(MILLIS_PER_SECOND)
         }
     }
 
@@ -130,9 +135,9 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item(key = "home_dashboard", contentType = "dashboard") {
-                val clockText = remember(now / 60_000) { formatClock(now) }
-                val secText = remember(now / 1000) { formatSec(now) }
-                val dayText = remember(now / 60_000) { formatDay(now) }
+                val clockText = remember(now / MILLIS_PER_MINUTE) { formatClock(now) }
+                val secText = remember(now / MILLIS_PER_SECOND) { formatSec(now) }
+                val dayText = remember(now / MILLIS_PER_MINUTE) { formatDay(now) }
                 HomeThemeDashboard(
                     clockText = clockText,
                     secText = secText,
@@ -204,7 +209,7 @@ fun HomeScreen(
                     SkeletonCard(
                         modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
                         titleWidth = 88.dp,
-                        lineCount = 4,
+                        lineCount = LATEST_RUN_SKELETON_LINE_COUNT,
                     )
                 }
             } else if (last != null) {
@@ -322,7 +327,7 @@ private fun GamesGrid(modifier: Modifier = Modifier) {
                 row.forEach { game ->
                     Box(Modifier.weight(1f)) { GameTile(game) }
                 }
-                repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                repeat(GAME_GRID_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

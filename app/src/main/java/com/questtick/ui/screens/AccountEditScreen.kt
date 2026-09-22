@@ -78,6 +78,9 @@ import com.questtick.ui.vm.AddAccountViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val REFRESH_FEEDBACK_DURATION_MS = 1_200L
+private const val REFRESH_BUTTON_RESET_DELAY_MS = 300L
+
 private enum class EditTab(
     val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -174,7 +177,7 @@ fun AccountEditScreen(
 
     LaunchedEffect(cookieRefreshDone, cookieRefreshFailed) {
         if (cookieRefreshDone || cookieRefreshFailed) {
-            delay(1200)
+            delay(REFRESH_FEEDBACK_DURATION_MS)
             cookieRefreshDone = false
             cookieRefreshFailed = false
         }
@@ -182,7 +185,7 @@ fun AccountEditScreen(
 
     LaunchedEffect(genshinTokenRefreshDone, genshinTokenRefreshFailed) {
         if (genshinTokenRefreshDone || genshinTokenRefreshFailed) {
-            delay(1200)
+            delay(REFRESH_FEEDBACK_DURATION_MS)
             genshinTokenRefreshDone = false
             genshinTokenRefreshFailed = false
         }
@@ -190,7 +193,7 @@ fun AccountEditScreen(
 
     LaunchedEffect(starrailTokenRefreshDone, starrailTokenRefreshFailed) {
         if (starrailTokenRefreshDone || starrailTokenRefreshFailed) {
-            delay(1200)
+            delay(REFRESH_FEEDBACK_DURATION_MS)
             starrailTokenRefreshDone = false
             starrailTokenRefreshFailed = false
         }
@@ -323,7 +326,7 @@ fun AccountEditScreen(
                                             refreshingCookie = true
                                             action(currentDraftAccount()) { success ->
                                                 refreshScope.launch {
-                                                    delay(300)
+                                                    delay(REFRESH_BUTTON_RESET_DELAY_MS)
                                                     refreshingCookie = false
                                                     cookieRefreshDone = success
                                                     cookieRefreshFailed = !success
@@ -368,7 +371,7 @@ fun AccountEditScreen(
                                                     refreshingGenshinToken = true
                                                     action(gameKey, currentDraftAccount()) { success ->
                                                         refreshScope.launch {
-                                                            delay(300)
+                                                            delay(REFRESH_BUTTON_RESET_DELAY_MS)
                                                             refreshingGenshinToken = false
                                                             genshinTokenRefreshDone = success
                                                             genshinTokenRefreshFailed = !success
@@ -387,7 +390,7 @@ fun AccountEditScreen(
                                                     refreshingStarrailToken = true
                                                     action(gameKey, currentDraftAccount()) { success ->
                                                         refreshScope.launch {
-                                                            delay(300)
+                                                            delay(REFRESH_BUTTON_RESET_DELAY_MS)
                                                             refreshingStarrailToken = false
                                                             starrailTokenRefreshDone = success
                                                             starrailTokenRefreshFailed = !success

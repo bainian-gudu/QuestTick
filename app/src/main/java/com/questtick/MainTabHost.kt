@@ -58,6 +58,8 @@ import com.questtick.ui.vm.LogsViewModel
 import com.questtick.ui.vm.RecordsViewModel
 import com.questtick.ui.vm.SettingsViewModel
 
+private const val TAB_SELECTION_THRESHOLD = 0.5f
+
 internal enum class Tab(
     val label: String,
     val icon: ImageVector,
@@ -170,7 +172,7 @@ internal fun GalaxyBottomBar(
         ) {
             Tab.entries.forEachIndexed { index, t ->
                 val selectionFraction = pagerSelectionFraction(index, visualPosition)
-                val selected = selectionFraction > 0.5f
+                val selected = selectionFraction > TAB_SELECTION_THRESHOLD
                 val indicatorWidth = 22.dp * selectionFraction
                 val tint = lerp(appTheme.textSecondary, appTheme.brand, selectionFraction)
 
