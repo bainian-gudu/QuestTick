@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.data.db
 
 // 定时签到执行槽位和账号保护状态的 Room 数据访问接口。

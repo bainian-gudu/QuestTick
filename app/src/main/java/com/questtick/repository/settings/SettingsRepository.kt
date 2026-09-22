@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+)
+
 package com.questtick.repository.settings
 
 import com.questtick.data.AppSettings

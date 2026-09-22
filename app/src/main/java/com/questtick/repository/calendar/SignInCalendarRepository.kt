@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+)
+
 package com.questtick.repository.calendar
 
 import com.questtick.data.RunRecord

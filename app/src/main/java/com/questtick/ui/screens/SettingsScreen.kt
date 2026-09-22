@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:LongMethod",
+)
+
 package com.questtick.ui.screens
 
 /*

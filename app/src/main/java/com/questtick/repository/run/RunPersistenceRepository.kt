@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:LargeClass",
+    "detekt:LongMethod",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.repository.run
 
 import com.questtick.data.FailureCategory

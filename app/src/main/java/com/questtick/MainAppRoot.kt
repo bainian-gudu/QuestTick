@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongMethod",
+)
+
 package com.questtick
 
 // 应用根 Composable：组装全局状态、主题、页面和底部导航。

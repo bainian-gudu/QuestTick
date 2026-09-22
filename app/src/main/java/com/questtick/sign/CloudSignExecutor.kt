@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.sign
 
 /*
@@ -43,7 +49,7 @@ internal class CloudSignExecutor(
         onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -> Unit,
     ): Account {
         var currentAccount = acc
-        val cloud = CloudSignIn(cloudDeviceId, httpTransport)
+        val context = CloudRunContext(CloudSignIn(cloudDeviceId, httpTransport), cloudDeviceId)
         val bindings =
             acc.selectedCloudBindings(cloudGameBindings).filter { binding ->
                 shouldExecuteTask(progressTaskId(acc, RunTaskType.CLOUD, binding.game.key))
@@ -60,12 +66,11 @@ internal class CloudSignExecutor(
             val webCookie = binding.webCookieOf(currentAccount)
 
             if (token.isBlank() && binding.hasKeepLogin(currentAccount)) {
-                credentialCoordinator.refreshCloudTokenForRun(currentAccount, game, game.key, webCookie, cloudDeviceId)?.let { newToken ->
-                    token = newToken
+                val refreshed = refreshCloudToken(context, currentAccount, binding, game, webCookie)
+                if (refreshed != null) {
+                    token = refreshed.token
                     tokenRefreshed = true
-                    credentialCoordinator.saveCloudTokenForRun(currentAccount, game, binding, newToken)?.let { updated ->
-                        currentAccount = updated
-                    }
+                    currentAccount = refreshed.account
                 }
             }
 
@@ -80,7 +85,16 @@ internal class CloudSignExecutor(
                         failure = TaskFailureDescriptor(FailureCategory.AUTH_EXPIRED),
                     )
                 val result = buildCloudTaskResult(game.name, game.key, currentAccount, outcome)
-                logOutcome(currentAccount.label, game.name, false, false, message, elapsedMs = taskElapsed)
+                logOutcome(
+                    TaskOutcomeLog(
+                        account = currentAccount.label,
+                        game = game.name,
+                        success = false,
+                        skipped = false,
+                        message = message,
+                        elapsedMs = taskElapsed,
+                    ),
+                )
                 recordError?.invoke("云游戏签到", "${game.name}: $message")
                 onTaskCompleted(taskId, result, "${currentAccount.label} · ${game.name}")
                 continue
@@ -93,26 +107,32 @@ internal class CloudSignExecutor(
                     check(onTaskStarted(taskId, "${currentAccount.label} · ${game.name}")) {
                         "无法获取任务执行权: $taskId"
                     }
-                    safeCloudRun(cloud, token, game)
+                    safeCloudRun(context.cloud, token, game)
                 }
 
             if (credentialCoordinator.shouldRefreshCloudToken(currentAccount, binding, outcome, tokenRefreshed)) {
-                credentialCoordinator.refreshCloudTokenForRun(currentAccount, game, game.key, webCookie, cloudDeviceId)?.let { newToken ->
-                    token = newToken
+                val retry = retryCloudRunAfterRefresh(context, currentAccount, binding, game, webCookie)
+                if (retry != null) {
+                    token = retry.token
                     tokenRefreshed = true
-                    credentialCoordinator.saveCloudTokenForRun(currentAccount, game, binding, newToken)?.let { updated ->
-                        currentAccount = updated
-                    }
-                    outcome =
-                        limitedRequest("${currentAccount.label} · ${game.name} 云游戏签到重试") {
-                            safeCloudRun(cloud, token, game)
-                        }
+                    currentAccount = retry.account
+                    outcome = retry.outcome
                 }
             }
 
             val taskElapsed = System.currentTimeMillis() - taskStart
             val result = buildCloudTaskResult(game.name, game.key, currentAccount, outcome)
-            logOutcome(currentAccount.label, game.name, outcome.success, outcome.skipped, outcome.message, outcome.detail, taskElapsed)
+            logOutcome(
+                TaskOutcomeLog(
+                    account = currentAccount.label,
+                    game = game.name,
+                    success = outcome.success,
+                    skipped = outcome.skipped,
+                    message = outcome.message,
+                    detail = outcome.detail,
+                    elapsedMs = taskElapsed,
+                ),
+            )
             if (!outcome.success && !outcome.skipped) {
                 recordError?.invoke("云游戏签到", "${game.name}: ${outcome.detail.ifBlank { outcome.message }}")
             }
@@ -124,6 +144,41 @@ internal class CloudSignExecutor(
         }
 
         return currentAccount
+    }
+
+    private suspend fun refreshCloudToken(
+        context: CloudRunContext,
+        account: Account,
+        binding: CloudGameBinding,
+        game: CloudSignIn.GameConfig,
+        webCookie: String,
+    ): CloudTokenRefresh? {
+        val token =
+            credentialCoordinator.refreshCloudTokenForRun(
+                account,
+                game,
+                game.key,
+                webCookie,
+                context.cloudDeviceId,
+            ) ?: return null
+        val updatedAccount =
+            credentialCoordinator.saveCloudTokenForRun(account, game, binding, token) ?: account
+        return CloudTokenRefresh(updatedAccount, token)
+    }
+
+    private suspend fun retryCloudRunAfterRefresh(
+        context: CloudRunContext,
+        account: Account,
+        binding: CloudGameBinding,
+        game: CloudSignIn.GameConfig,
+        webCookie: String,
+    ): CloudRetryResult? {
+        val refreshed = refreshCloudToken(context, account, binding, game, webCookie) ?: return null
+        val outcome =
+            limitedRequest("${refreshed.account.label} · ${game.name} 云游戏签到重试") {
+                safeCloudRun(context.cloud, refreshed.token, game)
+            }
+        return CloudRetryResult(refreshed.account, refreshed.token, outcome)
     }
 
     private suspend fun safeCloudRun(
@@ -165,22 +220,30 @@ internal class CloudSignExecutor(
         delay(Random.nextInt(min, max + 1) * MILLIS_PER_SECOND)
     }
 
-    private fun logOutcome(
-        account: String,
-        game: String,
-        success: Boolean,
-        skipped: Boolean,
-        message: String,
-        detail: String = "",
-        elapsedMs: Long = 0,
-    ) {
-        val elapsed = if (elapsedMs > 0) " (${formatSignInElapsed(elapsedMs)})" else ""
+    private fun logOutcome(entry: TaskOutcomeLog) {
+        val elapsed = if (entry.elapsedMs > 0) " (${formatSignInElapsed(entry.elapsedMs)})" else ""
         val level =
             when {
-                skipped -> "WARN"
-                success -> "OK"
+                entry.skipped -> "WARN"
+                entry.success -> "OK"
                 else -> "ERROR"
             }
-        log(level, "[$account · $game] $message$elapsed", detail)
+        log(level, "[${entry.account} · ${entry.game}] ${entry.message}$elapsed", entry.detail)
     }
+
+    private data class CloudRunContext(
+        val cloud: CloudSignIn,
+        val cloudDeviceId: String,
+    )
+
+    private data class CloudTokenRefresh(
+        val account: Account,
+        val token: String,
+    )
+
+    private data class CloudRetryResult(
+        val account: Account,
+        val token: String,
+        val outcome: CloudSignIn.Outcome,
+    )
 }

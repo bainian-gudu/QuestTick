@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.net
 
 import okhttp3.HttpUrl

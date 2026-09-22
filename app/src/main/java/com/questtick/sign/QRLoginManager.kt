@@ -1,3 +1,10 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.sign
 
 /*

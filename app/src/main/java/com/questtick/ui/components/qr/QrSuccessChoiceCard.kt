@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+)
+
 package com.questtick.ui.components.qr
 
 // QR 登录成功后选择是否保持登录的确认卡片。

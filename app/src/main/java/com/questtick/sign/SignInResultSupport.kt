@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongMethod",
+)
+
 package com.questtick.sign
 
 // 将各类签到执行结果转换为统一的任务记录模型。

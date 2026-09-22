@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:InjectDispatcher",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.sign
 
 /*

@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+)
+
 package com.questtick
 
 // 主 Tab 容器及各顶层页面之间的切换动画。

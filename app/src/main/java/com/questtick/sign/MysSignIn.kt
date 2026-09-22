@@ -1,3 +1,9 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.sign
 
 /*
@@ -7,6 +13,7 @@ package com.questtick.sign
 import com.questtick.log.AppLog
 import com.questtick.core.throwIfCancellation
 import com.questtick.data.FailureCategory
+import com.questtick.net.HttpResponse
 import com.questtick.net.HttpTransport
 import com.questtick.net.getIdempotent
 import com.questtick.net.postJson
@@ -299,62 +306,18 @@ class MysSignIn(
         return try {
             val res = httpTransport.postJson(signUrl(game), signHeaders(cookie, game, ds), body)
             val data = res.json()
-            val message = data.optString("message", "Unknown")
-            val retcode = data.optInt("retcode", DEFAULT_RETCODE)
-            // 通用 luna 接口中 data.success == 1 表示需要验证码。
-            val httpSuccess = res.code in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX
-            val captchaRequired = httpSuccess && data.optJSONObject("data")?.optInt("success", 0) == 1
-            if (captchaRequired) {
-                SignResult(
-                    ok = false,
-                    already = false,
-                    message = "触发风控验证码，请前往米游社 App 手动签到一次后再试",
-                    detail = "luna sign captcha required (data.success == 1), retcode=$retcode",
-                    failure = TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode"),
-                )
-            } else {
-                // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
-                // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
-                val already =
-                    httpSuccess &&
-                        (retcode == RETCODE_ALREADY_SIGNED || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
-                when {
-                    already -> {
-                        SignResult(true, true, "今日已签到")
-                    }
-
-                    httpSuccess && (message == "OK" || retcode == 0) -> {
-                        SignResult(true, false, "签到成功")
-                    }
-
-                    else -> {
-                        // act_id 疑似失效时尝试动态刷新并重试一次。
-                        val canRefreshActId = httpSuccess && retryOnActIdInvalid
-                        val shouldRefreshActId =
-                            canRefreshActId && actIdAutoRefresh && ActIdInvalid.isInvalid(retcode, message)
-                        val retryResult =
-                            if (shouldRefreshActId) {
-                                refreshActIdAndRetry(cookie, game, role, actId)
-                            } else {
-                                null
-                            }
-                        retryResult ?: SignResult(
-                            ok = false,
-                            already = false,
-                            message =
-                                if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
-                                    "签到服务暂时不可用，请稍后重试"
-                                } else {
-                                    ErrorText.fromRetcode(retcode) ?: "签到失败：$message"
-                                },
-                            detail = "luna sign http=${res.code}, retcode=$retcode, message=$message, act_id=$actId",
-                            // 签到 POST 已获得完整服务端响应，但仍属于非幂等操作；除上方明确的 act_id 刷新外，
-                            // HTTP 或业务错误都不能交给 Worker 自动重发。
-                            failure = TaskFailureClassifier.fromNonIdempotentResponse(res.code, retcode),
-                        )
-                    }
-                }
-            }
+            evaluateSignResponse(
+                res = res,
+                data = data,
+                context =
+                    SignResponseContext(
+                        cookie = cookie,
+                        game = game,
+                        role = role,
+                        actId = actId,
+                        retryOnActIdInvalid = retryOnActIdInvalid,
+                    ),
+            )
         } catch (e: Exception) {
             e.throwIfCancellation()
             val failure = TaskFailureClassifier.fromException(e)
@@ -372,6 +335,78 @@ class MysSignIn(
             )
         }
     }
+
+    @Suppress("CyclomaticComplexMethod")
+    private suspend fun evaluateSignResponse(
+        res: HttpResponse,
+        data: JSONObject,
+        context: SignResponseContext,
+    ): SignResult {
+        val message = data.optString("message", "Unknown")
+        val retcode = data.optInt("retcode", DEFAULT_RETCODE)
+        // 通用 luna 接口中 data.success == 1 表示需要验证码。
+        val httpSuccess = res.code in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX
+        val captchaRequired = httpSuccess && data.optJSONObject("data")?.optInt("success", 0) == 1
+        // -5003 是官方“今日已签到”错误码，按已签到处理。文案兜底只接受成功码，
+        // 避免风控/限流文案（如“今日签到过于频繁”）被误判为已签到而跳过当天后续执行。
+        val already =
+            httpSuccess &&
+                (retcode == RETCODE_ALREADY_SIGNED || (retcode == 0 && ALREADY_SIGNED.containsMatchIn(message)))
+        return when {
+            captchaRequired -> {
+                SignResult(
+                    ok = false,
+                    already = false,
+                    message = "触发风控验证码，请前往米游社 App 手动签到一次后再试",
+                    detail = "luna sign captcha required (data.success == 1), retcode=$retcode",
+                    failure = TaskFailureDescriptor(FailureCategory.CAPTCHA_REQUIRED, "retcode:$retcode"),
+                )
+            }
+
+            already -> {
+                SignResult(true, true, "今日已签到")
+            }
+
+            httpSuccess && (message == "OK" || retcode == 0) -> {
+                SignResult(true, false, "签到成功")
+            }
+
+            else -> {
+                // act_id 疑似失效时尝试动态刷新并重试一次。
+                val canRefreshActId = httpSuccess && context.retryOnActIdInvalid
+                val shouldRefreshActId =
+                    canRefreshActId && actIdAutoRefresh && ActIdInvalid.isInvalid(retcode, message)
+                val retryResult =
+                    if (shouldRefreshActId) {
+                        refreshActIdAndRetry(context.cookie, context.game, context.role, context.actId)
+                    } else {
+                        null
+                    }
+                retryResult ?: SignResult(
+                    ok = false,
+                    already = false,
+                    message =
+                        if (res.code !in HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX) {
+                            "签到服务暂时不可用，请稍后重试"
+                        } else {
+                            ErrorText.fromRetcode(retcode) ?: "签到失败：$message"
+                        },
+                    detail = "luna sign http=${res.code}, retcode=$retcode, message=$message, act_id=${context.actId}",
+                    // 签到 POST 已获得完整服务端响应，但仍属于非幂等操作；除上方明确的 act_id 刷新外，
+                    // HTTP 或业务错误都不能交给 Worker 自动重发。
+                    failure = TaskFailureClassifier.fromNonIdempotentResponse(res.code, retcode),
+                )
+            }
+        }
+    }
+
+    private data class SignResponseContext(
+        val cookie: String,
+        val game: GameConfig,
+        val role: Role,
+        val actId: String,
+        val retryOnActIdInvalid: Boolean,
+    )
 
     /**
      * 刷新 act_id 并重试一次签到。

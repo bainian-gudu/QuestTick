@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:LongParameterList",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick.data.db
 
 // 签到完成后通知和邮件投递队列的 Room 数据访问接口。

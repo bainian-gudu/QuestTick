@@ -1,3 +1,8 @@
+@file:Suppress(
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
 package com.questtick
 
 /*

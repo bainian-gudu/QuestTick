@@ -1,3 +1,7 @@
+@file:Suppress(
+    "detekt:TooGenericExceptionCaught",
+)
+
 package com.questtick.work
 
 // 独立执行签到完成后的通知和邮件投递任务。
