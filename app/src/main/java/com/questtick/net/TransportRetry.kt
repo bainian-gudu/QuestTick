@@ -266,9 +266,10 @@ internal object TransportFailures {
         request: Request,
         policy: TransportRetryPolicy,
         attemptsUsed: Int,
-    ): Boolean {
-        if (policy != TransportRetryPolicy.IDEMPOTENT_READ || attemptsUsed >= policy.maxAttempts) return false
-        if (request.method !in setOf("GET", "HEAD")) return false
-        return failure is TransportFailureException && failure.retryableForIdempotentRead
-    }
+    ): Boolean =
+        policy == TransportRetryPolicy.IDEMPOTENT_READ &&
+            attemptsUsed < policy.maxAttempts &&
+            request.method in setOf("GET", "HEAD") &&
+            failure is TransportFailureException &&
+            failure.retryableForIdempotentRead
 }

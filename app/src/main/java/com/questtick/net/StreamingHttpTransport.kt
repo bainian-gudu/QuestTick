@@ -39,22 +39,26 @@ class HttpResponseStream internal constructor(
         byteCount: Int,
     ): Int {
         require(offset >= 0 && byteCount >= 0 && offset + byteCount <= buffer.size) { "invalid buffer range" }
-        if (byteCount == 0) return 0
-        val remaining = maxResponseBytes.toLong() - bytesRead
-        if (remaining <= 0L) {
-            val probe = input.read()
-            if (probe >= 0) throw ResponseTooLargeException(maxResponseBytes)
-            return -1
-        }
-        val allowed = minOf(byteCount.toLong(), remaining).toInt()
-        val read =
-            try {
-                input.read(buffer, offset, allowed)
-            } catch (error: IOException) {
-                throw HttpResponseReadException(error)
+        return if (byteCount == 0) {
+            0
+        } else {
+            val remaining = maxResponseBytes.toLong() - bytesRead
+            if (remaining <= 0L) {
+                val probe = input.read()
+                if (probe >= 0) throw ResponseTooLargeException(maxResponseBytes)
+                -1
+            } else {
+                val allowed = minOf(byteCount.toLong(), remaining).toInt()
+                val read =
+                    try {
+                        input.read(buffer, offset, allowed)
+                    } catch (error: IOException) {
+                        throw HttpResponseReadException(error)
+                    }
+                if (read > 0) bytesRead += read
+                read
             }
-        if (read > 0) bytesRead += read
-        return read
+        }
     }
 
     fun copyTo(

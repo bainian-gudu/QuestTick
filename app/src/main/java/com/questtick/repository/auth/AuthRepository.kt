@@ -31,16 +31,20 @@ class AuthRepository
 
         fun checkCookieHealth(account: Account): CredentialHealth {
             val cookie = account.mysCookie.trim()
-            if (cookie.isBlank()) return CredentialHealth(CredentialState.EXPIRED, "未填写 Cookie")
-            val lower = cookie.lowercase()
-            val missing = mutableListOf<String>()
-            if (!lower.contains("cookie_token")) missing.add("cookie_token")
-            if (!lower.contains("account_id")) missing.add("account_id")
-            if (cookie.length < MIN_COOKIE_LENGTH) missing.add("长度过短(${cookie.length}字符)")
-            if (missing.isNotEmpty()) {
-                return CredentialHealth(CredentialState.EXPIRING, "Cookie 可能不完整：缺少${missing.joinToString("、")}")
+            return if (cookie.isBlank()) {
+                CredentialHealth(CredentialState.EXPIRED, "未填写 Cookie")
+            } else {
+                val lower = cookie.lowercase()
+                val missing = mutableListOf<String>()
+                if (!lower.contains("cookie_token")) missing.add("cookie_token")
+                if (!lower.contains("account_id")) missing.add("account_id")
+                if (cookie.length < MIN_COOKIE_LENGTH) missing.add("长度过短(${cookie.length}字符)")
+                if (missing.isNotEmpty()) {
+                    CredentialHealth(CredentialState.EXPIRING, "Cookie 可能不完整：缺少${missing.joinToString("、")}")
+                } else {
+                    CredentialHealth(CredentialState.VALID)
+                }
             }
-            return CredentialHealth(CredentialState.VALID)
         }
 
         fun parseLoginCookies(

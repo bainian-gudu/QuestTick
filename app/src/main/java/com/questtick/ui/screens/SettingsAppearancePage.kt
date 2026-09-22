@@ -741,26 +741,27 @@ private fun percent(value: Float): Int = (value * PERCENT_MAX).roundToInt()
 
 /** 使用标准 HSL 公式转换，保证保存后的 HEX 与预览颜色一致。 */
 private fun hexToHsl(hex: String): HslColor {
-    if (hex.isBlank()) return HslColor(DEFAULT_THEME_HUE, DEFAULT_THEME_SATURATION, DEFAULT_THEME_LIGHTNESS)
-    val color =
-        runCatching { android.graphics.Color.parseColor(hex) }.getOrNull()
-            ?: return HslColor(DEFAULT_THEME_HUE, DEFAULT_THEME_SATURATION, DEFAULT_THEME_LIGHTNESS)
+    val color = if (hex.isBlank()) null else runCatching { android.graphics.Color.parseColor(hex) }.getOrNull()
+    if (color == null) return HslColor(DEFAULT_THEME_HUE, DEFAULT_THEME_SATURATION, DEFAULT_THEME_LIGHTNESS)
     val r = android.graphics.Color.red(color) / COLOR_CHANNEL_MAX
     val g = android.graphics.Color.green(color) / COLOR_CHANNEL_MAX
     val b = android.graphics.Color.blue(color) / COLOR_CHANNEL_MAX
     val max = maxOf(r, g, b)
     val min = minOf(r, g, b)
     val lightness = (max + min) / 2f
-    if (max == min) return HslColor(0f, 0f, lightness)
-    val delta = max - min
-    val saturation = delta / (1f - kotlin.math.abs(2f * lightness - 1f))
-    val hue =
-        when (max) {
-            r -> HSL_HUE_SECTOR_DEGREES * (((g - b) / delta) % HSL_HUE_SECTOR_COUNT)
-            g -> HSL_HUE_SECTOR_DEGREES * (((b - r) / delta) + 2f)
-            else -> HSL_HUE_SECTOR_DEGREES * (((r - g) / delta) + HSL_HUE_BLUE_OFFSET)
-        }.let { if (it < 0f) it + HSL_HUE_MAX else it }
-    return HslColor(hue, saturation, lightness)
+    return if (max == min) {
+        HslColor(0f, 0f, lightness)
+    } else {
+        val delta = max - min
+        val saturation = delta / (1f - kotlin.math.abs(2f * lightness - 1f))
+        val hue =
+            when (max) {
+                r -> HSL_HUE_SECTOR_DEGREES * (((g - b) / delta) % HSL_HUE_SECTOR_COUNT)
+                g -> HSL_HUE_SECTOR_DEGREES * (((b - r) / delta) + 2f)
+                else -> HSL_HUE_SECTOR_DEGREES * (((r - g) / delta) + HSL_HUE_BLUE_OFFSET)
+            }.let { if (it < 0f) it + HSL_HUE_MAX else it }
+        HslColor(hue, saturation, lightness)
+    }
 }
 
 private fun hslToHex(value: HslColor): String {

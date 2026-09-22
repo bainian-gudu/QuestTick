@@ -49,8 +49,9 @@ object AppUpdateInstaller {
     ): File? {
         if (info.hasUpdate && !TrustedUrlPolicy.isUpdateAssetUrl(info.apkUrl)) return null
         val target = targetFile(context, info)
-        if (!target.exists() || target.length() <= 0L) return null
-        return if (isApkValidForUpdate(context.applicationContext, info, target)) {
+        return if (!target.exists() || target.length() <= 0L) {
+            null
+        } else if (isApkValidForUpdate(context.applicationContext, info, target)) {
             target
         } else {
             target.delete()
