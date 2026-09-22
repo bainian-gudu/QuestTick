@@ -58,10 +58,8 @@ object Passport {
     }
 
     fun extractPassportId(value: String?): String {
-        if (value.isNullOrEmpty()) return ""
-        val text = value.trim()
-        if (isLikelyPassportId(text)) return text
-        return extractFromKeyValueText(text)
+        val text = value?.trim().orEmpty()
+        return if (isLikelyPassportId(text)) text else extractFromKeyValueText(text)
     }
 
     /** UID 脱敏示例：123456789 -> 123****789。 */
