@@ -1,11 +1,53 @@
 package com.questtick.sign
 
+import com.questtick.net.FakeHttpTransport
+import com.questtick.net.HttpResponse
+import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CloudComboTokenTest {
+    @Test
+    fun createQRCodeReturnsTicketAndUrl() =
+        runTest {
+            val transport =
+                FakeHttpTransport { request ->
+                    assertEquals(
+                        "https://passport-api.mihoyo.com/account/ma-cn-passport/web/createQRLogin",
+                        request.url,
+                    )
+                    HttpResponse.text(200, """{"retcode":0,"data":{"ticket":"ticket","url":"https://qr.example"}}""")
+                }
+
+            val qrCode = CloudQRLogin.createQRCode("CloudYS", "device", transport).getOrThrow()
+
+            assertEquals("ticket", qrCode.ticket)
+            assertEquals("https://qr.example", qrCode.url)
+        }
+
+    @Test
+    fun exchangeComboTokenBuildsToken() =
+        runTest {
+            val transport =
+                FakeHttpTransport { request ->
+                    assertEquals(
+                        "https://hk4e-sdk.mihoyo.com/hk4e_cn/combo/granter/login/webLogin",
+                        request.url,
+                    )
+                    HttpResponse.text(
+                        200,
+                        """{"retcode":0,"data":{"app_id":"4","channel_id":"1","open_id":"open_id","combo_token":"combo_token"}}""",
+                    )
+                }
+
+            val token = CloudQRLogin.exchangeComboToken("CloudYS", "cookie=value", "device", transport).getOrThrow()
+
+            assertTrue(token.startsWith("ai=4;ci=1;oi=open_id;ct=combo_token;"))
+            assertTrue(token.endsWith(";bi=hk4e_cn"))
+        }
+
     @Test
     fun buildWebComboTokenSignsGenshinPayload() {
         val token =
