@@ -1,5 +1,8 @@
 package com.questtick.sign
 
+import com.questtick.net.FakeHttpTransport
+import com.questtick.net.HttpResponse
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -79,6 +82,68 @@ class ActIdTest {
                 """"https://evil.example/bbs/event/signin/hk4e/?act_id=e202311201442471"}]}}"""
         assertNull(ActId.parseFromNavigation(mismatch, "Genshin"))
     }
+
+    @Test
+    fun `fetch latest prefers navigation act id`() =
+        runTest {
+            val game = testGame()
+            val navigationUrl = "https://bbs-api.miyoushe.com/apihub/api/home/new?gids=2"
+            val body =
+                """{"retcode":0,"data":{"navigator":[{"app_path":""" +
+                    """"https://act.mihoyo.com/bbs/event/signin/hk4e/index.html?act_id=e202311201442471"}]}}"""
+            val transport =
+                FakeHttpTransport { request ->
+                    assertEquals(navigationUrl, request.url)
+                    HttpResponse.text(200, body, finalUrl = navigationUrl)
+                }
+
+            assertEquals("e202311201442471", ActId.fetchLatest(game, transport))
+            assertEquals(1, transport.requests.size)
+        }
+
+    @Test
+    fun `fetch latest falls back to activity scripts`() =
+        runTest {
+            val game = testGame()
+            val navigationUrl = "https://bbs-api.miyoushe.com/apihub/api/home/new?gids=2"
+            val scriptUrl = "https://act.mihoyo.com/js/signin.js"
+            val html = """<html><script src="/js/signin.js"></script></html>"""
+            val transport =
+                FakeHttpTransport { request ->
+                    when (request.url) {
+                        navigationUrl -> {
+                            HttpResponse.text(200, """{"retcode":0,"data":{"navigator":[]}}""", finalUrl = navigationUrl)
+                        }
+
+                        game.actPage -> {
+                            HttpResponse.text(200, html, finalUrl = game.actPage)
+                        }
+
+                        scriptUrl -> {
+                            assertEquals(game.actPage, request.headers["Referer"])
+                            HttpResponse.text(200, """var act_id = "e202406242138391";""", finalUrl = scriptUrl)
+                        }
+
+                        else -> {
+                            error("unexpected request: ${request.url}")
+                        }
+                    }
+                }
+
+            assertEquals("e202406242138391", ActId.fetchLatest(game, transport))
+            assertEquals(listOf(navigationUrl, game.actPage, scriptUrl), transport.requests.map { it.url })
+        }
+
+    private fun testGame(): MysSignIn.GameConfig =
+        MysSignIn.GameConfig(
+            key = "Genshin",
+            name = "原神",
+            gameBiz = "hk4e_cn",
+            actId = "e202311201442471",
+            signgame = "hk4e_cn",
+            defaultRegion = "cn_gf01",
+            actPage = "https://act.mihoyo.com/bbs/event/signin/hk4e/index.html",
+        )
 }
 
 class ActIdInvalidTest {
