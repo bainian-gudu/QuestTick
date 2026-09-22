@@ -235,21 +235,37 @@ internal object MysCoinCheckIn {
         fun scan(
             value: Any?,
             depth: Int,
-        ): Int? {
-            if (depth > STATE_SCAN_MAX_DEPTH || value == null) return null
-            if (value is JSONObject) {
-                wanted.forEach { key ->
-                    if (value.has(key) && !value.isNull(key)) {
-                        value.optInt(key, Int.MIN_VALUE).takeIf { it != Int.MIN_VALUE }?.let { return it }
+        ): Int? =
+            if (depth > STATE_SCAN_MAX_DEPTH || value == null) {
+                null
+            } else {
+                when (value) {
+                    is JSONObject -> {
+                        val direct =
+                            wanted.firstNotNullOfOrNull { key ->
+                                if (value.has(key) && !value.isNull(key)) {
+                                    value.optInt(key, Int.MIN_VALUE).takeIf { it != Int.MIN_VALUE }
+                                } else {
+                                    null
+                                }
+                            }
+                        direct
+                            ?: value
+                                .keys()
+                                .asSequence()
+                                .firstNotNullOfOrNull { key -> scan(value.opt(key), depth + 1) }
+                    }
+
+                    is org.json.JSONArray -> {
+                        (0 until value.length()).firstNotNullOfOrNull { index -> scan(value.opt(index), depth + 1) }
+                    }
+
+                    else -> {
+                        null
                     }
                 }
-                val iterator = value.keys()
-                while (iterator.hasNext()) scan(value.opt(iterator.next()), depth + 1)?.let { return it }
-            } else if (value is org.json.JSONArray) {
-                for (index in 0 until value.length()) scan(value.opt(index), depth + 1)?.let { return it }
             }
-            return null
-        }
+
         return scan(json, 0)
     }
 
@@ -290,19 +306,6 @@ internal object MysCoinCheckIn {
                 v2Ltmid.isNotBlank() &&
                 v2Account.isNotBlank() &&
                 sameIdentity(v2Account, uid.trim())
-        if (v2Complete) {
-            return CookieBuildResult(
-                cookie =
-                    listOf(
-                        "stoken_v2=$v2Stoken",
-                        "mid=$v2Mid",
-                        "ltoken_v2=$v2Ltoken",
-                        "ltmid_v2=$v2Ltmid",
-                        "account_id_v2=$v2Account",
-                    ).joinToString("; "),
-                detail = "",
-            )
-        }
 
         val v1Stoken = value("stoken").ifBlank { stoken.trim() }
         val v1Mid = value("mid", "stmid").ifBlank { mid.trim() }
@@ -317,19 +320,6 @@ internal object MysCoinCheckIn {
                 v1Account.isNotBlank() &&
                 sameIdentity(v1Stuid, v1Account) &&
                 sameIdentity(v1Account, uid.trim())
-        if (v1Complete) {
-            return CookieBuildResult(
-                cookie =
-                    listOf(
-                        "stoken=$v1Stoken",
-                        "mid=$v1Mid",
-                        "stuid=$v1Stuid",
-                        "ltoken=$v1Ltoken",
-                        "account_id=$v1Account",
-                    ).joinToString("; "),
-                detail = "",
-            )
-        }
         val v2Missing =
             buildList {
                 if (v2Stoken.isBlank()) add("stoken_v2")
@@ -358,13 +348,45 @@ internal object MysCoinCheckIn {
                     add("V1 account_id 与保存 UID 不一致")
                 }
             }
-        return CookieBuildResult(
-            cookie = null,
-            detail =
-                "V2 Cookie 不完整：missing=[${v2Missing.joinToString(", ")}]; " +
-                    "尝试回退 V1；V1 Cookie 不完整：missing=[${v1Missing.joinToString(", ")}]" +
-                    conflicts.takeIf { it.isNotEmpty() }?.let { "；身份冲突：${it.joinToString("、")}" }.orEmpty(),
-        )
+        return when {
+            v2Complete -> {
+                CookieBuildResult(
+                    cookie =
+                        listOf(
+                            "stoken_v2=$v2Stoken",
+                            "mid=$v2Mid",
+                            "ltoken_v2=$v2Ltoken",
+                            "ltmid_v2=$v2Ltmid",
+                            "account_id_v2=$v2Account",
+                        ).joinToString("; "),
+                    detail = "",
+                )
+            }
+
+            v1Complete -> {
+                CookieBuildResult(
+                    cookie =
+                        listOf(
+                            "stoken=$v1Stoken",
+                            "mid=$v1Mid",
+                            "stuid=$v1Stuid",
+                            "ltoken=$v1Ltoken",
+                            "account_id=$v1Account",
+                        ).joinToString("; "),
+                    detail = "",
+                )
+            }
+
+            else -> {
+                CookieBuildResult(
+                    cookie = null,
+                    detail =
+                        "V2 Cookie 不完整：missing=[${v2Missing.joinToString(", ")}]; " +
+                            "尝试回退 V1；V1 Cookie 不完整：missing=[${v1Missing.joinToString(", ")}]" +
+                            conflicts.takeIf { it.isNotEmpty() }?.let { "；身份冲突：${it.joinToString("、")}" }.orEmpty(),
+                )
+            }
+        }
     }
 
     private data class CookieBuildResult(

@@ -180,7 +180,6 @@
     <ID>NestedBlockDepth:CloudSignExecutor.kt$CloudSignExecutor$suspend fun runAccount( acc: Account, cloudGameBindings: List&lt;CloudGameBinding&gt;, cloudDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>NestedBlockDepth:CloudSignIn.kt$CloudSignIn$private suspend fun listNotifications( game: GameConfig, token: String, version: String, clientType: String, ): Notifications</ID>
     <ID>NestedBlockDepth:CloudSignIn.kt$CloudSignIn$private suspend fun runWithVersion( token: String, game: GameConfig, version: String, ): Outcome</ID>
-    <ID>NestedBlockDepth:MysCoinCheckIn.kt$MysCoinCheckIn$private fun findInt( json: JSONObject, vararg keys: String, ): Int?</ID>
     <ID>NestedBlockDepth:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>NestedBlockDepth:MysSignIn.kt$MysSignIn$suspend fun signIn( cookie: String, game: GameConfig, role: Role, retryOnActIdInvalid: Boolean = true, ): SignResult</ID>
     <ID>NestedBlockDepth:TrustedRedirects.kt$TrustedRedirects$fun &lt;T&gt; executeMapped( client: OkHttpClient, request: Request, policy: RedirectTrustPolicy, retryPolicy: TransportRetryPolicy = TransportRetryPolicy.NEVER, transform: (Response) -&gt; T, ): T</ID>
@@ -205,8 +204,6 @@
     <ID>ReturnCount:HomeViewModel.kt$HomeViewModel$fun runNow()</ID>
     <ID>ReturnCount:Localization.kt$fun localizeText( text: String, language: AppLanguage, ): String</ID>
     <ID>ReturnCount:Mailer.kt$Mailer$private fun renderMysRewardContent(row: TaskResult): String</ID>
-    <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$fun scan( value: Any?, depth: Int, ): Int?</ID>
-    <ID>ReturnCount:MysCoinCheckIn.kt$MysCoinCheckIn$private fun appAuthCookie( cookie: String, stoken: String, mid: String, uid: String, ): CookieBuildResult</ID>
     <ID>ReturnCount:MysSignExecutor.kt$MysSignExecutor$suspend fun runAccount( acc: Account, settings: AppSettings, runMysAppVersion: String, actIdCache: ConcurrentHashMap&lt;String, String&gt;, actIdCacheMutex: Mutex, mysDeviceId: String, total: Int, done: AtomicInteger, onProgress: (String, Int, Int) -&gt; Unit, shouldExecuteTask: (taskId: String) -&gt; Boolean, onTaskStarted: (String, String) -&gt; Boolean, onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -&gt; Unit, ): Account</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$private suspend fun refreshActIdAndRetry( cookie: String, game: GameConfig, role: Role, staleActId: String, ): SignResult?</ID>
     <ID>ReturnCount:MysSignIn.kt$MysSignIn$suspend fun getReward( cookie: String, game: GameConfig, role: Role, ): Reward?</ID>
