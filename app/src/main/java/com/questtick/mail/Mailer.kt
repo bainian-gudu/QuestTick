@@ -412,34 +412,40 @@ object Mailer {
             } else {
                 ""
             }
-        if (coinContent.isNotBlank()) {
-            return "<div style=\"font-size:11px;line-height:1.5;color:#1E3A8A;\">$coinContent</div>"
-        }
-        if (row.rewardName.isBlank()) return "—"
-        val name = row.rewardName
-        val cnt =
-            row.rewardCount
-                .takeIf { it.isNotBlank() }
-                ?.let { "×$it" }
-                .orEmpty()
-        val icon =
-            if (TrustedUrlPolicy.isRewardIconUrl(row.rewardIcon)) {
-                """<img src="${escape(
-                    row.rewardIcon,
-                )}" alt="${escape(name)}" style="width:30px;height:30px;display:block;margin:0 auto 4px auto;border-radius:6px;">"""
+        val rewardContent =
+            if (row.rewardName.isBlank()) {
+                "—"
             } else {
-                "<div style=\"font-size:24px;line-height:1;\">🎁</div>"
+                val name = row.rewardName
+                val cnt =
+                    row.rewardCount
+                        .takeIf { it.isNotBlank() }
+                        ?.let { "×$it" }
+                        .orEmpty()
+                val icon =
+                    if (TrustedUrlPolicy.isRewardIconUrl(row.rewardIcon)) {
+                        """<img src="${escape(
+                            row.rewardIcon,
+                        )}" alt="${escape(name)}" style="width:30px;height:30px;display:block;margin:0 auto 4px auto;border-radius:6px;">"""
+                    } else {
+                        "<div style=\"font-size:24px;line-height:1;\">🎁</div>"
+                    }
+                """
+                <div
+                  style="display:inline-block;min-width:58px;margin:3px 4px;padding:6px 5px;
+                         background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;
+                         text-align:center;vertical-align:top;">
+                  $icon
+                  <div style="font-size:11px;margin-top:4px;line-height:1.25;word-break:keep-all;color:#1E3A8A;">${escape(name)}</div>
+                  <div style="font-size:11px;color:#2563EB;line-height:1.25;">${escape(cnt)}</div>
+                </div>
+                """.trimIndent()
             }
-        return """
-            <div
-              style="display:inline-block;min-width:58px;margin:3px 4px;padding:6px 5px;
-                     background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;
-                     text-align:center;vertical-align:top;">
-              $icon
-              <div style="font-size:11px;margin-top:4px;line-height:1.25;word-break:keep-all;color:#1E3A8A;">${escape(name)}</div>
-              <div style="font-size:11px;color:#2563EB;line-height:1.25;">${escape(cnt)}</div>
-            </div>
-            """.trimIndent()
+        return if (coinContent.isNotBlank()) {
+            "<div style=\"font-size:11px;line-height:1.5;color:#1E3A8A;\">$coinContent</div>"
+        } else {
+            rewardContent
+        }
     }
 
     private fun renderAccountCloudTable(rows: List<TaskResult>): String {
