@@ -80,22 +80,20 @@ class SecureStore
             maxEntries: Int = 20,
         ) = actIdStore.save(cache, maxEntries)
 
-        fun effectiveMysDeviceId(forceCreate: Boolean = true): String {
-            val user = plainPrefs.getString("mysDeviceIdUser", "").orEmpty()
-            if (user.isNotBlank()) return user
-            plainPrefs.getString("mysDeviceId", null)?.takeIf { it.isNotBlank() }?.let { return it }
-            return if (forceCreate) getOrCreateDeviceId("mysDeviceId") else ""
-        }
+        fun effectiveMysDeviceId(forceCreate: Boolean = true): String =
+            plainPrefs
+                .getString("mysDeviceIdUser", "")
+                .orEmpty()
+                .ifBlank { plainPrefs.getString("mysDeviceId", "").orEmpty() }
+                .ifBlank { if (forceCreate) getOrCreateDeviceId("mysDeviceId") else "" }
 
-        fun effectiveCloudDeviceId(forceCreate: Boolean = true): String {
-            val user =
-                plainPrefs.getString("cloudDeviceIdUser", "").orEmpty().ifBlank {
-                    plainPrefs.getString("cloudBackupDeviceIdUser", "").orEmpty()
-                }
-            if (user.isNotBlank()) return user
-            plainPrefs.getString("cloudDeviceId", null)?.takeIf { it.isNotBlank() }?.let { return it }
-            return if (forceCreate) getOrCreateDeviceId("cloudDeviceId") else ""
-        }
+        fun effectiveCloudDeviceId(forceCreate: Boolean = true): String =
+            plainPrefs
+                .getString("cloudDeviceIdUser", "")
+                .orEmpty()
+                .ifBlank { plainPrefs.getString("cloudBackupDeviceIdUser", "").orEmpty() }
+                .ifBlank { plainPrefs.getString("cloudDeviceId", "").orEmpty() }
+                .ifBlank { if (forceCreate) getOrCreateDeviceId("cloudDeviceId") else "" }
 
         fun persistGeneratedMysDeviceId(id: String) {
             persistGeneratedDeviceId("mysDeviceId", id)
