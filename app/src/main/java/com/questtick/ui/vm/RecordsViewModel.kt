@@ -17,6 +17,8 @@ import com.questtick.repository.log.AppErrorLogger
 import com.questtick.repository.run.PostRunActionRepository
 import com.questtick.repository.run.PostRunActionType
 import com.questtick.repository.settings.SettingsRepository
+import com.questtick.ui.screens.RecordsSnapshot
+import com.questtick.ui.screens.buildRecordsSnapshot
 import com.questtick.work.PostRunActionScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -44,6 +47,18 @@ class RecordsViewModel
 
         val history: StateFlow<List<RunRecord>> = historyRepository.history
         val loadState: StateFlow<RepositoryLoadState> = historyRepository.loadState
+
+        /**
+         * 记录索引在 ViewModel 内构建并常驻，只随历史数据变化重建。
+         *
+         * 分页器会回收远离视口的记录页，索引若放在 Composable 里会在每次切回时按记录数重建；
+         * 记录多时这段全量遍历会与切换动画争抢 CPU 与内存带宽，导致切页不流畅。
+         */
+        internal val records: StateFlow<RecordsSnapshot?> =
+            historyRepository.history
+                .map { records -> withContext(Dispatchers.Default) { buildRecordsSnapshot(records) } }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
         val emailDeliveries: StateFlow<Map<String, EmailDeliveryUiState>> =
             postRunActionRepository
                 .observeAll()

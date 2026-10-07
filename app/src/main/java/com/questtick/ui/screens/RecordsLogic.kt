@@ -55,6 +55,24 @@ internal class RecordsIndex(
     val runsByFilter: Map<RecFilter, List<RecordRunSummary>>,
 )
 
+/**
+ * 历史快照与其索引成对保存，避免后台重建期间用旧索引读新列表导致卡片内容错位。
+ *
+ * 索引随历史数据一起缓存在 ViewModel 中：分页器会回收远离视口的记录页，
+ * 索引若只放在 Composable 里，每次切回都要按记录数重建，记录多时切换会卡顿。
+ */
+internal data class RecordsSnapshot(
+    val history: List<RunRecord>,
+    val index: RecordsIndex,
+)
+
+internal fun buildRecordsSnapshot(history: List<RunRecord>): RecordsSnapshot =
+    if (history.isEmpty()) {
+        RecordsSnapshot(history, RecordsIndex(0, emptyMap(), emptyMap()))
+    } else {
+        RecordsSnapshot(history, buildRecordsIndex(history))
+    }
+
 /** 在后台建立轻量索引；不会为未显示的运行复制结果列表。 */
 internal fun buildRecordsIndex(
     history: List<RunRecord>,

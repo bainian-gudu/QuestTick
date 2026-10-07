@@ -140,6 +140,26 @@ class RecordsLogicTest {
         assertEquals(listOf("全部", "成功", "失败", "已签到", "待确认", "跳过"), RecFilter.entries.map { it.label })
     }
 
+    @Test
+    fun buildRecordsSnapshotPairsHistoryWithIndex() {
+        val history = listOf(RunRecord(timestamp = 1000L, results = listOf(result("success", success = true))))
+
+        val snapshot = buildRecordsSnapshot(history)
+
+        assertSame(history, snapshot.history)
+        assertEquals(1, snapshot.index.allResultCount)
+        assertEquals(1, snapshot.index.counts.getValue(RecFilter.SUCCESS))
+    }
+
+    @Test
+    fun buildRecordsSnapshotReturnsEmptyIndexForEmptyHistory() {
+        val snapshot = buildRecordsSnapshot(emptyList())
+
+        assertTrue(snapshot.history.isEmpty())
+        assertEquals(0, snapshot.index.allResultCount)
+        assertTrue(snapshot.index.runsByFilter.isEmpty())
+    }
+
     private fun result(
         label: String,
         success: Boolean,

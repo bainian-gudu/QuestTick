@@ -80,9 +80,7 @@ import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.EmailDeliveryUiState
 import com.questtick.ui.vm.RecordsViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val RECORD_LIST_SPACING_DP = 12
@@ -94,24 +92,8 @@ private fun formatRecordTime(timestamp: Long): String = formatLocalizedShortDate
 private const val RECORD_RUN_INITIAL_LIMIT = 24
 private const val RECORD_RUN_BATCH_SIZE = 24
 
-/** 主分页器切换动画的大致时长；全量解码与索引重建等随记录数增长的工作推迟到动画结束后。 */
+/** 主分页器切换动画的大致时长；随记录数增长的全量历史解码推迟到动画结束后。 */
 private const val PAGE_SWITCH_SETTLE_MILLIS = 350L
-
-/** 仅用首尾标识触发缓存更新，避免 Compose 为比较整份历史列表而阻塞主线程。 */
-private data class HistorySnapshotKey(
-    val identity: Int,
-    val size: Int,
-    val newestRunId: String,
-    val oldestRunId: String,
-    val newestTimestamp: Long,
-    val oldestTimestamp: Long,
-)
-
-/** 索引与其源列表成对保存，避免后台重建期间用旧索引读新列表导致卡片内容错位。 */
-private data class IndexedHistory(
-    val history: List<RunRecord>,
-    val index: RecordsIndex,
-)
 
 @Composable
 fun RecordsScreen(
@@ -119,23 +101,14 @@ fun RecordsScreen(
     viewModel: RecordsViewModel = hiltViewModel(),
 ) {
     val history by viewModel.history.collectAsStateWhenVisible(isVisible)
+    val records by viewModel.records.collectAsStateWhenVisible(isVisible)
     val loadState by viewModel.loadState.collectAsStateWhenVisible(isVisible)
     val emailDeliveries by viewModel.emailDeliveries.collectAsStateWhenVisible(isVisible)
 
     var filter by rememberSaveable { mutableStateOf(RecFilter.ALL) }
-    var indexed by remember { mutableStateOf<IndexedHistory?>(null) }
     var visibleRunLimit by rememberSaveable(filter) { mutableIntStateOf(RECORD_RUN_INITIAL_LIMIT) }
     val listState = rememberLazyListState()
     val filterScrollState = rememberScrollState()
-    val historyKey =
-        HistorySnapshotKey(
-            identity = System.identityHashCode(history),
-            size = history.size,
-            newestRunId = history.firstOrNull()?.runId.orEmpty(),
-            oldestRunId = history.lastOrNull()?.runId.orEmpty(),
-            newestTimestamp = history.firstOrNull()?.timestamp ?: 0L,
-            oldestTimestamp = history.lastOrNull()?.timestamp ?: 0L,
-        )
 
     LaunchedEffect(isVisible) {
         if (!isVisible) return@LaunchedEffect
@@ -144,29 +117,12 @@ fun RecordsScreen(
         viewModel.refresh()
     }
 
-    LaunchedEffect(historyKey, isVisible) {
-        // 页面切走时保留现有索引，避免分页器预加载的隐藏页面抢占 CPU。
-        if (!isVisible) return@LaunchedEffect
-        if (history.isEmpty()) {
-            indexed = IndexedHistory(history, RecordsIndex(0, emptyMap(), emptyMap()))
-            return@LaunchedEffect
-        }
-        // 已有索引时先沿用旧内容渲染，全量索引重建同样推迟到切换动画结束后。
-        if (indexed != null) delay(PAGE_SWITCH_SETTLE_MILLIS)
-        val snapshot = history
-        indexed =
-            IndexedHistory(
-                snapshot,
-                withContext(Dispatchers.Default) { buildRecordsIndex(snapshot) },
-            )
-    }
-
     // 过滤索引只保存运行摘要；结果行在对应卡片展开后才读取。
-    val recordsIndex = indexed?.index
+    val recordsIndex = records?.index
     val currentRunSummaries =
-        remember(filter, indexed) { recordsIndex?.runsByFilter?.get(filter).orEmpty() }
+        remember(filter, recordsIndex) { recordsIndex?.runsByFilter?.get(filter).orEmpty() }
     val buildingInitialIndex =
-        loadState !is RepositoryLoadState.InitialLoading && history.isNotEmpty() && indexed == null
+        loadState !is RepositoryLoadState.InitialLoading && history.isNotEmpty() && recordsIndex == null
     val visibleFilteredRuns =
         remember(currentRunSummaries, visibleRunLimit) {
             currentRunSummaries.take(visibleRunLimit.coerceAtMost(currentRunSummaries.size))
@@ -294,7 +250,7 @@ fun RecordsScreen(
                         key = { it.id },
                         contentType = { "run_card" },
                     ) { summary ->
-                        indexed?.history?.getOrNull(summary.runIndex)?.let { run ->
+                        records?.history?.getOrNull(summary.runIndex)?.let { run ->
                             RunCard(
                                 summary = summary,
                                 run = run,
@@ -352,7 +308,7 @@ private fun FilterChip(
 @Suppress("detekt:LongMethod", "detekt:CyclomaticComplexMethod", "detekt:FunctionNaming")
 private fun RunCard(
     summary: RecordRunSummary,
-    run: com.questtick.data.RunRecord,
+    run: RunRecord,
     filter: RecFilter,
     emailDelivery: EmailDeliveryUiState?,
     onRetryEmail: (String) -> Unit,
