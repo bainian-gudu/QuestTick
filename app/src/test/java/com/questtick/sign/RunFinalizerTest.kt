@@ -86,7 +86,7 @@ class RunFinalizerTest {
             every { store.getAppSettings() } returns AppSettings(notifyEnabled = true)
             every { store.getMailSettings() } returns MailSettings(enabled = true)
 
-            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logs = emptyList())
+            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logsProvider = { logs.toList() })
 
             assertEquals(
                 setOf(PostRunActionType.NOTIFICATION, PostRunActionType.EMAIL),
@@ -103,7 +103,7 @@ class RunFinalizerTest {
             every { store.getAppSettings() } returns AppSettings(notifyEnabled = true)
             every { store.getMailSettings() } returns MailSettings(enabled = true)
 
-            finalizer.finish(recordWithResults(0), emptyMap(), startTime = 1L, logs = emptyList())
+            finalizer.finish(recordWithResults(0), emptyMap(), startTime = 1L, logsProvider = { logs.toList() })
 
             assertEquals(listOf(PostRunActionType.NOTIFICATION), capturedActions())
         }
@@ -114,7 +114,7 @@ class RunFinalizerTest {
             every { store.getAppSettings() } returns AppSettings(notifyEnabled = false)
             every { store.getMailSettings() } returns MailSettings(enabled = false)
 
-            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logs = emptyList())
+            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logsProvider = { logs.toList() })
 
             assertTrue(capturedActions().isEmpty())
         }
@@ -126,7 +126,7 @@ class RunFinalizerTest {
                 recordWithResults(1),
                 emptyMap(),
                 startTime = 1L,
-                logs = emptyList(),
+                logsProvider = { logs.toList() },
                 enqueuePostRunActions = false,
             )
 
@@ -144,10 +144,24 @@ class RunFinalizerTest {
             every { postRunActionScheduler.scheduleForRun(any(), any()) } throws RuntimeException("wm unavailable")
 
             // 不抛出：投递调度失败不能影响已原子提交的结果。
-            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logs = emptyList())
+            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logsProvider = { logs.toList() })
 
             verify { runPersistenceRepository.finishRun(any(), any(), any(), any(), any()) }
             coVerify { historyRepository.reload() }
             assertTrue(logs.any { it.level == "WARN" && it.message.contains("投递任务将在下次启动恢复") })
+        }
+
+    @Test
+    fun `finish persists completion and end markers together with run logs`() =
+        runTest {
+            every { store.getAppSettings() } returns AppSettings(notifyEnabled = false)
+            every { store.getMailSettings() } returns MailSettings(enabled = false)
+
+            finalizer.finish(recordWithResults(1), emptyMap(), startTime = 1L, logsProvider = { logs.toList() })
+
+            val persistedLogs = slot<List<LogEntry>>()
+            verify { runPersistenceRepository.finishRun(any(), capture(persistedLogs), any(), any(), any()) }
+            assertTrue(persistedLogs.captured.any { it.message.contains("签到完成") })
+            assertTrue(persistedLogs.captured.any { it.message.contains("签到结束") })
         }
 }

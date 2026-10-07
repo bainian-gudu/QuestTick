@@ -40,14 +40,15 @@ class RunFinalizer(
     }
 
     /**
-     * @param logs 本次运行的日志快照；由调用方在进入不可取消区间前完成排序。
+     * @param logsProvider 本次运行的日志快照提供者；必须在「签到完成/签到结束」写入后再取，
+     *   否则结束标记只会进入内存日志流而不会落盘，重启后运行会被日志页判为「进行中」。
      * @param enqueuePostRunActions Root 阻断等无需通知的场景传 false。
      */
     suspend fun finish(
         record: RunRecord,
         actIdCache: Map<String, String>,
         startTime: Long,
-        logs: List<LogEntry>,
+        logsProvider: () -> List<LogEntry>,
         enqueuePostRunActions: Boolean = true,
     ) {
         val totalElapsed = System.currentTimeMillis() - startTime
@@ -91,7 +92,7 @@ class RunFinalizer(
                 } else {
                     emptyList()
                 }
-            runPersistenceRepository.finishRun(record, logs, postRunActions)
+            runPersistenceRepository.finishRun(record, logsProvider(), postRunActions)
         }
         try {
             postRunActionScheduler.scheduleForRun(record.runId)

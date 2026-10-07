@@ -541,7 +541,7 @@ class SignInRunner(
                         record,
                         actIdCache,
                         startTime,
-                        logs.toList().sortedBy { it.timestamp },
+                        logsProvider = { logs.toList().sortedBy { it.timestamp } },
                         enqueuePostRunActions = false,
                     )
                     runCoordinator?.finishProgress(RunProgressPhase.BLOCKED, blockMessage)
@@ -765,7 +765,12 @@ class SignInRunner(
                                 },
                         )
                     runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存签到结果")
-                    runFinalizer.finish(record, actIdCache, startTime, logs.toList().sortedBy { it.timestamp })
+                    runFinalizer.finish(
+                        record,
+                        actIdCache,
+                        startTime,
+                        logsProvider = { logs.toList().sortedBy { it.timestamp } },
+                    )
                     runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "签到任务已完成")
                     record
                 }
