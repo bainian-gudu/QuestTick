@@ -1,6 +1,7 @@
 package com.questtick.sign
 
 import com.questtick.data.Account
+import com.questtick.data.Games
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -31,7 +32,13 @@ class SignInTaskPlanningTest {
 
         val games = account.selectedMysGames()
 
-        assertEquals(MysSignIn.GAMES.size, games.size)
+        // 预支持游戏已登记签到参数，但仍不属于账号可选集合。
+        assertEquals(
+            MysSignIn.GAMES.keys
+                .filterNot { it in Games.PREVIEW_KEYS }
+                .toSet(),
+            games.map { it.key }.toSet(),
+        )
         assertTrue(games.any { it.key == "Genshin" })
         assertTrue(games.any { it.key == "StarRail" })
     }

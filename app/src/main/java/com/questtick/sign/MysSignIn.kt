@@ -26,6 +26,8 @@ import org.json.JSONObject
  *
  * 原神、崩坏：星穹铁道、绝区零使用各自 luna 接口；崩坏 2、崩坏 3 与未定事件簿使用通用
  * luna 接口。负责角色查询、奖励查询、签到请求与 act_id 刷新重试。
+ *
+ * 崩坏：因缘精灵与星布谷地仍为预支持：只登记已确认的 game_biz，签到活动开放后再补 act_id。
  */
 class MysSignIn(
     private val deviceId: String,
@@ -160,6 +162,28 @@ class MysSignIn(
                         "zzz",
                         "prod_gf_cn",
                         "https://act.mihoyo.com/bbs/event/signin/zzz/index.html",
+                    ),
+                // 预支持游戏：米游社签到活动尚未上线，先同步已确认的 game_biz，
+                // act_id / 活动页等参数等开放后再补，游戏选择页仍标记为预支持。
+                "HNA" to
+                    GameConfig(
+                        "HNA",
+                        "崩坏：因缘精灵-米游社",
+                        "abc_cn",
+                        "",
+                        null,
+                        "",
+                        "",
+                    ),
+                "StarNest" to
+                    GameConfig(
+                        "StarNest",
+                        "星布谷地-米游社",
+                        "hyg_cn",
+                        "",
+                        null,
+                        "",
+                        "",
                     ),
             )
 
