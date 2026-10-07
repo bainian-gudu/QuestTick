@@ -61,7 +61,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.questtick.log.LogExporter
 import com.questtick.repository.base.RepositoryLoadState
-import com.questtick.sign.Mask
 import com.questtick.ui.components.AnimatedSwitch
 import com.questtick.ui.components.EmptyState
 import com.questtick.ui.components.GalaxyBackground
@@ -70,6 +69,7 @@ import com.questtick.ui.components.PanelCard
 import com.questtick.ui.components.SkeletonCard
 import com.questtick.ui.components.StatusBadge
 import com.questtick.ui.components.clickableNoRipple
+import com.questtick.ui.components.collectAsStateWhenVisible
 import com.questtick.ui.components.consumeHorizontalScrollOverflow
 import com.questtick.ui.theme.AppMotion
 import com.questtick.ui.theme.DangerRed
@@ -78,12 +78,7 @@ import com.questtick.ui.theme.TextSecondary
 import com.questtick.ui.theme.WarnAmber
 import com.questtick.ui.vm.LogsViewModel
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-private val logTimeFmt: SimpleDateFormat get() = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-private val logDateFmt: SimpleDateFormat get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 private const val LOG_SEARCH_DEBOUNCE_MS = 250L
 
 @Composable
@@ -98,21 +93,10 @@ fun LogsScreen(
         if (isVisible) viewModel.refresh()
     }
 
-    val displayPrepared =
-        remember(logs, isVisible) {
-            if (!isVisible) {
-                PreparedLogs(emptyList(), LogStats())
-            } else {
-                val timeFormatter = logTimeFmt
-                val dateFormatter = logDateFmt
-                prepareLogs(
-                    logs = logs,
-                    formatTime = { timestamp -> timeFormatter.format(Date(timestamp)) },
-                    formatDate = { timestamp -> dateFormatter.format(Date(timestamp)) },
-                    mask = Mask::sensitive,
-                )
-            }
-        }
+    // 脱敏与时间格式化在 ViewModel 的后台线程完成；页面不可见后不再订阅并释放结果。
+    val displayLogs by viewModel.displayLogs.collectAsStateWhenVisible(isVisible)
+    val preparingLogs = displayLogs == null && logs.isNotEmpty()
+    val displayPrepared = displayLogs ?: PreparedLogs(emptyList(), LogStats())
     val processed = displayPrepared.entries
     val stats = displayPrepared.stats
     var filter by rememberSaveable { mutableStateOf(LogFilter.ALL) }
@@ -438,7 +422,7 @@ fun LogsScreen(
                     )
                 }
 
-                loadState is RepositoryLoadState.InitialLoading -> {
+                loadState is RepositoryLoadState.InitialLoading || preparingLogs -> {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 72.dp, lineCount = 4)
                         SkeletonCard(modifier = Modifier.fillMaxWidth(), titleWidth = 96.dp, lineCount = 3)

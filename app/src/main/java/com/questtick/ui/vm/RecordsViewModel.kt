@@ -31,6 +31,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/** 记录页切走后保留索引的时间；期间切回复用，避免按记录数重建。 */
+private const val RECORDS_INDEX_KEEP_MILLIS = 5_000L
+
 @HiltViewModel
 class RecordsViewModel
     @Inject
@@ -49,15 +52,16 @@ class RecordsViewModel
         val loadState: StateFlow<RepositoryLoadState> = historyRepository.loadState
 
         /**
-         * 记录索引在 ViewModel 内构建并常驻，只随历史数据变化重建。
+         * 记录索引在 ViewModel 内构建，只随历史数据变化重建。
          *
          * 分页器会回收远离视口的记录页，索引若放在 Composable 里会在每次切回时按记录数重建；
          * 记录多时这段全量遍历会与切换动画争抢 CPU 与内存带宽，导致切页不流畅。
+         * 索引按需构建并在切走后短暂保留，避免应用启动时白白遍历一遍历史。
          */
         internal val records: StateFlow<RecordsSnapshot?> =
             historyRepository.history
                 .map { records -> withContext(Dispatchers.Default) { buildRecordsSnapshot(records) } }
-                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(RECORDS_INDEX_KEEP_MILLIS), null)
 
         val emailDeliveries: StateFlow<Map<String, EmailDeliveryUiState>> =
             postRunActionRepository
