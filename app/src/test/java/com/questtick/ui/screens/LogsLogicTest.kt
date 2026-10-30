@@ -62,7 +62,7 @@ class LogsLogicTest {
         assertFalse(groups[0].running)
         assertEquals(listOf(prelude, start, ok, end), groups[0].entries)
         assertEquals(LogStats(info = 3, ok = 1), groups[0].stats)
-        assertEquals("其它日志 · 00:00:05", groups[1].title)
+        assertEquals("警告日志 · 00:00:05", groups[1].title)
         assertEquals(listOf(misc), groups[1].entries)
     }
 
@@ -167,7 +167,7 @@ class LogsLogicTest {
         val groups = buildLogGroups(listOf(misc), activeRunStartedAt = 2_000)
 
         assertEquals(1, groups.size)
-        assertEquals("其它日志 · 00:00:01", groups.single().title)
+        assertEquals("信息日志 · 00:00:01", groups.single().title)
         assertFalse(groups.single().running)
     }
 
@@ -480,6 +480,93 @@ class LogsLogicTest {
     fun logFilterLabelsStayStableForUi() {
         assertSame(LogFilter.ALL, LogFilter.entries.first())
         assertEquals(listOf("全部", "调试", "信息", "成功", "警告", "错误"), LogFilter.entries.map { it.label })
+    }
+
+    @Test
+    fun buildLogGroupsKeepsInsertionOrderForSameMillisecondEntries() {
+        val start = entry(1_000, "INFO", message = "开始执行签到")
+        val ok = entry(2_000, "OK", message = "原神签到成功")
+        val summary = entry(3_000, "INFO", message = "签到完成：成功 2，已签 0，失败 0，待确认 0，跳过 0")
+        val end = entry(3_000, "INFO", message = "========== 签到结束 (8.1s) ==========")
+
+        val group = buildLogGroups(listOf(start, ok, summary, end)).single()
+
+        assertEquals(listOf(start, ok, summary, end), group.entries)
+        assertEquals("运行日志 · 00:00:01", group.title)
+        assertFalse(group.running)
+    }
+
+    @Test
+    fun buildLogGroupsPullsTrailingCompletionSummaryIntoFinishedRun() {
+        val start = entry(1_000, "INFO", message = "开始执行签到")
+        val end = entry(3_000, "INFO", message = "========== 签到结束 (8.1s) ==========")
+        val summary = entry(3_000, "INFO", message = "签到完成：成功 2，已签 0，失败 0，待确认 0，跳过 0")
+
+        val groups = buildLogGroups(listOf(start, end, summary))
+
+        assertEquals(1, groups.size)
+        assertEquals(listOf(start, end, summary), groups.single().entries)
+        assertEquals("运行日志 · 00:00:01", groups.single().title)
+        assertFalse(groups.single().running)
+        assertEquals(LogStats(info = 3), groups.single().stats)
+    }
+
+    @Test
+    fun buildLogGroupsSplitsUnrelatedLogsAfterCompletionSummary() {
+        val start = entry(1_000, "INFO", message = "开始执行签到")
+        val end = entry(2_000, "INFO", message = "签到结束")
+        val summary = entry(2_000, "INFO", message = "签到完成：成功 2，已签 0，失败 0，待确认 0，跳过 0")
+        val warn = entry(3_000, "WARN", message = "定时签到暂未开始：已有签到任务正在运行")
+
+        val groups = buildLogGroups(listOf(start, end, summary, warn))
+
+        assertEquals(2, groups.size)
+        assertEquals(listOf(start, end, summary), groups[0].entries)
+        assertEquals(listOf(warn), groups[1].entries)
+        assertEquals("警告日志 · 00:00:03", groups[1].title)
+    }
+
+    @Test
+    fun prepareLogsKeepsWriteOrderForSameMillisecondEntries() {
+        val summary = LogEntry(3_000, "INFO", "签到完成：成功 2，已签 0，失败 0，待确认 0，跳过 0", "")
+        val end = LogEntry(3_000, "INFO", "========== 签到结束 (8.1s) ==========", "")
+
+        val prepared =
+            prepareLogs(
+                logs = listOf(summary, end),
+                formatTime = { "T$it" },
+                formatDate = { "D$it" },
+                mask = { it },
+            )
+
+        assertEquals(
+            listOf("签到完成：成功 2，已签 0，失败 0，待确认 0，跳过 0", "========== 签到结束 (8.1s) =========="),
+            prepared.entries.map { it.safeMessage },
+        )
+    }
+
+    @Test
+    fun buildLogGroupsNamesNonRunGroupsByLogType() {
+        fun titleOf(
+            level: String,
+            message: String,
+        ): String = buildLogGroups(listOf(entry(1_000, level, message = message))).single().title
+
+        assertEquals("警告日志 · 00:00:01", titleOf("WARN", "定时签到暂未开始"))
+        assertEquals("信息日志 · 00:00:01", titleOf("INFO", "已跳过重复的定时签到"))
+        assertEquals("调试日志 · 00:00:01", titleOf("DEBUG", "缓存命中"))
+        assertEquals("成功日志 · 00:00:01", titleOf("OK", "配置已保存"))
+        assertEquals("错误日志 · 00:00:01", titleOf("ERROR", "崩溃摘要"))
+    }
+
+    @Test
+    fun buildLogGroupsTitlesMixedNonRunGroupByHighestLevel() {
+        val info = entry(1_000, "INFO", message = "已跳过重复的定时签到")
+        val warn = entry(2_000, "WARN", message = "定时签到暂未开始")
+        val error = entry(3_000, "ERROR", message = "崩溃摘要")
+
+        assertEquals("警告日志 · 00:00:01", buildLogGroups(listOf(info, warn)).single().title)
+        assertEquals("错误日志 · 00:00:01", buildLogGroups(listOf(info, warn, error)).single().title)
     }
 
     private fun entry(

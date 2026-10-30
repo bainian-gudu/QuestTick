@@ -105,6 +105,34 @@ class LocalizationTest {
     }
 
     @Test
+    fun `multi-line messages resolve through dictionary templates`() {
+        assertEquals(
+            "Current version: 1.0.0\nNew version: 1.1.0",
+            localizeText("当前版本：1.0.0\n新版本：1.1.0", AppLanguage.ENGLISH),
+        )
+        assertEquals(
+            "Open the Miyoushe app → tap the QR icon in the upper-left\n" +
+                "Scan the QR code above and confirm the login on your phone 空灵",
+            localizeText(
+                "请打开「米游社」App → 点击左上角扫码图标\n" +
+                    "扫描上方二维码并在手机端确认登录 空灵",
+                AppLanguage.ENGLISH,
+            ),
+        )
+        assertEquals(
+            "📱 小米 detected. Enable auto-start as well:\n步骤",
+            localizeText("📱 检测到 小米 设备，建议同时开启自启动权限：\n步骤", AppLanguage.ENGLISH),
+        )
+    }
+
+    @Test
+    fun `log group titles follow localized log type`() {
+        assertEquals("Warning logs · 12:34", localizeText("警告日志 · 12:34", AppLanguage.ENGLISH))
+        assertEquals("資訊日誌 · 12:34", localizeText("信息日志 · 12:34", AppLanguage.TRADITIONAL_CHINESE))
+        assertEquals("디버그 로그 · 12:34", localizeText("调试日志 · 12:34", AppLanguage.KOREAN))
+    }
+
+    @Test
     fun `dynamic interface summaries use dictionary templates`() {
         assertEquals("Custom: Device ID", localizeText("已自定义：Device ID", AppLanguage.ENGLISH))
         assertEquals(

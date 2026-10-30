@@ -161,27 +161,27 @@ private fun localizeDynamicText(
     Regex("^本次获取：(.*)$").matchEntire(text)?.let {
         return formatDictionary("本次获取：%s", language, it.groupValues[1])
     }
-    Regex("^请打开「米游社」App → 点击左上角扫码图标\\n扫描上方二维码并在手机端确认登录(.*)$", RegexOption.DOT_MATCHES_ALL)
+    Regex("^请打开「米游社」App → 点击左上角扫码图标\n扫描上方二维码并在手机端确认登录(.*)$", RegexOption.DOT_MATCHES_ALL)
         .matchEntire(text)
         ?.let {
             return formatDictionary(
-                "请打开「米游社」App → 点击左上角扫码图标\\n扫描上方二维码并在手机端确认登录%s",
+                "请打开「米游社」App → 点击左上角扫码图标\n扫描上方二维码并在手机端确认登录%s",
                 language,
                 it.groupValues[1],
             )
         }
-    Regex("^📱 检测到 (.*?) 设备，建议同时开启自启动权限：\\n(.*)$", RegexOption.DOT_MATCHES_ALL)
+    Regex("^📱 检测到 (.*?) 设备，建议同时开启自启动权限：\n(.*)$", RegexOption.DOT_MATCHES_ALL)
         .matchEntire(text)
         ?.let {
             return formatDictionary(
-                "📱 检测到 %s 设备，建议同时开启自启动权限：\\n%s",
+                "📱 检测到 %s 设备，建议同时开启自启动权限：\n%s",
                 language,
                 it.groupValues[1],
                 localizeText(it.groupValues[2], language),
             )
         }
-    Regex("^当前版本：(.*?)\\n新版本：(.*)$", RegexOption.DOT_MATCHES_ALL).matchEntire(text)?.let {
-        return formatDictionary("当前版本：%s\\n新版本：%s", language, it.groupValues[1], it.groupValues[2])
+    Regex("^当前版本：(.*?)\n新版本：(.*)$", RegexOption.DOT_MATCHES_ALL).matchEntire(text)?.let {
+        return formatDictionary("当前版本：%s\n新版本：%s", language, it.groupValues[1], it.groupValues[2])
     }
     Regex("^签到完成：成功(\\d+) 已签(\\d+) 失败(\\d+) 待确认(\\d+) 跳过(\\d+)$").matchEntire(text)?.let {
         return formatDictionary(
@@ -197,7 +197,7 @@ private fun localizeDynamicText(
     Regex("^签到已跳过：(.*)$").matchEntire(text)?.let {
         return formatDictionary("签到已跳过：%s", language, it.groupValues[1])
     }
-    Regex("^(签到进行中|运行日志|错误日志|其它日志) · (.+)$").matchEntire(text)?.let {
+    Regex("^(签到进行中|运行日志|错误日志|警告日志|成功日志|信息日志|调试日志|其它日志) · (.+)$").matchEntire(text)?.let {
         return formatDictionary("${it.groupValues[1]} · %s", language, it.groupValues[2])
     }
     Regex("^当前阶段：(.+)$").matchEntire(text)?.let {

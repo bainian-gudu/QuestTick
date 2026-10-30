@@ -42,7 +42,9 @@ internal fun prepareLogs(
 ): PreparedLogs {
     if (logs.isEmpty()) return PreparedLogs(emptyList(), LogStats())
     val result = ArrayList<ProcessedLogEntry>(logs.size)
-    for (entry in logs.sortedWith(compareBy<com.questtick.data.LogEntry>({ it.timestamp }, { it.level }, { it.message }, { it.detail }))) {
+    // 只按时间戳稳定排序：同一毫秒内的多条日志保留写入顺序，
+    // 避免字典序把「签到结束」排到「签到完成」汇总之前。
+    for (entry in logs.sortedBy { it.timestamp }) {
         result.add(
             ProcessedLogEntry(
                 timestamp = entry.timestamp,
@@ -135,19 +137,21 @@ internal fun buildLogGroups(
     val groups = ArrayList<LogRunGroup>()
     val current = ArrayList<ProcessedLogEntry>()
     var currentIsRun = false
+    var currentEnded = false
 
     fun flush() {
+        currentEnded = false
         if (current.isEmpty()) return
         val list = current.toList()
         val first = list.first()
         val stats = countLogStats(list)
         val running = currentIsRun && list.none { isRunEndLog(it) }
+        // 非运行分组的标题按组内日志类型取，不再固定叫「其它日志」。
         val title =
             when {
                 currentIsRun && running -> "签到进行中 · ${first.formattedTime}"
                 currentIsRun -> "运行日志 · ${first.formattedTime}"
-                stats.error > 0 -> "错误日志 · ${first.formattedTime}"
-                else -> "其它日志 · ${first.formattedTime}"
+                else -> "${logGroupTypeLabel(stats)} · ${first.formattedTime}"
             }
         val subtitle = stats.subtitle(list.size)
         val expansionKeys = list.map(::logGroupEntryKey).distinct()
@@ -170,15 +174,14 @@ internal fun buildLogGroups(
     }
 
     entries
-        .sortedWith(
-            compareBy<ProcessedLogEntry>(
-                { it.timestamp },
-                { it.level },
-                { it.safeMessage },
-                { it.safeDetail },
-            ),
-        ).forEach { entry ->
+        // 稳定排序：同一毫秒内的多条日志保留写入顺序，不能被 level/message 字典序打乱。
+        .sortedBy { it.timestamp }
+        .forEach { entry ->
             if (current.isNotEmpty() && entry.dateKey != current.first().dateKey) {
+                flush()
+            }
+            if (currentEnded && !isRunSummaryLog(entry)) {
+                // 结束标记之后只有「签到完成」汇总仍属于本次运行，其它日志一律独立成组。
                 flush()
             }
             if (isRunStartLog(entry)) {
@@ -188,7 +191,9 @@ internal fun buildLogGroups(
             }
             current.add(entry)
             if (currentIsRun && isRunEndLog(entry)) {
-                flush()
+                // 不立刻收尾：同一毫秒内紧随其后的「签到完成」汇总必须并入本组，
+                // 否则结束标记会把汇总挤成一个独立的「其它日志」组。
+                currentEnded = true
             }
         }
     flush()
@@ -299,6 +304,9 @@ internal fun isRunStartLog(entry: ProcessedLogEntry): Boolean = entry.safeMessag
 
 internal fun isRunEndLog(entry: ProcessedLogEntry): Boolean = entry.safeMessage.contains("签到结束")
 
+/** 运行汇总行（签到完成：成功…）：无论排序如何都必须并入本次运行分组。 */
+internal fun isRunSummaryLog(entry: ProcessedLogEntry): Boolean = entry.safeMessage.startsWith("签到完成：成功")
+
 @Immutable
 internal data class LogStats(
     val debug: Int = 0,
@@ -309,6 +317,19 @@ internal data class LogStats(
 ) {
     fun subtitle(total: Int): String = "共 $total 条 · ✓$ok  ⚠$warn  ✗$error  ℹ$info  DBG$debug"
 }
+
+/**
+ * 非运行分组的标题类型：按组内最高级别取标签，命名与日志页筛选芯片（调试/信息/成功/警告/错误）一致。
+ */
+internal fun logGroupTypeLabel(stats: LogStats): String =
+    when {
+        stats.error > 0 -> "错误日志"
+        stats.warn > 0 -> "警告日志"
+        stats.ok > 0 -> "成功日志"
+        stats.info > 0 -> "信息日志"
+        stats.debug > 0 -> "调试日志"
+        else -> "其它日志"
+    }
 
 internal fun countLogStats(list: List<ProcessedLogEntry>): LogStats =
     LogStats(

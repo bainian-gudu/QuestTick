@@ -122,7 +122,12 @@ internal fun mergeLogSnapshots(
     return merged.sortedWith(logEntryOrder).takeLast(maxKeep.coerceAtLeast(1))
 }
 
-private val logEntryOrder = compareBy<LogEntry>({ it.timestamp }, { it.level }, { it.message }, { it.detail })
+/**
+ * 只按时间戳做稳定排序：同一毫秒内写入的多条日志必须保持调用顺序。
+ * 若继续用 level/message 兜底比较，「========== 签到结束」会排在「签到完成：…」汇总之前，
+ * 日志页就会把一次运行拆成「运行日志」+「其它日志」两组。
+ */
+private val logEntryOrder = compareBy<LogEntry> { it.timestamp }
 
 private fun LogEntry.identityKey(): String =
     buildString {

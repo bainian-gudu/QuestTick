@@ -94,7 +94,7 @@ object Games {
                 "✧",
                 R.drawable.game_starnest,
                 Color(STAR_NEST_FALLBACK_COLOR),
-                "预支持 · 签到参数待确认",
+                "预支持·签到参数预计在12月4日左右完成确认",
                 preview = true,
             ),
             GameInfo(

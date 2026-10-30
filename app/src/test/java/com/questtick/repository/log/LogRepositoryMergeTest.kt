@@ -65,6 +65,20 @@ class LogRepositoryMergeTest {
         assertEquals(listOf(older, middle, newer), merged)
     }
 
+    @Test
+    fun mergeLogSnapshotsKeepsWriteOrderForSameMillisecondEntries() {
+        val summary = entry(2000, "签到完成：成功 2，已签 0，失败 0，待确认 0，跳过 0")
+        val end = entry(2000, "========== 签到结束 (8.1s) ==========")
+
+        val merged =
+            mergeLogSnapshots(
+                persisted = listOf(summary),
+                current = listOf(summary, end),
+            )
+
+        assertEquals(listOf(summary, end), merged)
+    }
+
     private fun entry(
         timestamp: Long,
         message: String,
