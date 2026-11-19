@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#921B25</color>
+    <color name="galaxy_bg">#FFFFFF</color>
+    <color name="galaxy_bg_dark">#0B1120</color>
+    <color name="oled_pure_black">#000000</color>
+</resources>

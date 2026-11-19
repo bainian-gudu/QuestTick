@@ -1,0 +1,17 @@
+# ktlint EditorConfig
+# https://pinterest.github.io/ktlint/latest/rules/configuration-ktlint/
+
+root = true
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+ktlint_standard_import-ordering = disabled
+ktlint_standard_function-naming = disabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_no-consecutive-comments = disabled
+# 行宽以 140 列为软约束（IDE 提示），不做强制换行
+max_line_length = 140
+
+[**/ui/**]
+# Compose functions use PascalCase, which is fine
+ktlint_standard_function-naming = disabled

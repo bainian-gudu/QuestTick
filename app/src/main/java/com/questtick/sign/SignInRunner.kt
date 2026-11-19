@@ -1,0 +1,1010 @@
+@file:Suppress(
+    "detekt:CyclomaticComplexMethod",
+    "detekt:InjectDispatcher",
+    "detekt:LargeClass",
+    "detekt:LongMethod",
+    "detekt:LongParameterList",
+    "detekt:ThrowsCount",
+    "detekt:TooGenericExceptionCaught",
+    "detekt:TooManyFunctions",
+)
+
+package com.questtick.sign
+
+/* 签到运行的顶层编排器：加载账号、组建任务计划、执行 Root 阻断、控制并发度并归并结果。
+ * 具体执行与落盘分别委托给 MysSignExecutor / CloudSignExecutor / RunPersistenceRepository。 */
+
+import android.content.Context
+import com.questtick.core.throwIfCancellation
+import com.questtick.data.Account
+import com.questtick.data.AppSettings
+import com.questtick.data.FailureCategory
+import com.questtick.data.Games
+import com.questtick.data.LogEntry
+import com.questtick.data.RunRecord
+import com.questtick.data.RunTerminationReason
+import com.questtick.data.RunTrigger
+import com.questtick.data.SecureStore
+import com.questtick.data.TaskResult
+import com.questtick.log.LogMarkers
+import com.questtick.repository.account.AccountRepository
+import com.questtick.net.HttpTransport
+import com.questtick.repository.auth.AuthRepository
+import com.questtick.repository.history.HistoryRepository
+import com.questtick.repository.calendar.SignInCalendarRepository
+import com.questtick.repository.log.LogRepository
+import com.questtick.repository.log.AppErrorLogger
+import com.questtick.repository.run.RunPersistenceRepository
+import com.questtick.work.PostRunActionScheduler
+import com.questtick.security.RootBlockingPolicy
+import com.questtick.security.RootDetectorV2
+import com.questtick.security.RootEnvironmentChecker
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
+
+private const val MAX_PARALLELISM = 4
+private const val ACCOUNT_START_DELAY_MIN_MS = 800L
+private const val ACCOUNT_START_DELAY_MAX_MS = 3_501L
+private const val ACCOUNT_INDEX_DELAY_MIN_MS = 250L
+private const val ACCOUNT_INDEX_DELAY_MAX_MS = 701L
+private const val LOG_SAMPLE_LIMIT = 5
+private const val LOG_ID_SUFFIX_LENGTH = 8
+private const val BYTES_PER_MIB = 1024
+
+private class RunPersistenceException(
+    message: String,
+    cause: Throwable? = null,
+) : IllegalStateException(message, cause)
+
+/**
+ * 签到编排器。
+ *
+ * 负责账号级调度与结果归并；运行诊断与收尾落盘分别委托给
+ * [RunDiagnostics] 与 [RunFinalizer]，米游社与云游戏执行流程委托给独立执行器。
+ * 同一账号内的游戏任务保持串行，不同账号之间可按配置并行执行。
+ *
+ * @param parallel 为 false 时退化为串行模式，便于调试与排障。
+ */
+class SignInRunner(
+    private val context: Context,
+    private val store: SecureStore,
+    private val accountRepository: AccountRepository,
+    private val historyRepository: HistoryRepository,
+    private val signInCalendarRepository: SignInCalendarRepository,
+    private val logRepository: LogRepository,
+    private val runPersistenceRepository: RunPersistenceRepository,
+    private val rootEnvironmentChecker: RootEnvironmentChecker,
+    private val httpTransport: HttpTransport,
+    authRepository: AuthRepository,
+    private val postRunActionScheduler: PostRunActionScheduler,
+    private val parallel: Boolean = false,
+    private val runCoordinator: SignInRunCoordinator? = null,
+    private val appErrorLogger: AppErrorLogger? = null,
+) {
+    // 并发执行时通过线程安全队列收集日志；任务结果由单次运行专属收集器保证唯一终态。
+    private val logs = ConcurrentLinkedQueue<LogEntry>()
+
+    // act_id 缓存会在运行中被刷新，使用 Mutex 保护并发写入。
+    private val actIdCacheMutex = Mutex()
+
+    // 设备 ID 与版本号准备独立成类，避免编排器继续堆积无关流程。
+    private val runtimePreparation =
+        RunRuntimePreparation(store, httpTransport) { level, message, detail -> log(level, message, detail) }
+
+    // 账号并行度按 CPU 核心数收敛到较小范围，避免后台任务过度抢占资源。
+    private val maxParallelism = Runtime.getRuntime().availableProcessors().coerceIn(2, MAX_PARALLELISM)
+
+    /** 请求级限流器：协程可以并发调度，但真正发起请求前仍需排队。 */
+    private val mysRequestLimiter = Semaphore(permits = 2)
+    private val cloudRequestLimiter = Semaphore(permits = 1)
+    private val refreshRequestLimiter = Semaphore(permits = 1)
+
+    @Volatile
+    private var debugLoggingEnabled: Boolean = false
+
+    private val cloudGameBindings =
+        listOf(
+            CloudGameBinding(
+                game = CloudSignIn.GAMES.getValue("CloudYS"),
+                tokenOf = { it.genshinToken },
+                webCookieOf = { it.genshinWebCookie },
+                hasKeepLogin = { it.hasGenshinCloudKeepLogin },
+                updateToken = { account, token -> account.copy(genshinToken = token) },
+            ),
+            CloudGameBinding(
+                game = CloudSignIn.GAMES.getValue("CloudSR"),
+                tokenOf = { it.starrailToken },
+                webCookieOf = { it.starrailWebCookie },
+                hasKeepLogin = { it.hasStarrailCloudKeepLogin },
+                updateToken = { account, token -> account.copy(starrailToken = token) },
+            ),
+            CloudGameBinding(
+                // 云绝区零暂不支持扫码保持登录，只能手动填写 combo_token。
+                game = CloudSignIn.GAMES.getValue("CloudZZZ"),
+                tokenOf = { it.zzzToken },
+                webCookieOf = { "" },
+                hasKeepLogin = { false },
+                updateToken = { account, token -> account.copy(zzzToken = token) },
+            ),
+        )
+
+    // 按游戏键查找而不是按下标取：新增或调整绑定顺序时不会静默拿错游戏。
+    private val cloudGameBindingsByKey = cloudGameBindings.associateBy { it.game.key }
+
+    private fun cloudBinding(key: String): CloudGameBinding = cloudGameBindingsByKey.getValue(key)
+
+    private fun hasCloudYS(account: Account): Boolean = account.hasCloudTask(cloudBinding("CloudYS"))
+
+    private fun hasCloudSR(account: Account): Boolean = account.hasCloudTask(cloudBinding("CloudSR"))
+
+    private fun hasCloudZZZ(account: Account): Boolean = account.hasCloudTask(cloudBinding("CloudZZZ"))
+
+    private val credentialCoordinator =
+        SignInCredentialCoordinator(
+            authRepository = authRepository,
+            accountRepository = accountRepository,
+            refreshLimiter = refreshRequestLimiter,
+            log = ::log,
+        )
+    private val mysSignExecutor =
+        MysSignExecutor(
+            credentialCoordinator = credentialCoordinator,
+            httpTransport = httpTransport,
+            requestLimiter = mysRequestLimiter,
+            log = ::log,
+            recordError = { feature, detail ->
+                appErrorLogger?.record(feature, IllegalStateException(detail), detail)
+            },
+        )
+    private val cloudSignExecutor =
+        CloudSignExecutor(
+            credentialCoordinator = credentialCoordinator,
+            httpTransport = httpTransport,
+            requestLimiter = cloudRequestLimiter,
+            log = ::log,
+            recordError = { feature, detail ->
+                appErrorLogger?.record(feature, IllegalStateException(detail), detail)
+            },
+        )
+
+    // 运行诊断与收尾持久化已拆分为独立服务，编排器只保留调度与结果归并。
+    private val runDiagnostics =
+        RunDiagnostics(
+            context = context,
+            store = store,
+            log = ::log,
+        )
+    private val runFinalizer =
+        RunFinalizer(
+            store = store,
+            runPersistenceRepository = runPersistenceRepository,
+            postRunActionScheduler = postRunActionScheduler,
+            historyRepository = historyRepository,
+            signInCalendarRepository = signInCalendarRepository,
+            log = ::log,
+        )
+
+    private fun logPlannedTasksForAccount(account: Account) {
+        val mysGames = account.selectedMysGames()
+        val cloudGames = account.selectedCloudBindings(cloudGameBindings).map { it.game.name }
+        val gameNames = (mysGames.map { Games.byKey(it.key)?.name ?: it.name } + cloudGames).joinToString("、")
+        log(
+            "INFO",
+            "[${account.label}] 待签游戏: $gameNames（共 ${mysGames.size + cloudGames.size} 款）",
+            "hasCookie=${account.mysCookie.isNotBlank()}, hasMysKeepLogin=${account.hasMysKeepLogin}, " +
+                "hasGenshinToken=${account.genshinToken.isNotBlank()}, hasStarrailToken=${account.starrailToken.isNotBlank()}, " +
+                "hasGenshinWebCookie=${account.genshinWebCookie.isNotBlank()}, " +
+                "hasStarrailWebCookie=${account.starrailWebCookie.isNotBlank()}, qrLoginBound=${account.qrLoginBound}",
+        )
+    }
+
+    private fun log(
+        level: String,
+        message: String,
+        detail: String = "",
+    ) {
+        if (level.uppercase() == "DEBUG" && !debugLoggingEnabled) return
+        val entry =
+            LogEntry(
+                System.currentTimeMillis(),
+                level,
+                Mask.sensitive(message),
+                Mask.sensitive(detail),
+            )
+        logs.add(entry)
+        // 同步到 LogRepository，让日志页实时显示。
+        logRepository.append(entry)
+    }
+
+    private suspend fun accountStartJitter(
+        accountLabel: String,
+        index: Int,
+        total: Int,
+    ) {
+        if (!parallel || total <= 1) return
+        val delayMs =
+            Random.nextLong(ACCOUNT_START_DELAY_MIN_MS, ACCOUNT_START_DELAY_MAX_MS) +
+                index * Random.nextLong(ACCOUNT_INDEX_DELAY_MIN_MS, ACCOUNT_INDEX_DELAY_MAX_MS)
+        log("INFO", "账号启动随机延迟：[$accountLabel] ${delayMs}ms", "accountIndex=$index, totalAccounts=$total")
+        delay(delayMs)
+    }
+
+    suspend fun runAll(
+        onProgress: (label: String, done: Int, total: Int) -> Unit = { _, _, _ -> },
+        precheckedRootResult: RootDetectorV2.RootCheckResult? = null,
+        rootCheckAlreadyPerformed: Boolean = false,
+        trigger: RunTrigger = RunTrigger.MANUAL,
+        allowedTaskIds: Set<String>? = null,
+        excludedAccountIds: Set<String> = emptySet(),
+        scheduledBusinessDayAt: Long? = null,
+        // 运行锁被过期接管后，被接管方必须在账号边界停下，避免与接管方重复发出签到请求。
+        isLeaseCurrent: () -> Boolean = { true },
+    ): RunRecord {
+        val runId = UUID.randomUUID().toString()
+        val startTime = System.currentTimeMillis()
+        // 启动新会话前先幂等恢复旧 RUNNING 会话，避免进程中断后的签到 POST 被盲目重放。
+        val recovered = withContext(Dispatchers.IO) { runPersistenceRepository.recoverInterruptedRuns() }
+        if (recovered.recoveredRuns > 0) {
+            historyRepository.reload()
+            signInCalendarRepository.reload()
+            logRepository.reload()
+        }
+        // 设置快照在计划生成前读取：米游币开关决定任务清单本身，不能等到执行阶段才取。
+        val settings = withContext(Dispatchers.IO) { store.getAppSettings() }
+        val mysCoinEnabled = mysCoinFeatureEnabled(settings)
+        val allAccounts = withContext(Dispatchers.IO) { accountRepository.getAccounts() }
+        val enabledAccounts = allAccounts.filter { it.enabled && it.id !in excludedAccountIds }
+        val noEnabledAccounts = allAccounts.isEmpty() || enabledAccounts.isEmpty()
+        // 每次运行随机化账号顺序，减少长期固定请求轨迹带来的风控特征。
+        val accounts =
+            if (noEnabledAccounts) {
+                emptyList()
+            } else {
+                enabledAccounts.shuffled(Random(System.nanoTime()))
+            }
+        // 定时签到复用当天手动签到结果；已确认成功的任务不再重复请求，失败任务仍可按定时重试策略处理。
+        val signedTaskIdsForDay =
+            if (noEnabledAccounts) {
+                emptySet()
+            } else if (trigger == RunTrigger.SCHEDULED || trigger == RunTrigger.RETRY) {
+                runPersistenceRepository.signedTaskIdsForDay(scheduledBusinessDayAt ?: startTime)
+            } else {
+                emptySet()
+            }
+        val taskPlan =
+            if (noEnabledAccounts) {
+                emptyList()
+            } else {
+                buildRunTaskPlan(accounts, cloudGameBindings, mysCoinEnabled)
+                    .filter { task -> allowedTaskIds == null || task.id in allowedTaskIds }
+                    .filter { task -> task.id !in signedTaskIdsForDay }
+            }
+        val plannedTaskIds = taskPlan.mapTo(linkedSetOf()) { it.id }
+        val resultAccumulator = TaskResultAccumulator(plannedTaskIds)
+        if (!noEnabledAccounts) runCoordinator?.setTaskPlan(taskPlan)
+
+        val total = taskPlan.size
+        val earlyResult =
+            when {
+                noEnabledAccounts -> {
+                    onProgress("没有启用账号", 0, 0)
+                    runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "没有启用账号")
+                    RunRecord(
+                        timestamp = System.currentTimeMillis(),
+                        results = emptyList(),
+                        runId = runId,
+                        trigger = trigger,
+                        terminationReason = RunTerminationReason.NO_ENABLED_ACCOUNT,
+                    )
+                }
+
+                total == 0 -> {
+                    onProgress("没有可执行任务", 0, 0)
+                    runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "没有可执行任务")
+                    RunRecord(
+                        timestamp = System.currentTimeMillis(),
+                        results = emptyList(),
+                        runId = runId,
+                        trigger = trigger,
+                        terminationReason = RunTerminationReason.NO_RUNNABLE_TASK,
+                    )
+                }
+
+                else -> {
+                    null
+                }
+            }
+        if (earlyResult != null) return earlyResult
+
+        return try {
+            withContext(Dispatchers.IO) {
+                runPersistenceRepository.startRun(runId, trigger, startTime, taskPlan)
+            }
+            val uncertainTaskIds =
+                withContext(Dispatchers.IO) {
+                    runPersistenceRepository.uncertainTaskIdsForDay(startTime).intersect(taskPlan.map { it.id }.toSet())
+                }
+
+            val workerParallelism =
+                if (parallel) {
+                    minOf(accounts.size.coerceAtLeast(1), maxParallelism)
+                } else {
+                    1
+                }
+
+            withContext(Dispatchers.IO.limitedParallelism(workerParallelism)) {
+                logs.clear()
+
+                // 将设置页自定义云游戏版本同步到生效版本，确保签到请求使用用户指定的版本号。
+                CloudVersionRepository.applyOverrides(
+                    settings.cloudYsVersion,
+                    settings.cloudSrVersion,
+                    settings.cloudZzzVersion,
+                )
+                debugLoggingEnabled = settings.debugLoggingEnabled
+                // 版本自动获取必须由本次真正可执行的对应签到任务触发，不能只看账号是否保存了凭证。
+                val hasMysTasks =
+                    taskPlan.any { it.type == RunTaskType.MYS && it.id !in uncertainTaskIds } ||
+                        accounts.any { mysCoinEnabled && it.mysCoinEnabled }
+                val hasCloudYsTasks =
+                    taskPlan.any {
+                        it.type == RunTaskType.CLOUD &&
+                            it.id !in uncertainTaskIds &&
+                            it.id.substringAfterLast('|') == "CloudYS"
+                    }
+                val hasCloudSrTasks =
+                    taskPlan.any {
+                        it.type == RunTaskType.CLOUD &&
+                            it.id !in uncertainTaskIds &&
+                            it.id.substringAfterLast('|') == "CloudSR"
+                    }
+                val hasCloudZzzTasks =
+                    taskPlan.any {
+                        it.type == RunTaskType.CLOUD &&
+                            it.id !in uncertainTaskIds &&
+                            it.id.substringAfterLast('|') == "CloudZZZ"
+                    }
+                val hasCloudTasks = hasCloudYsTasks || hasCloudSrTasks || hasCloudZzzTasks
+
+                // 先写入运行起点，让版本准备、Root 检测和后续任务日志都落入同一签到组。
+                // 触发来源写在起点日志的详情里：日志页据此给分组标题打「手动 / 自动」标签，
+                // 不依赖「已提交执行」那条标记是否恰好落在同一分组（中间可能夹着别的日志）。
+                log("INFO", LogMarkers.RUN_START, "trigger=${trigger.name}")
+                log(
+                    "DEBUG",
+                    "调试日志已启用",
+                    "enabledAccounts=${accounts.size}, totalAccounts=${allAccounts.size}, workerParallelism=$workerParallelism, " +
+                        "hasMysTasks=$hasMysTasks, hasCloudTasks=$hasCloudTasks",
+                )
+
+                val actIdCache = ConcurrentHashMap<String, String>()
+                actIdCache.putAll(store.getActIdCache())
+
+                val done = AtomicInteger(0)
+                val hadUnexpectedAccountFailure = AtomicBoolean(false)
+                val completeTask: (String, TaskResult, String) -> Unit = { taskId, result, progressLabel ->
+                    val normalizedResult =
+                        result.copy(
+                            taskId = taskId,
+                            accountId = result.accountId.ifBlank { taskId.substringBefore('|') },
+                        )
+                    when (resultAccumulator.accept(taskId, normalizedResult)) {
+                        TaskResultAcceptance.ACCEPTED -> {
+                            val persisted =
+                                try {
+                                    runPersistenceRepository.persistTaskResult(runId, taskId, normalizedResult)
+                                } catch (e: Exception) {
+                                    e.throwIfCancellation()
+                                    throw RunPersistenceException(
+                                        "任务终态持久化异常: $taskId (${e.javaClass.simpleName})",
+                                        e,
+                                    )
+                                }
+                            if (!persisted) {
+                                throw RunPersistenceException("任务终态持久化失败或已存在: $taskId")
+                            }
+                            markProgressTaskFinished(taskId, normalizedResult)
+                            val completed = done.incrementAndGet()
+                            onProgress(progressLabel, completed.coerceAtMost(total), total)
+                        }
+
+                        TaskResultAcceptance.DUPLICATE -> {
+                            hadUnexpectedAccountFailure.set(true)
+                            log(
+                                "WARN",
+                                "忽略重复的任务终态结果",
+                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(LOG_ID_SUFFIX_LENGTH)}",
+                            )
+                        }
+
+                        TaskResultAcceptance.UNPLANNED -> {
+                            hadUnexpectedAccountFailure.set(true)
+                            log(
+                                "ERROR",
+                                "忽略未列入计划的任务结果",
+                                "taskId=$taskId, gameKey=${result.gameKey}, accountId=${result.accountId.takeLast(LOG_ID_SUFFIX_LENGTH)}",
+                            )
+                        }
+                    }
+                }
+                val shouldExecuteTask: (String) -> Boolean = { taskId ->
+                    resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)
+                }
+                val isTaskRunning: (String) -> Boolean = { taskId ->
+                    try {
+                        runPersistenceRepository.isTaskRunning(runId, taskId)
+                    } catch (e: Exception) {
+                        e.throwIfCancellation()
+                        throw RunPersistenceException(
+                            "读取任务持久化状态异常: $taskId (${e.javaClass.simpleName})",
+                            e,
+                        )
+                    }
+                }
+                val startTask: (String, String) -> Boolean = { taskId, message ->
+                    if (!shouldExecuteTask(taskId)) {
+                        false
+                    } else {
+                        val started =
+                            try {
+                                runPersistenceRepository.markTaskRunning(runId, taskId, message)
+                            } catch (e: Exception) {
+                                e.throwIfCancellation()
+                                throw RunPersistenceException(
+                                    "任务执行权持久化异常: $taskId (${e.javaClass.simpleName})",
+                                    e,
+                                )
+                            }
+                        if (!started) throw RunPersistenceException("无法获取任务执行权: $taskId")
+                        markProgressTaskRunning(taskId, message)
+                        true
+                    }
+                }
+
+                runCoordinator?.setProgressPhase(RunProgressPhase.CHECKING, "正在检查运行环境")
+                // Root 阻断必须使用强制实时检测，不能复用短期缓存，避免 Root 状态变化后继续放行。
+                val rootResult =
+                    if (rootCheckAlreadyPerformed) {
+                        precheckedRootResult
+                    } else {
+                        try {
+                            rootEnvironmentChecker.check(forceRefresh = true)
+                        } catch (e: Throwable) {
+                            e.throwIfCancellation()
+                            log(
+                                "ERROR",
+                                RootBlockMessages.CHECK_FAILED_CONTENT,
+                                "${e.javaClass.simpleName}: ${e.message}",
+                            )
+                            null
+                        }
+                    }
+                if (rootCheckAlreadyPerformed && rootResult == null) {
+                    log(
+                        "ERROR",
+                        RootBlockMessages.CHECK_FAILED_CONTENT,
+                        "manual pre-check failed before runner start",
+                    )
+                }
+                runDiagnostics.logSystemInfo(settings, allAccounts, rootResult)
+                val rootDecision = RootBlockingPolicy.decide(rootResult)
+                if (rootDecision != RootBlockingPolicy.Decision.ALLOW) {
+                    val rootCheckFailed = rootDecision == RootBlockingPolicy.Decision.BLOCK_CHECK_FAILED
+                    val blockMessage = rootBlockResultMessage(rootDecision)
+                    log(
+                        "ERROR",
+                        blockMessage,
+                        rootResult?.let {
+                            "completeness=${it.completeness}, checked=${it.checkedProbeCount}/${RootDetectorV2.TOTAL_PROBE_GROUPS}, " +
+                                "unavailable=${it.unavailableProbes.take(LOG_SAMPLE_LIMIT).joinToString()}, score=${it.score}, " +
+                                "rootEvidence=${it.rootEvidenceTriggers.take(LOG_SAMPLE_LIMIT).joinToString()}, " +
+                                "triggers=${it.triggers.take(LOG_SAMPLE_LIMIT).joinToString()}"
+                        } ?: "root check unavailable",
+                    )
+                    val blockedResults =
+                        sortTaskResultsForRecord(
+                            accounts.flatMap { account ->
+                                buildSkippedTaskResults(
+                                    account = account,
+                                    message = blockMessage,
+                                    cloudGameBindings = cloudGameBindings,
+                                    mysCoinEnabled = mysCoinEnabled,
+                                    failure =
+                                        TaskFailureDescriptor(
+                                            category = FailureCategory.SECURITY_BLOCKED,
+                                            errorCode = if (rootCheckFailed) "root-check-failed" else "root-detected",
+                                        ),
+                                ).filter { it.taskId in plannedTaskIds }
+                            },
+                        )
+                    blockedResults.forEach { result ->
+                        completeTask(result.taskId, result, "${result.accountLabel} · ${result.game}")
+                        logOutcome(
+                            TaskOutcomeLog(
+                                account = result.accountLabel,
+                                game = result.game,
+                                success = false,
+                                skipped = true,
+                                message = result.message,
+                                detail = "blockedBy=rootCheck",
+                            ),
+                        )
+                    }
+                    onProgress(blockMessage, 0, total)
+                    runCoordinator?.skipUnfinishedTasks(blockMessage)
+                    val record =
+                        RunRecord(
+                            timestamp = System.currentTimeMillis(),
+                            results = blockedResults,
+                            runId = runId,
+                            trigger = trigger,
+                            terminationReason =
+                                if (rootCheckFailed) {
+                                    RunTerminationReason.ROOT_CHECK_FAILED
+                                } else {
+                                    RunTerminationReason.ROOT_DETECTED
+                                },
+                        )
+                    runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存阻断结果")
+                    runFinalizer.finish(
+                        record,
+                        actIdCache,
+                        startTime,
+                        logsProvider = { logs.toList().sortedBy { it.timestamp } },
+                        enqueuePostRunActions = false,
+                    )
+                    runCoordinator?.finishProgress(RunProgressPhase.BLOCKED, blockMessage)
+                    record
+                } else {
+                    // 上次进程中断时已经发出请求但没有结果的任务，本业务日不再自动重放。
+                    if (uncertainTaskIds.isNotEmpty()) {
+                        taskPlan.filter { it.id in uncertainTaskIds }.forEach { task ->
+                            val parts = task.id.split('|', limit = 3)
+                            completeTask(
+                                task.id,
+                                TaskResult(
+                                    game = task.targetName,
+                                    gameKey = parts.getOrNull(2).orEmpty(),
+                                    accountLabel = task.accountLabel,
+                                    accountId = parts.getOrNull(0).orEmpty(),
+                                    success = false,
+                                    skipped = true,
+                                    message = RunPersistenceRepository.RESULT_UNKNOWN_MESSAGE,
+                                    failureCategory = FailureCategory.RESULT_UNKNOWN,
+                                    errorCode = "previous-run-result-unknown",
+                                    retryable = false,
+                                ),
+                                "${task.accountLabel} · ${task.targetName}（结果待确认）",
+                            )
+                        }
+                    }
+
+                    runCoordinator?.setProgressPhase(RunProgressPhase.REFRESHING, "正在准备版本与凭证")
+                    // Root 已确认放行后再启动准备任务。这里的并行独立于“并行签到”开关；
+                    // 该开关仍只控制多账号处理，米游社与云游戏请求各自等待自己的准备结果。
+                    val mysPreparation =
+                        async {
+                            runtimePreparation.prepareMys(settings, hasMysTasks)
+                        }
+                    val cloudPreparation =
+                        async {
+                            runtimePreparation.prepareCloud(settings, hasCloudYsTasks, hasCloudSrTasks, hasCloudTasks)
+                        }
+                    log(
+                        "DEBUG",
+                        "运行配置快照",
+                        buildString {
+                            append("parallel=${settings.parallelEnabled}, ")
+                            append("actIdAutoRefresh=${settings.actIdAutoRefresh}, ")
+                            append("mysAppVersion={autoFetch=${settings.mysAppVersionAutoFetch}, ")
+                            append("custom=${settings.mysAppVersion.ifBlank { "<empty>" }}, ")
+                            append("effective=${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion).ifBlank { "<empty>" }}}, ")
+                            append("cloudVersion={autoFetch=${settings.cloudVersionAutoFetch}, ")
+                            append("ysCustom=${settings.cloudYsVersion.ifBlank { "<empty>" }}, ")
+                            append("srCustom=${settings.cloudSrVersion.ifBlank { "<empty>" }}, ")
+                            append("ysEffective=${CloudVersionRepository.effectiveYs()}, ")
+                            append("srEffective=${CloudVersionRepository.effectiveSr()}}, ")
+                            append("rootCheck={enabled=true, mode=evidence, blockRun=true}, ")
+                            append("actIdCacheKeys=${actIdCache.keys.joinToString()}")
+                        },
+                    )
+
+                    val cpuCores = Runtime.getRuntime().availableProcessors()
+                    val maxMem = Runtime.getRuntime().maxMemory() / BYTES_PER_MIB / BYTES_PER_MIB
+                    val freeMem = Runtime.getRuntime().freeMemory() / BYTES_PER_MIB / BYTES_PER_MIB
+                    val mode = if (parallel && accounts.size > 1) "多核并行（${cpuCores}核）" else "串行"
+                    val mysVersion =
+                        when {
+                            settings.mysAppVersion.isNotBlank() -> {
+                                "自定义(${settings.mysAppVersion})"
+                            }
+
+                            settings.mysAppVersionAutoFetch -> {
+                                "自动准备中(${MysAppVersionRepository.effectiveVersion(settings.mysAppVersion)})"
+                            }
+
+                            else -> {
+                                "默认(${MysAppVersionRepository.currentVersion})"
+                            }
+                        }
+
+                    log(
+                        "INFO",
+                        "运行模式: $mode, 启用账号: ${accounts.size} 个",
+                        "parallel=$parallel, cpuCores=$cpuCores, maxHeap=${maxMem}MB, freeHeap=${freeMem}MB, " +
+                            "thread=${Thread.currentThread().name}",
+                    )
+                    log("INFO", "米游社版本准备已并行启动", "configured=$mysVersion")
+                    if (settings.actIdAutoRefresh) {
+                        log("INFO", "act_id 自动刷新已开启")
+                    }
+                    if (settings.parallelEnabled) {
+                        log("INFO", "并行调度线程上限: $workerParallelism")
+                    }
+
+                    log("INFO", "任务总数: $total 个游戏签到（${accounts.size} 个账号）")
+
+                    accounts.forEach(::logPlannedTasksForAccount)
+                    runCoordinator?.setProgressPhase(RunProgressPhase.SIGNING, "准备开始签到任务")
+
+                    if (parallel && accounts.size > 1) {
+                        log("INFO", "────── 启动并行调度，${accounts.size} 个协程同时执行 ──────")
+                        coroutineScope {
+                            accounts
+                                .mapIndexed { index, acc ->
+                                    async {
+                                        try {
+                                            if (!isLeaseCurrent()) return@async
+                                            accountStartJitter(acc.label, index, accounts.size)
+                                            processAccount(
+                                                acc,
+                                                settings,
+                                                mysCoinEnabled,
+                                                mysPreparation,
+                                                cloudPreparation,
+                                                actIdCache,
+                                                total,
+                                                done,
+                                                onProgress,
+                                                shouldExecuteTask = shouldExecuteTask,
+                                                onTaskStarted = startTask,
+                                                onTaskCompleted = completeTask,
+                                            )
+                                        } catch (e: CancellationException) {
+                                            throw e
+                                        } catch (e: RunPersistenceException) {
+                                            throw e
+                                        } catch (e: Exception) {
+                                            e.throwIfCancellation()
+                                            log(
+                                                "ERROR",
+                                                "[${acc.label}] 账号处理异常终止",
+                                                ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+                                            )
+                                            hadUnexpectedAccountFailure.set(true)
+                                            addFailedResultsForAccount(
+                                                acc,
+                                                e,
+                                                mysCoinEnabled,
+                                                { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
+                                                isTaskRunning,
+                                                completeTask,
+                                            )
+                                        }
+                                    }
+                                }.awaitAll()
+                        }
+                    } else {
+                        for (acc in accounts) {
+                            if (!isLeaseCurrent()) break
+                            try {
+                                processAccount(
+                                    acc,
+                                    settings,
+                                    mysCoinEnabled,
+                                    mysPreparation,
+                                    cloudPreparation,
+                                    actIdCache,
+                                    total,
+                                    done,
+                                    onProgress,
+                                    shouldExecuteTask = shouldExecuteTask,
+                                    onTaskStarted = startTask,
+                                    onTaskCompleted = completeTask,
+                                )
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: RunPersistenceException) {
+                                throw e
+                            } catch (e: Exception) {
+                                e.throwIfCancellation()
+                                log(
+                                    "ERROR",
+                                    "[${acc.label}] 账号处理异常终止",
+                                    ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+                                )
+                                hadUnexpectedAccountFailure.set(true)
+                                addFailedResultsForAccount(
+                                    acc,
+                                    e,
+                                    mysCoinEnabled,
+                                    { taskId -> !resultAccumulator.isExpected(taskId) || resultAccumulator.contains(taskId) },
+                                    isTaskRunning,
+                                    completeTask,
+                                )
+                            }
+                        }
+                    }
+
+                    if (!isLeaseCurrent()) {
+                        log(
+                            "WARN",
+                            "运行锁已被接管，停止后续账号签到",
+                            "剩余账号不再发起请求，避免与接管方重复签到",
+                        )
+                    }
+
+                    if (resultAccumulator.size != total) {
+                        hadUnexpectedAccountFailure.set(true)
+                        log(
+                            "ERROR",
+                            "签到任务结果不完整，正在补齐未完成任务",
+                            "planned=$total, completed=${resultAccumulator.size}",
+                        )
+                        accounts.forEach { account ->
+                            buildFailedTaskResults(
+                                account = account,
+                                errorMessage = "任务执行异常中断",
+                                cloudGameBindings = cloudGameBindings,
+                                mysCoinEnabled = mysCoinEnabled,
+                                failure = TaskFailureDescriptor(FailureCategory.INTERNAL_ERROR, "missing-terminal-result"),
+                            ).forEach { result ->
+                                val taskId = taskIdForResult(account, result, cloudGameBindings)
+                                if (resultAccumulator.isExpected(taskId) && !resultAccumulator.contains(taskId)) {
+                                    val finalResult =
+                                        if (isTaskRunning(taskId)) {
+                                            result.asUnknownAfterRequest("missing-terminal-after-request")
+                                        } else {
+                                            result
+                                        }
+                                    completeTask(taskId, finalResult, "${account.label} · 异常收尾")
+                                }
+                            }
+                        }
+                    }
+                    onProgress("完成", resultAccumulator.size.coerceAtMost(total), total)
+
+                    val sortedResults = sortTaskResultsForRecord(resultAccumulator.values())
+                    val record =
+                        RunRecord(
+                            timestamp = System.currentTimeMillis(),
+                            results = sortedResults,
+                            runId = runId,
+                            trigger = trigger,
+                            terminationReason =
+                                if (hadUnexpectedAccountFailure.get()) {
+                                    RunTerminationReason.INTERNAL_ERROR
+                                } else {
+                                    RunTerminationReason.COMPLETED
+                                },
+                        )
+                    runCoordinator?.setProgressPhase(RunProgressPhase.SAVING, "正在保存签到结果")
+                    runFinalizer.finish(
+                        record,
+                        actIdCache,
+                        startTime,
+                        logsProvider = { logs.toList().sortedBy { it.timestamp } },
+                    )
+                    runCoordinator?.finishProgress(RunProgressPhase.FINISHED, "签到任务已完成")
+                    record
+                }
+            }
+        } catch (e: CancellationException) {
+            withContext(NonCancellable + Dispatchers.IO) {
+                try {
+                    runPersistenceRepository.cancelRun(
+                        runId = runId,
+                        reason =
+                            if (trigger == RunTrigger.MANUAL) {
+                                RunTerminationReason.USER_CANCELLED
+                            } else {
+                                RunTerminationReason.SYSTEM_CANCELLED
+                            },
+                        logs = logs.toList().sortedBy { it.timestamp },
+                    )
+                } catch (cleanupError: Exception) {
+                    e.addSuppressed(cleanupError)
+                }
+            }
+            throw e
+        } catch (e: Exception) {
+            log(
+                "ERROR",
+                "签到运行异常",
+                ErrorText.detailOf(e, includeStackTrace = debugLoggingEnabled),
+            )
+            withContext(NonCancellable + Dispatchers.IO) {
+                try {
+                    runPersistenceRepository.failRun(
+                        runId = runId,
+                        logs = logs.toList().sortedBy { it.timestamp },
+                    )
+                } catch (cleanupError: Exception) {
+                    e.addSuppressed(cleanupError)
+                }
+            }
+            throw e
+        }
+    }
+
+    private fun logAccountProcessingStart(acc: Account) {
+        log(
+            "INFO",
+            "────── 开始处理账号: ${acc.label} ──────",
+            "accountId=${acc.id.takeLast(LOG_ID_SUFFIX_LENGTH)}, thread=${Thread.currentThread().name}, " +
+                "enabled=${acc.enabled}, hasMysCookie=${acc.mysCookie.isNotBlank()}, hasMysKeepLogin=${acc.hasMysKeepLogin}, " +
+                "qrLoginBound=${acc.qrLoginBound}, hasCloudYS=${hasCloudYS(acc)}, hasCloudSR=${hasCloudSR(acc)}, " +
+                "hasCloudZZZ=${hasCloudZZZ(acc)}, " +
+                "selectedMysGames=${acc.selectedMysGames().joinToString { it.key }}, " +
+                "selectedCloudGames=${acc.selectedCloudBindings(cloudGameBindings).joinToString { it.game.key }}",
+        )
+    }
+
+    private fun sortTaskResultsForRecord(rawResults: List<TaskResult>): List<TaskResult> {
+        val gameOrder = Games.ALL.mapIndexed { index, gameInfo -> gameInfo.key to index }.toMap()
+        // 使用一次 sortedWith 排序完成结果归并，并显式指定泛型避免编译器推断失败。
+        return rawResults.sortedWith(
+            compareBy<TaskResult> { gameOrder[it.gameKey] ?: Int.MAX_VALUE }
+                .thenBy { it.accountLabel }
+                .thenBy { it.game },
+        )
+    }
+
+    private suspend fun processAccount(
+        acc: Account,
+        settings: AppSettings,
+        mysCoinEnabled: Boolean,
+        mysPreparation: Deferred<MysRuntimePreparation>,
+        cloudPreparation: Deferred<CloudRuntimePreparation>,
+        actIdCache: ConcurrentHashMap<String, String>,
+        total: Int,
+        done: AtomicInteger,
+        onProgress: (String, Int, Int) -> Unit,
+        shouldExecuteTask: (taskId: String) -> Boolean,
+        onTaskStarted: (String, String) -> Boolean,
+        onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -> Unit,
+    ) {
+        val accountStart = System.currentTimeMillis()
+        logAccountProcessingStart(acc)
+
+        val afterMys =
+            if (acc.selectedMysGames().isNotEmpty() || (mysCoinEnabled && acc.mysCoinEnabled)) {
+                val prepared = mysPreparation.await()
+                mysSignExecutor.runAccount(
+                    acc = acc,
+                    settings = settings,
+                    mysCoinEnabled = mysCoinEnabled,
+                    runMysAppVersion = prepared.appVersion,
+                    actIdCache = actIdCache,
+                    actIdCacheMutex = actIdCacheMutex,
+                    mysDeviceId = prepared.deviceId,
+                    total = total,
+                    done = done,
+                    onProgress = onProgress,
+                    shouldExecuteTask = shouldExecuteTask,
+                    onTaskStarted = onTaskStarted,
+                    onTaskCompleted = onTaskCompleted,
+                )
+            } else {
+                acc
+            }
+        if (afterMys.selectedCloudBindings(cloudGameBindings).isNotEmpty()) {
+            val prepared = cloudPreparation.await()
+            cloudSignExecutor.runAccount(
+                acc = afterMys,
+                cloudGameBindings = cloudGameBindings,
+                cloudDeviceId = prepared.deviceId,
+                total = total,
+                done = done,
+                onProgress = onProgress,
+                shouldExecuteTask = shouldExecuteTask,
+                onTaskStarted = onTaskStarted,
+                onTaskCompleted = onTaskCompleted,
+            )
+        }
+
+        val accountElapsed = System.currentTimeMillis() - accountStart
+        log("INFO", "────── 账号 ${acc.label} 处理完成 (${formatSignInElapsed(accountElapsed)}) ──────")
+    }
+
+    private fun markProgressTaskRunning(
+        taskId: String,
+        message: String,
+    ) {
+        runCoordinator?.markTaskRunning(taskId, message)
+    }
+
+    private fun markProgressTaskFinished(
+        taskId: String,
+        result: TaskResult,
+    ) {
+        runCoordinator?.markTaskFinished(taskId, taskStatusFromResult(result), result.message)
+    }
+
+    private fun rootBlockResultMessage(decision: RootBlockingPolicy.Decision): String =
+        if (decision == RootBlockingPolicy.Decision.BLOCK_ROOT_EVIDENCE) {
+            RootBlockMessages.DETECTED_CONTENT
+        } else {
+            RootBlockMessages.CHECK_FAILED_CONTENT
+        }
+
+    private fun logOutcome(entry: TaskOutcomeLog) {
+        val elapsed = if (entry.elapsedMs > 0) " (${formatSignInElapsed(entry.elapsedMs)})" else ""
+        val level =
+            when {
+                entry.skipped -> "WARN"
+                entry.success -> "OK"
+                else -> "ERROR"
+            }
+        log(level, "[${entry.account} · ${entry.game}] ${entry.message}$elapsed", entry.detail)
+    }
+
+    private fun addFailedResultsForAccount(
+        acc: Account,
+        e: Exception,
+        mysCoinEnabled: Boolean,
+        isTaskCompleted: (taskId: String) -> Boolean,
+        isTaskRunning: (taskId: String) -> Boolean,
+        onTaskCompleted: (taskId: String, result: TaskResult, progressLabel: String) -> Unit,
+    ) {
+        val errorMsg = "账号处理异常终止：${ErrorText.fromException(e)}"
+        buildFailedTaskResults(
+            account = acc,
+            errorMessage = errorMsg,
+            cloudGameBindings = cloudGameBindings,
+            mysCoinEnabled = mysCoinEnabled,
+            failure = TaskFailureClassifier.fromException(e),
+        ).forEach { result ->
+            val taskId = taskIdForResult(acc, result, cloudGameBindings)
+            if (!isTaskCompleted(taskId)) {
+                val finalResult =
+                    if (isTaskRunning(taskId)) {
+                        result.asUnknownAfterRequest("account-exception-after-request")
+                    } else {
+                        result
+                    }
+                onTaskCompleted(taskId, finalResult, "${acc.label} · 异常处理")
+            }
+        }
+    }
+
+    private fun TaskResult.asUnknownAfterRequest(errorCode: String): TaskResult =
+        copy(
+            success = false,
+            skipped = true,
+            alreadySigned = false,
+            message = RunPersistenceRepository.RESULT_UNKNOWN_MESSAGE,
+            rewardName = "",
+            rewardCount = "",
+            rewardIcon = "",
+            failureCategory = FailureCategory.RESULT_UNKNOWN,
+            errorCode = errorCode,
+            retryable = false,
+        )
+}

@@ -1,0 +1,426 @@
+@file:Suppress(
+    "detekt:LongMethod",
+    "detekt:TooManyFunctions",
+)
+
+package com.questtick.ui.screens
+
+/*
+ * 自定义主题色页面：HSL 三色调节、预设组合与实时预览。
+ */
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.TextButton
+import com.questtick.ui.components.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.questtick.data.AppSettings
+import com.questtick.ui.components.GalaxyBackground
+import com.questtick.ui.components.clickableNoRipple
+import com.questtick.ui.components.consumeHorizontalScrollOverflow
+import com.questtick.ui.theme.TextSecondary
+import kotlin.math.roundToInt
+
+internal const val DISABLED_THEME_ALPHA = 0.45f
+internal const val DEFAULT_THEME_HUE = 210f
+internal const val DEFAULT_THEME_SATURATION = 0.65f
+internal const val DEFAULT_THEME_LIGHTNESS = 0.5f
+internal const val HSL_MIDPOINT = 0.5f
+internal const val HSL_HUE_MAX = 360f
+internal const val HSL_HUE_SECTOR_DEGREES = 60f
+internal const val HSL_HUE_SECTOR_COUNT = 6f
+internal const val HSL_HUE_BLUE_OFFSET = 4f
+internal const val HSL_ONE_SIXTH = 1f / 6f
+internal const val HSL_ONE_HALF = 1f / 2f
+internal const val HSL_ONE_THIRD = 1f / 3f
+internal const val HSL_TWO_THIRDS = 2f / 3f
+internal const val COLOR_CHANNEL_MAX = 255f
+internal const val PERCENT_MAX = 100f
+internal const val HEX_COLOR_LENGTH = 7
+internal const val THEME_NAME_MAX_LENGTH = 24
+internal const val THEME_PAGE_BOTTOM_SPACING_DP = 24
+internal const val COMPACT_PRESET_SWATCH_SIZE_DP = 24
+internal const val THEME_PRESET_SPACING_DP = 7
+
+/** 三级调色页面：用 HSL 调节三种主题色，并提供即时预览。 */
+@Composable
+internal fun CustomThemeColorPage(
+    settings: AppSettings,
+    onApply: (AppSettings) -> Unit,
+    onBack: () -> Unit,
+) {
+    var themeName by remember(settings.customThemeName) { mutableStateOf(settings.customThemeName) }
+    var primary by remember(settings.customThemeColor) { mutableStateOf(hexToHsl(settings.customThemeColor)) }
+    var secondary by remember(settings.customThemeSecondaryColor, settings.customThemeColor) {
+        mutableStateOf(hexToHsl(settings.customThemeSecondaryColor.ifBlank { settings.customThemeColor }))
+    }
+    var tertiary by remember(settings.customThemeTertiaryColor, settings.customThemeColor) {
+        mutableStateOf(hexToHsl(settings.customThemeTertiaryColor.ifBlank { settings.customThemeColor }))
+    }
+    GalaxyBackground {
+        Column(
+            Modifier.fillMaxSize().windowInsetsPadding(
+                WindowInsets.statusBars.union(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)),
+            ),
+        ) {
+            DetailTopBar("自定义颜色", onBack)
+            LazyColumn(
+                Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    SettingsCard {
+                        OutlinedTextField(
+                            value = themeName,
+                            onValueChange = { themeName = it.take(THEME_NAME_MAX_LENGTH) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("主题名称") },
+                            placeholder = { Text("例如：我的蓝色主题") },
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text("调整色相、饱和度和明度", fontWeight = FontWeight.SemiBold)
+                        Text("拖动滑块即可预览，颜色会在应用后保存。", fontSize = 12.sp, color = TextSecondary)
+                        Spacer(Modifier.height(10.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            listOf(
+                                "P" to hslToHex(primary),
+                                "S" to hslToHex(secondary),
+                                "T" to hslToHex(tertiary),
+                            ).forEach { (label, hex) ->
+                                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CustomColorOption(hex, hex, true, onSelect = {}, compact = false)
+                                    Text(label, fontSize = 12.sp, color = TextSecondary)
+                                }
+                            }
+                        }
+                    }
+                }
+                item { SettingsCard { HslEditor("主色", primary) { primary = it } } }
+                item { SettingsCard { HslEditor("辅色", secondary) { secondary = it } } }
+                item { SettingsCard { HslEditor("第三色", tertiary) { tertiary = it } } }
+                item {
+                    Row(
+                        Modifier.fillMaxWidth().height(50.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Button(
+                            onClick = onBack,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
+                        ) { Text("取消", color = MaterialTheme.colorScheme.onPrimary) }
+                        Button(
+                            onClick = {
+                                val name = themeName.trim().ifBlank { "自定义" }
+                                val primaryHex = hslToHex(primary)
+                                val secondaryHex = hslToHex(secondary)
+                                val tertiaryHex = hslToHex(tertiary)
+                                val savedPreset = com.questtick.data.SavedThemePreset(name, primaryHex, secondaryHex, tertiaryHex)
+                                onApply(
+                                    settings.copy(
+                                        customThemeName = name,
+                                        customThemeColor = primaryHex,
+                                        customThemeSecondaryColor = secondaryHex,
+                                        customThemeTertiaryColor = tertiaryHex,
+                                        customThemePresets =
+                                            settings.customThemePresets
+                                                .filterNot { it.name.equals(name, true) }
+                                                .plus(savedPreset),
+                                    ),
+                                )
+                            },
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        ) { Text("保存", color = MaterialTheme.colorScheme.onPrimary) }
+                    }
+                }
+                item { Spacer(Modifier.height(THEME_PAGE_BOTTOM_SPACING_DP.dp)) }
+            }
+        }
+    }
+}
+
+internal data class ThemePreset(
+    val name: String,
+    val primary: String,
+    val secondary: String,
+    val tertiary: String,
+    val isCustom: Boolean = false,
+)
+
+/** 预设保存完整三色组合，避免只替换主色后辅色仍停留在旧主题。 */
+internal fun buildThemePresets(): List<ThemePreset> =
+    listOf(
+        ThemePreset("默认", "#2563EB", "#60A5FA", "#3B82F6"),
+        ThemePreset("海蓝青绿", "#0284C7", "#14B8A6", "#38BDF8"),
+        ThemePreset("紫罗兰", "#7C3AED", "#A78BFA", "#EC4899"),
+        ThemePreset("珊瑚暖橙", "#EA580C", "#F59E0B", "#F43F5E"),
+        ThemePreset("森林青柠", "#15803D", "#22C55E", "#84CC16"),
+        ThemePreset("玫瑰莓红", "#BE123C", "#F43F5E", "#FB7185"),
+    )
+
+@Composable
+internal fun ThemePresetOption(
+    preset: ThemePreset,
+    selected: Boolean,
+    enabled: Boolean,
+    onSelect: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
+    val primary = preset.primary.toComposeColor()
+    val secondary = preset.secondary.toComposeColor()
+    val tertiary = preset.tertiary.toComposeColor()
+    Column(
+        Modifier
+            .width(64.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .then(if (enabled) Modifier.clickableNoRipple(onClick = onSelect) else Modifier)
+            .padding(5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Box(Modifier.size(42.dp)) {
+            ThemePresetSwatch(
+                primary = primary,
+                secondary = secondary,
+                tertiary = tertiary,
+                selected = selected,
+                enabled = enabled,
+            )
+            if (onDelete != null && enabled) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "删除${preset.name}",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickableNoRipple(onClick = onDelete)
+                            .padding(2.dp),
+                )
+            }
+        }
+        Text(
+            preset.name,
+            fontSize = 9.sp,
+            color = if (enabled) TextSecondary else TextSecondary.copy(alpha = DISABLED_THEME_ALPHA),
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+internal fun ThemePresetSwatch(
+    primary: Color,
+    secondary: Color,
+    tertiary: Color,
+    selected: Boolean,
+    enabled: Boolean,
+) {
+    val ringColor =
+        if (selected && enabled) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+        }
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .clip(CircleShape)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = ringColor,
+                shape = CircleShape,
+            ),
+    ) {
+        val alpha = if (enabled) 1f else DISABLED_THEME_ALPHA
+        drawRect(secondary.copy(alpha = alpha), size = size)
+        drawRect(
+            tertiary.copy(alpha = alpha),
+            topLeft = Offset(size.width / 2f, size.height / 2f),
+            size =
+                androidx.compose.ui.geometry
+                    .Size(size.width / 2f, size.height / 2f),
+        )
+        drawCircle(
+            primary.copy(alpha = alpha),
+            radius = if (selected) 11.dp.toPx() else 8.dp.toPx(),
+            center = Offset(size.width / 2f, size.height / 2f),
+        )
+    }
+}
+
+private fun String.toComposeColor(): Color = runCatching { Color(android.graphics.Color.parseColor(this)) }.getOrDefault(Color.Gray)
+
+internal data class HslColor(
+    val hue: Float,
+    val saturation: Float,
+    val lightness: Float,
+)
+
+@Composable
+internal fun HslEditor(
+    title: String,
+    value: HslColor,
+    onValueChange: (HslColor) -> Unit,
+) {
+    val preview = hslToComposeColor(value)
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.weight(1f))
+            Box(Modifier.size(26.dp).clip(RoundedCornerShape(13.dp)).background(preview))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                hslToHex(value),
+                fontSize = 11.sp,
+                color = TextSecondary,
+            )
+        }
+        HslSlider("色相", "${value.hue.roundToInt()}°", value.hue, 0f..HSL_HUE_MAX) { onValueChange(value.copy(hue = it)) }
+        HslSlider("饱和度", "${percent(value.saturation)}%", value.saturation, 0f..1f) { onValueChange(value.copy(saturation = it)) }
+        HslSlider("明度", "${percent(value.lightness)}%", value.lightness, 0f..1f) { onValueChange(value.copy(lightness = it)) }
+    }
+}
+
+@Composable
+internal fun HslSlider(
+    label: String,
+    valueText: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.width(52.dp), fontSize = 12.sp, color = TextSecondary)
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = range,
+            modifier = Modifier.weight(1f),
+        )
+        Text(valueText, modifier = Modifier.width(42.dp), fontSize = 12.sp, color = TextSecondary)
+    }
+}
+
+private fun percent(value: Float): Int = (value * PERCENT_MAX).roundToInt()
+
+/** 使用标准 HSL 公式转换，保证保存后的 HEX 与预览颜色一致。 */
+internal fun hexToHsl(hex: String): HslColor {
+    val color = if (hex.isBlank()) null else runCatching { android.graphics.Color.parseColor(hex) }.getOrNull()
+    if (color == null) return HslColor(DEFAULT_THEME_HUE, DEFAULT_THEME_SATURATION, DEFAULT_THEME_LIGHTNESS)
+    val r = android.graphics.Color.red(color) / COLOR_CHANNEL_MAX
+    val g = android.graphics.Color.green(color) / COLOR_CHANNEL_MAX
+    val b = android.graphics.Color.blue(color) / COLOR_CHANNEL_MAX
+    val max = maxOf(r, g, b)
+    val min = minOf(r, g, b)
+    val lightness = (max + min) / 2f
+    return if (max == min) {
+        HslColor(0f, 0f, lightness)
+    } else {
+        val delta = max - min
+        val saturation = delta / (1f - kotlin.math.abs(2f * lightness - 1f))
+        val hue =
+            when (max) {
+                r -> HSL_HUE_SECTOR_DEGREES * (((g - b) / delta) % HSL_HUE_SECTOR_COUNT)
+                g -> HSL_HUE_SECTOR_DEGREES * (((b - r) / delta) + 2f)
+                else -> HSL_HUE_SECTOR_DEGREES * (((r - g) / delta) + HSL_HUE_BLUE_OFFSET)
+            }.let { if (it < 0f) it + HSL_HUE_MAX else it }
+        HslColor(hue, saturation, lightness)
+    }
+}
+
+internal fun hslToHex(value: HslColor): String {
+    val h = (value.hue % HSL_HUE_MAX) / HSL_HUE_MAX
+    val s = value.saturation.coerceIn(0f, 1f)
+    val l = value.lightness.coerceIn(0f, 1f)
+    val q = if (l < HSL_MIDPOINT) l * (1f + s) else l + s - l * s
+    val p = 2f * l - q
+
+    fun hueToRgb(t0: Float): Float {
+        var t = t0
+        if (t < 0f) t += 1f
+        if (t > 1f) t -= 1f
+        return when {
+            t < HSL_ONE_SIXTH -> p + (q - p) * HSL_HUE_SECTOR_COUNT * t
+            t < HSL_ONE_HALF -> q
+            t < HSL_TWO_THIRDS -> p + (q - p) * (HSL_TWO_THIRDS - t) * HSL_HUE_SECTOR_COUNT
+            else -> p
+        }
+    }
+    val (r, g, b) =
+        if (s == 0f) {
+            Triple(l, l, l)
+        } else {
+            Triple(hueToRgb(h + HSL_ONE_THIRD), hueToRgb(h), hueToRgb(h - HSL_ONE_THIRD))
+        }
+    return "#%02X%02X%02X".format(
+        (r * COLOR_CHANNEL_MAX).roundToInt(),
+        (g * COLOR_CHANNEL_MAX).roundToInt(),
+        (b * COLOR_CHANNEL_MAX).roundToInt(),
+    )
+}
+
+private fun hslToComposeColor(value: HslColor): Color = Color(android.graphics.Color.parseColor(hslToHex(value)))
